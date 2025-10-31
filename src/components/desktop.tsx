@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Dock from '@/components/dock';
 import Window from '@/components/window';
 import Terminal from '@/components/apps/terminal';
@@ -13,9 +13,12 @@ import CameraCapture from './camera-capture';
 import type { ImagePlaceholder } from '@/lib/placeholder-images';
 import GpsTracker from './gps-tracker';
 import type { GeoJSON } from 'geojson';
+import BlueScreen from './events/blue-screen';
+import Screamer from './events/screamer';
 
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser';
+export type EventId = 'bsod' | 'scream' | 'lag' | 'corrupt' | 'none';
 
 type AppConfig = {
   [key in AppId]: {
@@ -42,6 +45,17 @@ export default function Desktop() {
   const desktopRef = useRef<HTMLDivElement>(null);
   const [capturedImages, setCapturedImages] = useState<ImagePlaceholder[]>([]);
   const [location, setLocation] = useState<GeoJSON.Point | null>(null);
+  const [activeEvent, setActiveEvent] = useState<EventId>('none');
+
+  const triggerEvent = useCallback((eventId: EventId) => {
+    setActiveEvent(eventId);
+
+    if (eventId === 'lag' || eventId === 'corrupt') {
+      // These events are temporary visual effects
+      setTimeout(() => setActiveEvent('none'), eventId === 'lag' ? 5000 : 3000);
+    }
+    // 'bsod' and 'scream' will be reset by their own components
+  }, []);
 
   const handleNewCapture = (imageUri: string) => {
     const newCapture: ImagePlaceholder = {
@@ -54,7 +68,13 @@ export default function Desktop() {
   };
 
   const appConfig: AppConfig = {
-    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400 },
+    terminal: { 
+        title: 'Terminal', 
+        component: Terminal, 
+        width: 600, 
+        height: 400,
+        props: { triggerEvent }
+    },
     chat: { 
         title: 'AI Assistant [L\'Ombre]', 
         component: AIChat, 
@@ -117,12 +137,25 @@ export default function Desktop() {
     setNextZIndex(nextZIndex + 1);
   };
 
+  const renderEvent = () => {
+    switch (activeEvent) {
+      case 'bsod':
+        return <BlueScreen />; // This event will lock the screen, no need to reset from here
+      case 'scream':
+        return <Screamer onFinish={() => setActiveEvent('none')} />;
+      default:
+        return null;
+    }
+  }
+
   return (
     <main 
       ref={desktopRef}
       className={cn(
         "h-full w-full font-code relative overflow-hidden flex flex-col justify-center items-center p-4",
-        isGlitching && 'animate-glitch'
+        isGlitching && 'animate-glitch-short',
+        activeEvent === 'corrupt' && 'animate-glitch',
+        activeEvent === 'lag' && 'animate-lag'
       )}
       style={{
         backgroundImage: `linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)`,
@@ -134,40 +167,47 @@ export default function Desktop() {
       <CameraCapture onCapture={handleNewCapture} />
       <GpsTracker onLocationUpdate={setLocation} />
 
-      <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">
-        CAUCHEMAR VIRTUEL
-      </h1>
+      {activeEvent !== 'bsod' && (
+        <>
+            <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">
+                CAUCHEMAR VIRTUEL
+            </h1>
+            {openApps.map((app, index) => {
+                const currentAppConfig = appConfig[app.appId];
+                const AppComponent = currentAppConfig.component;
+                
+                let initialX = 0;
+                let initialY = 0;
 
-      {openApps.map((app, index) => {
-        const currentAppConfig = appConfig[app.appId];
-        const AppComponent = currentAppConfig.component;
-        
-        let initialX = 0;
-        let initialY = 0;
+                if (desktopRef.current) {
+                    const desktopRect = desktopRef.current.getBoundingClientRect();
+                    const jitterX = (Math.random() - 0.5) * 40;
+                    const jitterY = (Math.random() - 0.5) * 40;
+                    initialX = (desktopRect.width / 2) - (currentAppConfig.width / 2) + jitterX + (openApps.length * 20);
+                    initialY = (desktopRect.height / 2) - (currentAppConfig.height / 2) + jitterY + (openApps.length * 20);
+                }
+                
+                return (
+                    <div key={app.instanceId} onMouseDown={() => bringToFront(app.instanceId)} style={{ zIndex: app.zIndex, position: 'absolute' }}>
+                        <Window 
+                          title={currentAppConfig.title} 
+                          onClose={() => closeApp(app.instanceId)} 
+                          width={currentAppConfig.width} 
+                          height={currentAppConfig.height}
+                          initialX={initialX}
+                          initialY={initialY}
+                        >
+                            <AppComponent {...currentAppConfig.props} />
+                        </Window>
+                    </div>
+                )
+            })}
+            <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} />
+        </>
+      )}
 
-        if (desktopRef.current) {
-            const desktopRect = desktopRef.current.getBoundingClientRect();
-            initialX = (desktopRect.width / 2) - (currentAppConfig.width / 2) + (index * 30);
-            initialY = (desktopRect.height / 2) - (currentAppConfig.height / 2) + (index * 30);
-        }
-        
-        return (
-            <div key={app.instanceId} onMouseDown={() => bringToFront(app.instanceId)} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                <Window 
-                  title={currentAppConfig.title} 
-                  onClose={() => closeApp(app.instanceId)} 
-                  width={currentAppConfig.width} 
-                  height={currentAppConfig.height}
-                  initialX={initialX}
-                  initialY={initialY}
-                >
-                    <AppComponent {...currentAppConfig.props} />
-                </Window>
-            </div>
-        )
-      })}
+      {renderEvent()}
 
-      <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} />
     </main>
   );
 }

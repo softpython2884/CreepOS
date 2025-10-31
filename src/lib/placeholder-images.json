@@ -35,6 +35,12 @@
       "description": "An empty swing set in a deserted playground at dusk.",
       "imageUrl": "https://images.unsplash.com/photo-1725782226149-aa69d419e064?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxlbXB0eSUyMHN3aW5nfGVufDB8fHx8MTc2MTkyOTY1N3ww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "empty swing"
+    },
+    {
+      "id": "screamer-face",
+      "description": "A distorted, ghostly face screaming from the darkness.",
+      "imageUrl": "https://images.unsplash.com/photo-1604169752532-637942e4414b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzY3JlYW1pbmclMjBmYWNlfGVufDB8fHx8MTc2MTk0MDIzN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "screaming face"
     }
   ]
 }

@@ -89,6 +89,12 @@ export default {
           },
         },
         glitch: {
+            '0%, 100%': { transform: 'translate(0, 0) skew(0deg)', opacity: '1' },
+            '25%': { transform: 'translate(5px, -5px) skew(1deg)', opacity: '.85' },
+            '50%': { transform: 'translate(-5px, 5px) skew(-1deg)', opacity: '.75' },
+            '75%': { transform: 'translate(5px, 5px) skew(1deg)', opacity: '.85' },
+        },
+        'glitch-short': {
           '0%': { transform: 'translate(0, 0)', opacity: '1' },
           '25%': { transform: 'translate(2px, -2px)', opacity: '.75' },
           '50%': { transform: 'translate(-2px, 2px)', opacity: '.5' },
@@ -102,14 +108,28 @@ export default {
         blink: {
             '0%, 100%': { opacity: '1' },
             '50%': { opacity: '0' }
+        },
+        scream: {
+            '0%, 100%': { transform: 'scale(1)', opacity: 0.8 },
+            '5%': { transform: 'scale(1.1) translate(-5px, 5px)', opacity: 1 },
+            '10%': { transform: 'scale(1)', opacity: 0.9 },
+            '80%': { transform: 'scale(1.5)', opacity: 0.2 },
+            '90%': { opacity: 0.1 },
+        },
+        lag: {
+            '0%, 100%': { opacity: 1, filter: 'none' },
+            '50%': { opacity: 0.6, filter: 'blur(1px) contrast(2)' },
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'glitch': 'glitch 0.2s linear',
+        'glitch': 'glitch 0.4s linear infinite alternate',
+        'glitch-short': 'glitch-short 0.2s linear',
         'typing': 'typing 1s steps(20, end), blink .75s step-end infinite',
-        'blink': 'blink 1s step-end infinite'
+        'blink': 'blink 1s step-end infinite',
+        'scream': 'scream 0.7s ease-out forwards',
+        'lag': 'lag 1.5s linear infinite alternate',
       },
     },
   },

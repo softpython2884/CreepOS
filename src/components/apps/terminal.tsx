@@ -4,13 +4,18 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { documents } from './content';
+import type { EventId } from '../desktop';
 
 interface HistoryItem {
   type: 'command' | 'output';
   content: string;
 }
 
-export default function Terminal() {
+interface TerminalProps {
+    triggerEvent: (eventId: EventId) => void;
+}
+
+export default function Terminal({ triggerEvent }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "Virtual Nightmare OS v1.3. Type 'help' for a list of commands." }
   ]);
@@ -53,6 +58,22 @@ export default function Terminal() {
         setHistory([]);
         setInput('');
         return;
+      case 'bsod':
+        triggerEvent('bsod');
+        newHistory.push({ type: 'output', content: 'FATAL_SYSTEM_ERROR' });
+        break;
+      case 'scream':
+        triggerEvent('scream');
+        newHistory.push({ type: 'output', content: 'Unknown resource requested.' });
+        break;
+      case 'lag':
+        triggerEvent('lag');
+        newHistory.push({ type: 'output', content: 'System unresponsive. Please wait...' });
+        break;
+      case 'corrupt':
+        triggerEvent('corrupt');
+        newHistory.push({ type: 'output', content: 'WARNING: File system integrity compromised.' });
+        break;
       case '':
         break;
       default:
