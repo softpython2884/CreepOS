@@ -12,7 +12,7 @@ interface BrowserController {
 }
 
 interface ChapterFourManagerProps {
-    browser: BrowserController;
+    browser: BrowserController | null;
     terminal: TerminalWriter;
     location: GeoJSON.Point;
     triggerEvent: (eventId: EventId) => void;
@@ -23,6 +23,8 @@ export default function ChapterFourManager({ browser, terminal, location, trigge
     const hasRun = useRef(false);
 
     const runSequence = useCallback(async () => {
+        if (!browser) return;
+
         // 1. Type search query automatically
         browser.startTyping("comment supprimer une conscience", () => {
             setTimeout(() => {
@@ -51,7 +53,7 @@ export default function ChapterFourManager({ browser, terminal, location, trigge
                         });
                     }, 500);
                 });
-            }, 2000); // Increased delay before deleting for dramatic effect
+            }, 2000);
         });
     }, [browser, triggerEvent, openApp, terminal, location]);
 
@@ -59,7 +61,7 @@ export default function ChapterFourManager({ browser, terminal, location, trigge
         if (!hasRun.current && browser) {
             hasRun.current = true;
             // A short delay to ensure the browser UI is ready and the user sees the default state.
-            setTimeout(runSequence, 1500);
+            setTimeout(runSequence, 2000);
         }
     }, [runSequence, browser]);
 

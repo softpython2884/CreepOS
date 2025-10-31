@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { PlaceHolderImages, type ImagePlaceholder } from '@/lib/placeholder-images';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -76,6 +76,7 @@ export default function PhotoViewer({ extraImages = [], highlightedImageId, isSy
                 </div>
               </DialogTrigger>
               <DialogContent className="max-w-4xl h-auto bg-black/80 border-accent/20 backdrop-blur-md p-2">
+                <DialogTitle className="sr-only">{displayImage.description}</DialogTitle>
                 <div className="relative w-full h-[80vh] overflow-hidden flex items-center justify-center">
                    <Image
                       src={displayImage.imageUrl}

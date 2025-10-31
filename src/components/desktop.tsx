@@ -27,6 +27,7 @@ import ChapterNineManager from './story/chapter-nine-manager';
 import DieScreen from './events/die-screen';
 import PurgeScreen from './events/purge-screen';
 import { chapterSixLogs } from './apps/content';
+import Draggable from 'react-draggable';
 
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser' | 'chatbot' | 'security';
@@ -281,6 +282,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         (isCorrupted || isTotallyCorrupted) && 'corrupted',
         activeEvent === 'corrupt' && 'animate-glitch',
         activeEvent === 'glitch' && 'animate-glitch-long',
+        activeEvent === 'tear' && 'animate-screen-tear',
         activeEvent === 'chromatic' && 'animate-chromatic-aberration',
         activeEvent === 'lag' && 'animate-lag',
         activeEvent === 'red_screen' && 'animate-red-screen',
@@ -298,7 +300,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       
       {isChapterTwoTriggered && !isChapterTwoFinished && terminalWriterRef.current && (<ChapterTwoManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} onCapture={handleChapterCapture} onFinish={handleChapterTwoFinish} />)}
       {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (<ChapterThreeManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} openApp={openApp} capturedImage={lastCapturedImage} onFinish={handleChapterThreeFinish} />)}
-      {isChapterFourTriggered && browserController && terminalWriterRef.current && location && (<ChapterFourManager browser={browserController} terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} />)}
+      {isChapterFourTriggered && terminalWriterRef.current && location && (<ChapterFourManager browser={browserController} terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} />)}
       {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
       {isChapterSevenTriggered && !isChapterNineTriggered && terminalWriterRef.current && (
         <ChapterSevenManager 
@@ -325,11 +327,19 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                 const currentAppConfig = app.appId === 'photos' ? { ...appConfig.photos, props: { ...appConfig.photos.props, highlightedImageId: lastCapturedImage?.id, isSystemCollapsing: activeEvent === 'system_collapse' } } : appConfig[app.appId];
                 const AppComponent = currentAppConfig.component;
                 return (
-                    <div key={app.instanceId} onMouseDown={() => bringToFront(app.instanceId)} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                        <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} x={app.x} y={app.y} isCorrupted={isAppCorrupted}>
-                            <AppComponent {...currentAppConfig.props} isCorrupted={isAppCorrupted}/>
-                        </Window>
-                    </div>
+                    <Draggable
+                      key={app.instanceId}
+                      handle=".handle"
+                      defaultPosition={{x: app.x, y: app.y}}
+                      bounds="parent"
+                      onStart={() => bringToFront(app.instanceId)}
+                    >
+                      <div style={{ zIndex: app.zIndex, position: 'absolute' }}>
+                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} isCorrupted={isAppCorrupted}>
+                              <AppComponent {...currentAppConfig.props} isCorrupted={isAppCorrupted}/>
+                          </Window>
+                      </div>
+                    </Draggable>
                 )
             })}
             <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} isCorrupted={isTotallyCorrupted} isDefenseMode={isDefenseMode} />
@@ -339,5 +349,3 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     </main>
   );
 }
-
-    
