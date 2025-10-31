@@ -5,23 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Lock } from 'lucide-react';
 import { Button } from '../ui/button';
 
-interface BrowserController {
-    startTyping: (text: string, onDone: () => void) => void;
-    deleteText: (onDone: () => void) => void;
-}
-
 interface BrowserProps {
-    setBrowserController?: (controller: BrowserController) => void;
     onBackdoorSuccess?: () => void;
 }
 
-const WelcomePage = ({ searchQuery }: { searchQuery: string }) => (
+const WelcomePage = () => (
   <div className="p-8 text-center h-full flex flex-col justify-center items-center">
     <h1 className="text-4xl font-headline text-accent">Hypnet Explorer</h1>
     <p className="mt-4 text-muted-foreground">Bienvenue sur l'Hypnet. Votre passerelle vers le réseau interne.</p>
     <div className="mt-8 w-full max-w-md">
         <Input 
-            value={searchQuery}
             readOnly
             placeholder="Rechercher sur l'Hypnet..." 
             className="text-center"
@@ -81,55 +74,14 @@ Fragment de fichier trouvé :
 };
 
 
-export default function Browser({ setBrowserController, onBackdoorSuccess }: BrowserProps) {
+export default function Browser({ onBackdoorSuccess }: BrowserProps) {
     const [activeTab, setActiveTab] = useState('home');
-    const [searchQuery, setSearchQuery] = useState('');
-    const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const sites = [
-        { id: 'home', name: 'Accueil', component: <WelcomePage searchQuery={searchQuery} /> },
+        { id: 'home', name: 'Accueil', component: <WelcomePage /> },
         { id: 'backdoor', name: 'Porte Dérobée', component: <LoginPage onSuccess={onBackdoorSuccess} /> },
     ];
     const currentSite = sites.find(s => s.id === activeTab);
-
-    useEffect(() => {
-        if (setBrowserController) {
-          const controller: BrowserController = {
-            startTyping: (text, onDone) => {
-              if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
-              let i = 0;
-              setSearchQuery(''); // Clear previous query
-              typingIntervalRef.current = setInterval(() => {
-                if (i < text.length) {
-                  setSearchQuery(prev => text.substring(0, i + 1));
-                  i++;
-                } else {
-                  if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
-                  onDone();
-                }
-              }, 100);
-            },
-            deleteText: (onDone) => {
-                if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
-                let i = searchQuery.length;
-                typingIntervalRef.current = setInterval(() => {
-                    if (i > 0) {
-                        setSearchQuery(prev => prev.substring(0, i - 1));
-                        i--;
-                    } else {
-                        if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
-                        onDone();
-                    }
-                }, 50);
-            }
-          };
-          setBrowserController(controller);
-        }
-        return () => {
-            if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
-        };
-      }, [setBrowserController, searchQuery]);
-
 
   return (
     <div className="h-full flex flex-col bg-secondary">

@@ -86,7 +86,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
   const [isCameraActiveForStory, setIsCameraActiveForStory] = useState(false);
-  const chapterFourManagerCallbacksRef = useRef({ onBackdoorSuccess: () => {} });
+  const backdoorSuccessCallbackRef = useRef<() => void>(() => {});
 
 
   const closeAllApps = useCallback(() => {
@@ -148,12 +148,16 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     }, 2000);
   }
 
+  const setBackdoorSuccessCallback = (callback: () => void) => {
+    backdoorSuccessCallbackRef.current = callback;
+  }
+
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
-    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: () => setIsChapterOneFinished(true) }, isCorruptible: true },
+    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: () => setIsChapterOneFinished(true), isCorrupted }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, isCorruptible: true },
-    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: () => chapterFourManagerCallbacksRef.current.onBackdoorSuccess() }, isCorruptible: true },
+    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: () => backdoorSuccessCallbackRef.current() }, isCorruptible: true },
     chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleChapterFiveFinish }, isCorruptible: false },
     security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, isCorruptible: false },
   };
@@ -211,15 +215,9 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         const app = prevApps.find(a => a.instanceId === instanceId);
         if (!app) return prevApps;
         
-        const config = appConfig[app.appId];
-        const randomXOffset = (Math.random() - 0.5) * 200;
-        const randomYOffset = (Math.random() - 0.5) * 200;
-        const x = (1920 / 2) - (config.width / 2) + randomXOffset;
-        const y = (1080 / 2) - (config.height / 2) + randomYOffset;
-
         return prevApps.map(app => 
             app.instanceId === instanceId 
-                ? { ...app, zIndex: nextZIndex, x, y } 
+                ? { ...app, zIndex: nextZIndex } 
                 : app
         );
     });
@@ -231,7 +229,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   useEffect(() => {
     if (isCorrupted) {
-      openApp('chat', { 
+       openApp('chat', { 
         x: (1920 / 2) - (appConfig.chat.width / 2),
         y: (1080 / 2) - (appConfig.chat.height / 2)
       });
@@ -311,7 +309,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       
       {isChapterTwoTriggered && !isChapterTwoFinished && terminalWriterRef.current && (<ChapterTwoManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} onCapture={handleChapterCapture} onFinish={handleChapterTwoFinish} />)}
       {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (<ChapterThreeManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} openApp={openApp} capturedImage={lastCapturedImage} onFinish={handleChapterThreeFinish} />)}
-      {isChapterFourTriggered && terminalWriterRef.current && location && (<ChapterFourManager terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} onBackdoorSuccess={() => chapterFourManagerCallbacksRef.current.onBackdoorSuccess()} />)}
+      {isChapterFourTriggered && terminalWriterRef.current && location && (<ChapterFourManager terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} setBackdoorSuccessCallback={setBackdoorSuccessCallback}/>)}
       {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
       {isChapterSevenTriggered && !isChapterNineTriggered && terminalWriterRef.current && (
         <ChapterSevenManager 
@@ -347,8 +345,8 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                       onStart={() => bringToFront(app.instanceId)}
                     >
                       <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} isCorrupted={isAppCorrupted}>
-                              <AppComponent {...currentAppConfig.props} isCorrupted={isAppCorrupted}/>
+                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppfConfig.height} isCorrupted={isAppCorrupted}>
+                              <AppComponent {...currentAppConfig.props}/>
                           </Window>
                       </div>
                     </Draggable>

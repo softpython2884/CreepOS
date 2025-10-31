@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import type { EventId, AppId } from '../desktop';
 import type { TerminalWriter } from './chapter-two-manager';
 import type { GeoJSON } from 'geojson';
@@ -11,10 +11,10 @@ interface ChapterFourManagerProps {
     location: GeoJSON.Point;
     triggerEvent: (eventId: EventId) => void;
     openApp: (appId: AppId) => void;
-    onBackdoorSuccess: () => void; // This will be called by the Browser component
+    setBackdoorSuccessCallback: (callback: () => void) => void;
 }
 
-export default function ChapterFourManager({ terminal, location, triggerEvent, openApp, onBackdoorSuccess }: ChapterFourManagerProps) {
+export default function ChapterFourManager({ terminal, location, triggerEvent, openApp, setBackdoorSuccessCallback }: ChapterFourManagerProps) {
     const hasRun = useRef(false);
     const sequenceTimeout = useRef<NodeJS.Timeout>();
 
@@ -39,14 +39,16 @@ export default function ChapterFourManager({ terminal, location, triggerEvent, o
 
     useEffect(() => {
         // This function will be called from the browser component when the backdoor is accessed.
-        (onBackdoorSuccess as any) = () => {
+        const handleBackdoorSuccess = () => {
             if (!hasRun.current) {
                 hasRun.current = true;
                 
-                // Start a 35-second timer before the panic sequence
-                sequenceTimeout.current = setTimeout(runPanicSequence, 35000);
+                // Start a 15-second timer before the panic sequence
+                sequenceTimeout.current = setTimeout(runPanicSequence, 15000);
             }
         };
+
+        setBackdoorSuccessCallback(() => handleBackdoorSuccess);
 
         // Cleanup the timer if the component unmounts
         return () => {
@@ -54,7 +56,7 @@ export default function ChapterFourManager({ terminal, location, triggerEvent, o
                 clearTimeout(sequenceTimeout.current);
             }
         };
-    }, [onBackdoorSuccess, runPanicSequence]);
+    }, [setBackdoorSuccessCallback, runPanicSequence]);
 
 
     return null;
