@@ -1,123 +1,128 @@
 'use client';
 
-import { useState } from 'react';
-import Dock from '@/components/dock';
-import Window from '@/components/window';
-import Terminal from '@/components/apps/terminal';
-import AIChat from '@/components/apps/ai-chat';
-import PhotoViewer from '@/components/apps/photo-viewer';
-import DocumentFolder from '@/components/apps/document-folder';
-import Browser from '@/components/apps/browser';
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { User, Lock, Power } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Desktop from '@/components/desktop';
 
-export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser';
+type MachineState = 'off' | 'booting' | 'login' | 'desktop';
 
-const appConfig: Record<AppId, { title: string; component: JSX.Element; width: number; height: number; }> = {
-  terminal: { title: 'Terminal', component: <Terminal />, width: 600, height: 400 },
-  chat: { title: 'AI Assistant [L\'Ombre]', component: <AIChat />, width: 600, height: 400 },
-  photos: { title: 'Photo Viewer', component: <PhotoViewer />, width: 600, height: 400 },
-  documents: { title: 'Documents', component: <DocumentFolder />, width: 600, height: 400 },
-  browser: { title: 'Web Browser', component: <Browser />, width: 800, height: 600 },
+const bootLines = [
+  'Virtual Nightmare OS v1.3 Initializing...',
+  'Memory check: 640KB OK',
+  'Loading kernel...',
+  'Mounting virtual file system...',
+  'Initializing HYPNET services...',
+  'Searching for L\'Ombre...',
+  'WARN: AI core signature mismatch. Continuing at own risk.',
+  'Starting UI...',
+  'Welcome to Cauchemar Virtuel.',
+  ''
+];
+
+const BootScreen = ({ onBootComplete }: { onBootComplete: () => void }) => {
+    const [lines, setLines] = useState<string[]>([]);
+  
+    useEffect(() => {
+      const bootTimeout = setTimeout(() => {
+        let i = 0;
+        const intervalId = setInterval(() => {
+          setLines(prev => [...prev, bootLines[i]]);
+          i++;
+          if (i === bootLines.length) {
+            clearInterval(intervalId);
+            setTimeout(onBootComplete, 1000);
+          }
+        }, 300);
+      }, 500);
+  
+      return () => clearTimeout(bootTimeout);
+    }, [onBootComplete]);
+  
+    return (
+      <div className="bg-black text-green-400 font-code p-4 w-full h-full flex flex-col justify-center">
+        <div className="whitespace-pre-wrap">
+          {lines.map((line, i) => (
+            <p key={i} className="animate-typing">{line}</p>
+          ))}
+          <span className="animate-blink">_</span>
+        </div>
+      </div>
+    );
 };
 
-type OpenApp = {
-  id: AppId;
-  zIndex: number;
-  x: number;
-  y: number;
+const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
+    const [username, setUsername] = useState('D.C. Omen');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState(false);
+
+    const handleLogin = (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(false);
+        // Any password is correct
+        onLogin();
+    };
+
+    return (
+        <div className="w-full h-full flex items-center justify-center bg-background">
+            <form onSubmit={handleLogin} className="w-full max-w-xs text-center p-8 bg-card rounded-lg shadow-2xl shadow-primary/20 animate-in fade-in zoom-in-95">
+                <h1 className="text-2xl font-headline text-primary opacity-70 mb-2">Virtual Nightmare OS</h1>
+                <p className="text-sm text-muted-foreground mb-6">Enter credentials to proceed</p>
+                <div className="relative mb-4">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="pl-10 text-center" 
+                        placeholder="Username"
+                    />
+                </div>
+                <div className="relative mb-6">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 text-center tracking-widest" 
+                        placeholder="••••••••"
+                        autoFocus
+                    />
+                </div>
+                <Button type="submit" className="w-full">
+                    Log In
+                </Button>
+                {error && <p className="mt-4 text-sm text-destructive animate-in fade-in">Authentication failed.</p>}
+            </form>
+        </div>
+    );
 };
 
 export default function Home() {
-  const [openApps, setOpenApps] = useState<OpenApp[]>([]);
-  const [activeApp, setActiveApp] = useState<AppId | null>(null);
-  const [isGlitching, setIsGlitching] = useState(false);
-  const [nextZIndex, setNextZIndex] = useState(10);
+    const [machineState, setMachineState] = useState<MachineState>('off');
 
-  const openApp = (appId: AppId) => {
-    
-    let appIsOpen = false;
-    
-    const updatedApps = openApps.map(app => {
-        if (app.id === appId) {
-            appIsOpen = true;
-            return { ...app, zIndex: nextZIndex };
-        }
-        return app;
-    });
-
-    if (appIsOpen) {
-        setOpenApps(updatedApps);
-    } else {
-        const appMeta = appConfig[appId];
-        const appCount = openApps.filter(app => app.id === appId).length;
-        const x = (window.innerWidth / 2) - (appMeta.width / 2) + (appCount * 30);
-        const y = (window.innerHeight / 2) - (appMeta.height / 2) + (appCount * 30);
-
-        setOpenApps([...openApps, { id: appId, zIndex: nextZIndex, x, y }]);
-    }
-    
-    setActiveApp(appId);
-    setNextZIndex(nextZIndex + 1);
-
-    // Trigger a brief glitch effect when opening an app
-    setIsGlitching(true);
-    setTimeout(() => setIsGlitching(false), 200);
-  };
-
-  const closeApp = (appId: AppId) => {
-    setOpenApps(openApps.filter(app => app.id !== appId));
-    if (activeApp === appId) {
-      const remainingApps = openApps.filter(app => app.id !== appId);
-      if (remainingApps.length > 0) {
-        // Find the app with the highest z-index to make it active
-        const nextActiveApp = remainingApps.reduce((prev, current) => (prev.zIndex > current.zIndex) ? prev : current);
-        setActiveApp(nextActiveApp.id);
-      } else {
-        setActiveApp(null);
-      }
-    }
-  };
-
-  const bringToFront = (appId: AppId) => {
-    setOpenApps(openApps.map(app => {
-      if (app.id === appId) {
-        return { ...app, zIndex: nextZIndex };
-      }
-      return app;
-    }));
-    setActiveApp(appId);
-    setNextZIndex(nextZIndex + 1);
-  };
-
-  return (
-    <main 
-      className={cn(
-        "min-h-screen w-full font-code relative overflow-hidden flex flex-col justify-center items-center p-4",
-        isGlitching && 'animate-glitch'
-      )}
-      style={{
-        backgroundImage: `linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)`,
-        backgroundSize: `2rem 2rem`
-      }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
-      
-      <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">
-        CAUCHEMAR VIRTUEL
-      </h1>
-
-      {openApps.map((app) => {
-        const currentApp = appConfig[app.id];
+    if (machineState === 'off') {
         return (
-            <div key={app.id} onMouseDown={() => bringToFront(app.id)} style={{ zIndex: app.zIndex, position: 'absolute', left: `${app.x}px`, top: `${app.y}px`}}>
-                <Window title={currentApp.title} onClose={() => closeApp(app.id)} width={currentApp.width} height={currentApp.height}>
-                    {currentApp.component}
-                </Window>
-            </div>
-        )
-      })}
+            <main className="min-h-screen w-full flex flex-col justify-center items-center bg-black">
+                <Button variant="outline" size="lg" className="gap-2 text-lg p-8 animate-pulse" onClick={() => setMachineState('booting')}>
+                    <Power /> Start System
+                </Button>
+            </main>
+        );
+    }
 
-      <Dock onAppClick={openApp} activeApp={activeApp} />
-    </main>
-  );
+    if (machineState === 'booting') {
+        return <BootScreen onBootComplete={() => setMachineState('login')} />;
+    }
+
+    if (machineState === 'login') {
+        return <LoginScreen onLogin={() => setMachineState('desktop')} />;
+    }
+
+    if (machineState === 'desktop') {
+        return <Desktop />;
+    }
+
+    return null;
 }

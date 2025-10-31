@@ -95,11 +95,21 @@ export default {
           '75%': { transform: 'translate(2px, 2px)', opacity: '.75' },
           '100%': { transform: 'translate(-2px, -2px)', opacity: '1' },
         },
+        typing: {
+            from: { width: '0' },
+            to: { width: '100%' }
+        },
+        blink: {
+            '0%, 100%': { opacity: '1' },
+            '50%': { opacity: '0' }
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'glitch': 'glitch 0.2s linear',
+        'typing': 'typing 1s steps(20, end), blink .75s step-end infinite',
+        'blink': 'blink 1s step-end infinite'
       },
     },
   },
