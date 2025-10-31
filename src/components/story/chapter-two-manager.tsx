@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { type EventId } from '../desktop';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import Image from 'next/image';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 // Custom hook for managing timeouts
 const useTimeout = (callback: () => void, delay: number | null) => {
@@ -54,6 +55,7 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture }:
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isCameraReady, setIsCameraReady] = useState(false);
+    const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
     // Setup Camera
     useEffect(() => {
@@ -63,8 +65,10 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture }:
             if (videoRef.current) {
               videoRef.current.srcObject = stream;
             }
+            setHasCameraPermission(true);
           } catch (error) {
             console.error('Error accessing camera for story:', error);
+            setHasCameraPermission(false);
           }
         };
         getCameraPermission();
@@ -113,7 +117,7 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture }:
                 triggerEvent(currentStep.eventId as EventId);
                 break;
             case 'capture':
-                if (isCameraReady) {
+                if (isCameraReady && hasCameraPermission) {
                     takePicture();
                 }
                 break;
@@ -148,6 +152,17 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture }:
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {hasCameraPermission === false && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100]">
+                    <Alert variant="destructive">
+                        <AlertTitle>Camera Access Denied</AlertTitle>
+                        <AlertDescription>
+                            Camera is required for the full experience. L'Ombre is watching...
+                        </AlertDescription>
+                    </Alert>
+                </div>
+            )}
         </>
     )
 }

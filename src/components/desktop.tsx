@@ -85,8 +85,8 @@ export default function Desktop() {
     chat: { 
         title: 'Néo', 
         component: AIChat, 
-        width: 600, 
-        height: 400,
+        width: 400, 
+        height: 600,
         props: { location, isChapterOne: true }
     },
     photos: { 
@@ -232,20 +232,17 @@ export default function Desktop() {
             <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">
                 CAUCHEMAR VIRTUEL
             </h1>
-            {openApps.map((app, index) => {
+            {openApps.map((app) => {
                 const currentAppConfig = appConfig[app.appId];
                 const AppComponent = currentAppConfig.component;
                 
-                let initialX = 0;
-                let initialY = 0;
+                const jitterX = (Math.random() - 0.5) * 40;
+                const jitterY = (Math.random() - 0.5) * 40;
 
-                if (desktopRef.current) {
-                    const desktopRect = desktopRef.current.getBoundingClientRect();
-                    const jitterX = (Math.random() - 0.5) * 40;
-                    const jitterY = (Math.random() - 0.5) * 40;
-                    initialX = (desktopRect.width / 2) - (currentAppConfig.width / 2) + jitterX;
-                    initialY = (desktopRect.height / 2) - (currentAppConfig.height / 2) + jitterY;
-                }
+                const initialPosition = desktopRef.current ? {
+                    x: (desktopRef.current.getBoundingClientRect().width / 2) - (currentAppConfig.width / 2) + jitterX,
+                    y: (desktopRef.current.getBoundingClientRect().height / 2) - (currentAppConfig.height / 2) + jitterY,
+                } : { x: 0, y: 0 };
                 
                 return (
                     <div key={app.instanceId} onMouseDown={() => bringToFront(app.instanceId)} style={{ zIndex: app.zIndex, position: 'absolute' }}>
@@ -254,8 +251,8 @@ export default function Desktop() {
                           onClose={() => closeApp(app.instanceId)} 
                           width={currentAppConfig.width} 
                           height={currentAppConfig.height}
-                          initialX={initialX}
-                          initialY={initialY}
+                          initialX={initialPosition.x}
+                          initialY={initialPosition.y}
                         >
                             <AppComponent {...currentAppConfig.props} />
                         </Window>
