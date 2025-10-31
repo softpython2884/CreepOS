@@ -12,10 +12,10 @@ interface DockProps {
 }
 
 const apps: { id: AppId; name: string; icon: JSX.Element }[] = [
-  { id: 'terminal', name: 'Terminal', icon: <Terminal /> },
   { id: 'chat', name: 'AI Assistant', icon: <Bot /> },
-  { id: 'photos', name: 'Photo Viewer', icon: <ImageIcon /> },
+  { id: 'terminal', name: 'Terminal', icon: <Terminal /> },
   { id: 'documents', name: 'Documents', icon: <Folder /> },
+  { id: 'photos', name: 'Photo Viewer', icon: <ImageIcon /> },
   { id: 'browser', name: 'Browser', icon: <Globe /> },
 ];
 

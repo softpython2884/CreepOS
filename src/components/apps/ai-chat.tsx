@@ -9,8 +9,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import type { GeoJSON } from 'geojson';
-import type * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
-
 
 interface Message {
   id: number;
@@ -21,12 +19,15 @@ interface Message {
 interface AIChatProps {
     location: GeoJSON.Point | null;
     isChapterOne?: boolean;
+    onChapterOneFinish?: () => void;
+    isCorrupted?: boolean;
 }
 
 const initialActionState = { response: undefined, error: undefined };
 const chapterOneWelcome = "Bonjour, D.C. Omen. Je suis Néo, votre assistant personnel. Je suis là pour vous aider dans toutes vos tâches quotidiennes. Je vous laisse découvrir votre nouvel environnement.";
+const corruptedLoopMessage = "Watch your death in agony. I'll be back in your nightmares.";
 
-export default function AIChat({ location, isChapterOne = false }: AIChatProps) {
+export default function AIChat({ location, isChapterOne = false, onChapterOneFinish, isCorrupted = false }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatState, chatFormAction, isChatPending] = useActionState(chatWithAI, initialActionState);
   const [hintState, hintFormAction, isHintPending] = useActionState(generateInitialHint, initialActionState);
@@ -44,10 +45,21 @@ export default function AIChat({ location, isChapterOne = false }: AIChatProps) 
         addMessage('ai', chapterOneWelcome);
         setTimeout(() => {
           setIsReadOnly(true);
-        }, 1000);
+          onChapterOneFinish?.();
+        }, 3000);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isChapterOne]);
+
+  useEffect(() => {
+    if (isCorrupted) {
+      const interval = setInterval(() => {
+        addMessage('ai', corruptedLoopMessage);
+      }, 2000);
+      setIsReadOnly(true);
+      return () => clearInterval(interval);
+    }
+  }, [isCorrupted]);
 
   useEffect(() => {
     if (chatState.response) {
@@ -56,7 +68,7 @@ export default function AIChat({ location, isChapterOne = false }: AIChatProps) 
     if (chatState.error) {
       toast({ variant: 'destructive', title: 'AI Error', description: chatState.error });
     }
-  }, [chatState]);
+  }, [chatState, toast]);
 
   useEffect(() => {
     if (hintState.response) {
@@ -65,7 +77,7 @@ export default function AIChat({ location, isChapterOne = false }: AIChatProps) 
     if (hintState.error) {
       toast({ variant: 'destructive', title: 'Hint Error', description: hintState.error });
     }
-  }, [hintState]);
+  }, [hintState, toast]);
 
   useEffect(() => {
     if (viewportRef.current) {
@@ -97,13 +109,16 @@ export default function AIChat({ location, isChapterOne = false }: AIChatProps) 
   const isPending = isChatPending || isHintPending;
 
   return (
-    <div className="h-full flex flex-col bg-card font-code">
+    <div className={cn("h-full flex flex-col bg-card font-code", isCorrupted && "animate-glitch")}>
       <ScrollArea className="flex-1" viewportRef={viewportRef}>
         <div className="space-y-4 p-4">
           {messages.map((msg) => (
             <div key={msg.id} className={cn('flex items-start gap-3', msg.sender === 'user' ? 'justify-end' : 'justify-start')}>
               {msg.sender === 'ai' && <Bot className="w-6 h-6 text-accent flex-shrink-0 mt-1" />}
-              <div className={cn('max-w-sm rounded-lg px-4 py-2 text-sm whitespace-pre-wrap', msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary')}>
+              <div className={cn('max-w-sm rounded-lg px-4 py-2 text-sm whitespace-pre-wrap', 
+                msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary',
+                isCorrupted && "text-destructive"
+              )}>
                 {msg.text}
               </div>
               {msg.sender === 'user' && <User className="w-6 h-6 text-muted-foreground flex-shrink-0 mt-1" />}

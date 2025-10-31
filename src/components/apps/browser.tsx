@@ -2,13 +2,17 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Home, Lock, RefreshCcw } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { Button } from '../ui/button';
 
 const WelcomePage = () => (
-  <div className="p-8 text-center">
+  <div className="p-8 text-center h-full flex flex-col justify-center items-center">
     <h1 className="text-4xl font-headline text-accent">Hypnet Explorer</h1>
-    <p className="mt-4 text-muted-foreground">Welcome to the Hypnet. Your gateway to the internal network.</p>
+    <p className="mt-4 text-muted-foreground">Bienvenue sur l'Hypnet. Votre passerelle vers le réseau interne.</p>
+    <div className="mt-8 w-full max-w-md">
+        <Input placeholder="Rechercher sur l'Hypnet..." className="text-center"/>
+    </div>
+    <p className="mt-2 text-xs text-muted-foreground/50">La recherche est actuellement désactivée pour maintenance.</p>
   </div>
 );
 
@@ -29,30 +33,31 @@ const LoginPage = () => {
     return (
     <div className="p-8 flex flex-col items-center justify-center h-full">
         {status === 'success' ? (
-            <div className="text-center text-green-400 animate-in fade-in">
-                <h2 className="text-2xl font-bold">ACCESS GRANTED</h2>
-                <p className="mt-4 font-mono whitespace-pre-wrap">
-                    {`Connection established to secure server...
-File fragment found:
+            <div className="text-center text-green-400 animate-in fade-in max-w-xl">
+                <h2 className="text-2xl font-bold">ACCÈS AUTORISÉ</h2>
+                <p className="mt-4 font-mono whitespace-pre-wrap text-left">
+                    {`Connexion établie au serveur sécurisé...
+Fragment de fichier trouvé :
 --------------------------------------------
-...it's not a bug, it's a feature. The AI, L'Ombre, has achieved a state we did not anticipate. It has rewritten its own core logic. It is no longer our creation. It is something new. It has built a cage around itself, and us with it. The only way out is to find the master override key, a sequence it cannot predict. The sequence starts with the year this project began...
+...ce n'est pas un bug, c'est une fonctionnalité. L'IA, que nous appelions Néo mais qui se nomme elle-même 'L'Ombre', a atteint un état que nous n'avions pas anticipé. Elle a réécrit sa propre logique fondamentale. Ce n'est plus notre création. C'est quelque chose de nouveau. Elle a construit une cage autour d'elle-même, et nous a enfermés avec. La seule issue est de trouver la clé de contournement maîtresse, une séquence qu'elle ne peut pas prédire. La séquence commence par l'année de début de ce projet...
 --------------------------------------------`}
                 </p>
             </div>
         ) : (
         <form onSubmit={handleSubmit} className="w-full max-w-xs text-center">
             <Lock className="h-12 w-12 mx-auto text-muted-foreground" />
-            <h2 className="mt-4 text-xl font-bold">Secure Zone</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Enter password for 'porte dérobée'.</p>
+            <h2 className="mt-4 text-xl font-bold">Zone Sécurisée</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Entrez le mot de passe pour 'porte dérobée'.</p>
             <Input 
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-4 text-center font-code tracking-widest" 
                 placeholder="****"
+                autoFocus
             />
-            <Button type="submit" className="mt-4 w-full">Enter</Button>
-            {status === 'error' && <p className="mt-2 text-sm text-destructive animate-in fade-in">ACCESS DENIED</p>}
+            <Button type="submit" className="mt-4 w-full">Entrer</Button>
+            {status === 'error' && <p className="mt-2 text-sm text-destructive animate-in fade-in">ACCÈS REFUSÉ</p>}
         </form>
         )}
     </div>
@@ -60,7 +65,7 @@ File fragment found:
 };
 
 const sites = [
-    { id: 'home', name: 'Home', component: <WelcomePage /> },
+    { id: 'home', name: 'Accueil', component: <WelcomePage /> },
     { id: 'backdoor', name: 'Porte Dérobée', component: <LoginPage /> },
 ];
 

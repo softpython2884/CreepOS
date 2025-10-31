@@ -41,9 +41,10 @@ type OpenApp = {
 
 interface DesktopProps {
   onReboot: () => void;
+  isCorrupted: boolean;
 }
 
-export default function Desktop({ onReboot }: DesktopProps) {
+export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [isGlitching, setIsGlitching] = useState(false);
@@ -56,12 +57,14 @@ export default function Desktop({ onReboot }: DesktopProps) {
   const [soundEvent, setSoundEvent] = useState<SoundEvent | null>('fan');
 
   // Story state
+  const [isChapterOneFinished, setIsChapterOneFinished] = useState(false);
   const [isChapterTwoTriggered, setIsChapterTwoTriggered] = useState(false);
   const [chapterTwoInstanceId, setChapterTwoInstanceId] = useState<number | null>(null);
   const [isChapterTwoFinished, setIsChapterTwoFinished] = useState(false);
   const [isChapterThreeFinished, setIsChapterThreeFinished] = useState(false);
   const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
+
 
   const closeAllApps = useCallback(() => {
     setOpenApps([]);
@@ -119,7 +122,6 @@ export default function Desktop({ onReboot }: DesktopProps) {
       }, 2000);
   }
 
-
   const appConfig: AppConfig = {
     terminal: { 
         title: 'Terminal', 
@@ -136,7 +138,12 @@ export default function Desktop({ onReboot }: DesktopProps) {
         component: AIChat, 
         width: 400, 
         height: 600,
-        props: { location, isChapterOne: true }
+        props: { 
+          location, 
+          isChapterOne: !isChapterOneFinished && !isCorrupted, 
+          onChapterOneFinish: () => setIsChapterOneFinished(true),
+          isCorrupted: isCorrupted,
+        }
     },
     photos: { 
         title: 'Photo Viewer', 
@@ -146,8 +153,9 @@ export default function Desktop({ onReboot }: DesktopProps) {
         props: { extraImages: capturedImages }
     },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400 },
-    browser: { title: 'Web Browser', component: Browser, width: 800, height: 600 },
+    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600 },
   };
+
 
   const openApp = useCallback((appId: AppId) => {
     const instanceId = nextInstanceIdRef.current;
@@ -161,7 +169,7 @@ export default function Desktop({ onReboot }: DesktopProps) {
         }
     }
     
-    if (appId === 'terminal' && !isChapterTwoTriggered) {
+    if (appId === 'terminal' && isChapterOneFinished && !isChapterTwoTriggered) {
         setIsChapterTwoTriggered(true);
         setChapterTwoInstanceId(instanceId);
     }
@@ -181,11 +189,10 @@ export default function Desktop({ onReboot }: DesktopProps) {
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterTwoTriggered, nextZIndex, openApps]);
+  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps]);
 
-  // Chapter 1 Effects on Login
+  // Chapter 1 Effects & Post-Crash
   useEffect(() => {
-    // Open the chat app on startup for the story
     openApp('chat');
 
     setActiveEvent('chromatic');
@@ -200,7 +207,7 @@ export default function Desktop({ onReboot }: DesktopProps) {
       clearTimeout(timer2);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isCorrupted]);
 
   const handleNewCapture = (imageUri: string) => {
     const newCapture: ImagePlaceholder = {
@@ -252,6 +259,7 @@ export default function Desktop({ onReboot }: DesktopProps) {
       className={cn(
         "h-full w-full font-code relative overflow-hidden flex flex-col justify-center items-center p-4",
         isGlitching && 'animate-glitch-short',
+        isCorrupted && 'corrupted',
         activeEvent === 'corrupt' && 'animate-glitch',
         activeEvent === 'glitch' && 'animate-glitch-long',
         activeEvent === 'tear' && 'animate-screen-tear',

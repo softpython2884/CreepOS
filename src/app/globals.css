@@ -66,10 +66,20 @@
   }
 
   .corrupted {
-    --background: 0 100% 4%;
+    --background: 0 0% 4%;
     --foreground: 0 80% 60%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 80% 60%;
     --primary: 0 80% 50%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 80% 60%;
     --accent: 0 80% 70%;
+    --accent-foreground: 0 0% 4%;
+    --destructive: 0 100% 50%;
+    --border: 0 80% 30%;
+    --input: 0 80% 15%;
+    --ring: 0 80% 70%;
   }
 }
 

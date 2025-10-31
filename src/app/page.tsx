@@ -62,7 +62,7 @@ const BootScreen = ({ onBootComplete, corrupted = false }: { onBootComplete: () 
     );
 };
 
-const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
+const LoginScreen = ({ onLogin, corrupted = false }: { onLogin: () => void, corrupted?: boolean }) => {
     const [username, setUsername] = useState('D.C. Omen');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(false);
@@ -70,9 +70,27 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         setError(false);
-        // Any password is correct
+        // Any password is correct in normal mode.
+        // In corrupted mode, no login is required.
         onLogin();
     };
+    
+    useEffect(() => {
+        if(corrupted) {
+            const timer = setTimeout(() => {
+                onLogin();
+            }, 1500)
+            return () => clearTimeout(timer);
+        }
+    }, [corrupted, onLogin])
+
+    if (corrupted) {
+        return (
+             <div className="w-full h-full flex items-center justify-center bg-background">
+                 <h1 className="text-4xl font-headline text-destructive animate-pulse">UNSECURED</h1>
+            </div>
+        )
+    }
 
     return (
         <div className="w-full h-full flex items-center justify-center bg-background">
@@ -111,8 +129,10 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
 
 export default function Home() {
     const [machineState, setMachineState] = useState<MachineState>('off');
+    const [isCorrupted, setIsCorrupted] = useState(false);
 
     const handleReboot = () => {
+        setIsCorrupted(true);
         setMachineState('rebooting_corrupted');
     }
 
@@ -145,14 +165,14 @@ export default function Home() {
 
         if (machineState === 'login') {
             return (
-                <div className="w-full h-full flex flex-col justify-center items-center">
-                    <LoginScreen onLogin={() => setMachineState('desktop')} />
+                <div className={cn("w-full h-full flex flex-col justify-center items-center", isCorrupted && "corrupted")}>
+                    <LoginScreen onLogin={() => setMachineState('desktop')} corrupted={isCorrupted} />
                 </div>
             );
         }
 
         if (machineState === 'desktop') {
-            return <Desktop onReboot={handleReboot} />;
+            return <Desktop onReboot={handleReboot} isCorrupted={isCorrupted} />;
         }
 
         return null;
