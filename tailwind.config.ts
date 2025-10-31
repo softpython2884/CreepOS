@@ -144,6 +144,16 @@ export default {
         lag: {
             '0%, 100%': { opacity: 1, filter: 'none' },
             '50%': { opacity: 0.6, filter: 'blur(1px) contrast(2)' },
+        },
+        'image-deform': {
+            '0%, 100%': { transform: 'scale(1)', filter: 'url(#chromatic-aberration-filter-0)' },
+            '20%': { transform: 'scale(1.02) skewX(2deg)', filter: 'url(#chromatic-aberration-filter-1)' },
+            '50%': { clipPath: 'inset(20% 0 30% 0)' },
+            '80%': { transform: 'scale(0.98) skewX(-2deg)', filter: 'none' },
+        },
+        'pulse-strong': {
+            '0%, 100%': { boxShadow: '0 0 0 0 hsl(var(--accent) / 0.7)' },
+            '50%': { boxShadow: '0 0 0 8px hsl(var(--accent) / 0)' },
         }
       },
       animation: {
@@ -158,6 +168,8 @@ export default {
         'lag': 'lag 1.5s linear infinite alternate',
         'screen-tear': 'screen-tear 0.5s ease-in-out infinite alternate',
         'chromatic-aberration': 'chromatic-aberration 1s steps(1, end) infinite',
+        'image-deform': 'image-deform 4s ease-in-out forwards, screen-tear 2s ease-in-out infinite alternate',
+        'pulse-strong': 'pulse-strong 2s infinite',
       },
     },
   },

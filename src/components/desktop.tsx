@@ -17,6 +17,7 @@ import BlueScreen from './events/blue-screen';
 import Screamer from './events/screamer';
 import AudioManager, { SoundEvent } from './audio-manager';
 import ChapterTwoManager, { type TerminalWriter } from './story/chapter-two-manager';
+import ChapterThreeManager from './story/chapter-three-manager';
 
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser';
@@ -52,6 +53,8 @@ export default function Desktop() {
 
   // Story state
   const [isChapterTwoTriggered, setIsChapterTwoTriggered] = useState(false);
+  const [isChapterTwoFinished, setIsChapterTwoFinished] = useState(false);
+  const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
   
   const triggerEvent = useCallback((eventId: EventId) => {
@@ -100,7 +103,7 @@ export default function Desktop() {
     browser: { title: 'Web Browser', component: Browser, width: 800, height: 600 },
   };
 
-  const openApp = (appId: AppId) => {
+  const openApp = useCallback((appId: AppId) => {
     if (appId === 'terminal' && !isChapterTwoTriggered) {
         setIsChapterTwoTriggered(true);
     }
@@ -119,7 +122,7 @@ export default function Desktop() {
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  };
+  }, [isChapterTwoTriggered, nextInstanceId, nextZIndex]);
 
   // Chapter 1 Effects on Login
   useEffect(() => {
@@ -137,8 +140,7 @@ export default function Desktop() {
       clearTimeout(timer1);
       clearTimeout(timer2);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [openApp]);
 
   const handleNewCapture = (imageUri: string) => {
     const newCapture: ImagePlaceholder = {
@@ -150,13 +152,15 @@ export default function Desktop() {
     setCapturedImages(prev => [...prev, newCapture]);
   };
   
-  const handleChapterTwoCapture = useCallback((imageUri: string) => {
-      setCapturedImages(prev => [...prev, {
+  const handleChapterCapture = useCallback((imageUri: string) => {
+      const newCapture: ImagePlaceholder = {
           id: `story-capture-${Date.now()}`,
           description: "...",
           imageUrl: imageUri,
           imageHint: "self portrait"
-      }]);
+      };
+      setLastCapturedImage(newCapture);
+      setCapturedImages(prev => [...prev, newCapture]);
   }, []);
 
   const closeApp = (instanceId: number) => {
@@ -219,13 +223,25 @@ export default function Desktop() {
       <CameraCapture onCapture={handleNewCapture} enabled={false} />
       <GpsTracker onLocationUpdate={setLocation} />
       <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
-      {isChapterTwoTriggered && terminalWriterRef.current && (
+      
+      {isChapterTwoTriggered && !isChapterTwoFinished && terminalWriterRef.current && (
           <ChapterTwoManager 
               terminal={terminalWriterRef.current}
               triggerEvent={triggerEvent}
-              onCapture={handleChapterTwoCapture}
+              onCapture={handleChapterCapture}
+              onFinish={() => setIsChapterTwoFinished(true)}
           />
       )}
+
+      {isChapterTwoFinished && terminalWriterRef.current && lastCapturedImage && (
+        <ChapterThreeManager
+          terminal={terminalWriterRef.current}
+          triggerEvent={triggerEvent}
+          openApp={openApp}
+          capturedImage={lastCapturedImage}
+        />
+      )}
+
 
       {activeEvent !== 'bsod' && (
         <>
@@ -233,7 +249,10 @@ export default function Desktop() {
                 CAUCHEMAR VIRTUEL
             </h1>
             {openApps.map((app) => {
-                const currentAppConfig = appConfig[app.appId];
+                const currentAppConfig = app.appId === 'photos'
+                ? { ...appConfig.photos, props: { ...appConfig.photos.props, highlightedImageId: lastCapturedImage?.id } }
+                : appConfig[app.appId];
+
                 const AppComponent = currentAppConfig.component;
                 
                 const jitterX = (Math.random() - 0.5) * 40;

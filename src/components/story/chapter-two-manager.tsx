@@ -32,6 +32,7 @@ interface ChapterTwoManagerProps {
     terminal: TerminalWriter;
     triggerEvent: (eventId: EventId) => void;
     onCapture: (imageUri: string) => void;
+    onFinish: () => void;
 }
 
 const sequence = [
@@ -48,7 +49,7 @@ const sequence = [
     { delay: 3500, action: 'write', text: 'Je vois... Ce regard. La peur.' },
 ];
 
-export default function ChapterTwoManager({ terminal, triggerEvent, onCapture }: ChapterTwoManagerProps) {
+export default function ChapterTwoManager({ terminal, triggerEvent, onCapture, onFinish }: ChapterTwoManagerProps) {
     const [step, setStep] = useState(0);
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [isCaptureModalOpen, setIsCaptureModalOpen] = useState(false);
@@ -101,6 +102,10 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture }:
     useTimeout(() => {
         if (!currentStep) {
             terminal.lock(false); // Unlock terminal at the end
+            setTimeout(() => {
+                setIsCaptureModalOpen(false);
+                onFinish();
+            }, 2000);
             return;
         }
 
@@ -119,6 +124,9 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture }:
             case 'capture':
                 if (isCameraReady && hasCameraPermission) {
                     takePicture();
+                } else {
+                   // If camera fails, just skip to next step.
+                   console.warn("Camera not ready or no permission, skipping capture.");
                 }
                 break;
         }
