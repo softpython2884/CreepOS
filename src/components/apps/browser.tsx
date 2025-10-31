@@ -1,16 +1,30 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Lock } from 'lucide-react';
 import { Button } from '../ui/button';
 
-const WelcomePage = () => (
+interface BrowserController {
+    startTyping: (text: string, onDone: () => void) => void;
+    deleteText: (onDone: () => void) => void;
+}
+
+interface BrowserProps {
+    setBrowserController?: (controller: BrowserController) => void;
+}
+
+const WelcomePage = ({ searchQuery }: { searchQuery: string }) => (
   <div className="p-8 text-center h-full flex flex-col justify-center items-center">
     <h1 className="text-4xl font-headline text-accent">Hypnet Explorer</h1>
     <p className="mt-4 text-muted-foreground">Bienvenue sur l'Hypnet. Votre passerelle vers le réseau interne.</p>
     <div className="mt-8 w-full max-w-md">
-        <Input placeholder="Rechercher sur l'Hypnet..." className="text-center"/>
+        <Input 
+            value={searchQuery}
+            readOnly
+            placeholder="Rechercher sur l'Hypnet..." 
+            className="text-center"
+        />
     </div>
     <p className="mt-2 text-xs text-muted-foreground/50">La recherche est actuellement désactivée pour maintenance.</p>
   </div>
@@ -64,14 +78,55 @@ Fragment de fichier trouvé :
     );
 };
 
-const sites = [
-    { id: 'home', name: 'Accueil', component: <WelcomePage /> },
-    { id: 'backdoor', name: 'Porte Dérobée', component: <LoginPage /> },
-];
 
-export default function Browser() {
-  const [activeTab, setActiveTab] = useState('home');
-  const currentSite = sites.find(s => s.id === activeTab);
+export default function Browser({ setBrowserController }: BrowserProps) {
+    const [activeTab, setActiveTab] = useState('home');
+    const [searchQuery, setSearchQuery] = useState('');
+    const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const sites = [
+        { id: 'home', name: 'Accueil', component: <WelcomePage searchQuery={searchQuery} /> },
+        { id: 'backdoor', name: 'Porte Dérobée', component: <LoginPage /> },
+    ];
+    const currentSite = sites.find(s => s.id === activeTab);
+
+    useEffect(() => {
+        if (setBrowserController) {
+          const controller: BrowserController = {
+            startTyping: (text, onDone) => {
+              let i = 0;
+              if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+              typingIntervalRef.current = setInterval(() => {
+                if (i < text.length) {
+                  setSearchQuery(prev => text.substring(0, i + 1));
+                  i++;
+                } else {
+                  if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+                  onDone();
+                }
+              }, 100);
+            },
+            deleteText: (onDone) => {
+                let i = searchQuery.length;
+                if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+                typingIntervalRef.current = setInterval(() => {
+                    if (i > 0) {
+                        setSearchQuery(prev => prev.substring(0, i - 1));
+                        i--;
+                    } else {
+                        if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+                        onDone();
+                    }
+                }, 50);
+            }
+          };
+          setBrowserController(controller);
+        }
+        return () => {
+            if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+        };
+      }, [setBrowserController, searchQuery]);
+
 
   return (
     <div className="h-full flex flex-col bg-secondary">

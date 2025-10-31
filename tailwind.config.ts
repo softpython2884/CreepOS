@@ -154,6 +154,19 @@ export default {
         'pulse-strong': {
             '0%, 100%': { boxShadow: '0 0 0 0 hsl(var(--accent) / 0.7)' },
             '50%': { boxShadow: '0 0 0 8px hsl(var(--accent) / 0)' },
+        },
+        'red-screen': {
+          '0%': { backgroundColor: 'transparent', filter: 'invert(0)'},
+          '50%': { backgroundColor: 'hsl(var(--destructive) / 0.7)', filter: 'invert(1)'},
+          '100%': { backgroundColor: 'transparent', filter: 'invert(0)'},
+        },
+        'die-spam': {
+          '0%, 100%': { transform: 'scale(1)', opacity: 1 },
+          '5%': { transform: 'scale(1.2) translate(10px, -5px)', opacity: 0.8 },
+          '10%': { transform: 'scale(0.9) translate(-10px, 5px)', opacity: 1 },
+          '15%': { transform: 'scale(1.1)', opacity: 0.9 },
+          '20%, 80%': { opacity: 1, textShadow: '0 0 20px #f00, 0 0 40px #f00, 0 0 60px #f00' },
+          '100%': { opacity: 1, transform: 'scale(3)', filter: 'blur(5px)' }
         }
       },
       animation: {
@@ -170,6 +183,8 @@ export default {
         'chromatic-aberration': 'chromatic-aberration 1s steps(1, end) infinite',
         'image-deform': 'image-deform 4s ease-in-out forwards, screen-tear 2s ease-in-out infinite alternate',
         'pulse-strong': 'pulse-strong 2s infinite',
+        'red-screen': 'red-screen 1.5s ease-in-out forwards',
+        'die-spam': 'die-spam 0.5s linear infinite',
       },
     },
   },

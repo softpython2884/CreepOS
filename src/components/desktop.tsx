@@ -18,10 +18,12 @@ import Screamer from './events/screamer';
 import AudioManager, { SoundEvent } from './audio-manager';
 import ChapterTwoManager, { type TerminalWriter } from './story/chapter-two-manager';
 import ChapterThreeManager from './story/chapter-three-manager';
+import ChapterFourManager from './story/chapter-four-manager';
+import DieScreen from './events/die-screen';
 
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser';
-export type EventId = 'bsod' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'none';
+export type EventId = 'bsod' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'red_screen' | 'die_screen' | 'none';
 
 type AppConfig = {
   [key in AppId]: {
@@ -64,8 +66,13 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
   const [chapterTwoInstanceId, setChapterTwoInstanceId] = useState<number | null>(null);
   const [isChapterTwoFinished, setIsChapterTwoFinished] = useState(false);
   const [isChapterThreeFinished, setIsChapterThreeFinished] = useState(false);
+  const [isChapterFourTriggered, setIsChapterFourTriggered] = useState(false);
   const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
+  const [browserController, setBrowserController] = useState<{
+    startTyping: (text: string, onDone: () => void) => void;
+    deleteText: (onDone: () => void) => void;
+  } | null>(null);
 
   const closeAllApps = useCallback(() => {
     setOpenApps([]);
@@ -85,12 +92,11 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
     if (eventId === 'scream') setSoundEvent('scream');
     if (eventId === 'corrupt' || eventId === 'glitch') setSoundEvent('glitch');
 
-    if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic'].includes(eventId)) {
+    if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic', 'red_screen'].includes(eventId)) {
       // These events are temporary visual effects
-      const duration = eventId === 'lag' ? 5000 : (eventId === 'chromatic' ? 500 : 3000);
+      const duration = eventId === 'lag' ? 5000 : (eventId === 'red_screen' ? 1500 : (eventId === 'chromatic' ? 500 : 3000));
       setTimeout(() => setActiveEvent('none'), duration);
     }
-    // 'bsod' and 'scream' will be reset by their own components
   }, [closeAllApps]);
 
   const closeApp = useCallback((instanceId: number) => {
@@ -152,13 +158,25 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
         props: { extraImages: capturedImages }
     },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400 },
-    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600 },
+    browser: { 
+        title: 'Hypnet Explorer', 
+        component: Browser, 
+        width: 800, 
+        height: 600,
+        props: {
+            setBrowserController: setBrowserController
+        }
+    },
   };
 
 
   const openApp = useCallback((appId: AppId, options: { x?: number, y?: number } = {}) => {
     const instanceId = nextInstanceIdRef.current;
     
+    if (appId === 'browser' && isCorrupted && !isChapterFourTriggered) {
+        setIsChapterFourTriggered(true);
+    }
+
     // Prevent re-opening chat in chapter 1
     if (appId === 'chat' && !isChapterTwoTriggered && !isCorrupted) {
         const chatApp = openApps.find(app => app.appId === 'chat');
@@ -194,7 +212,7 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps, appConfig, isCorrupted]);
+  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps, appConfig, isCorrupted, isChapterFourTriggered]);
 
   // Chapter 1 Effects & Post-Crash
   useEffect(() => {
@@ -265,6 +283,8 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
         return <BlueScreen onReboot={onReboot} />;
       case 'scream':
         return <Screamer onFinish={() => setActiveEvent('none')} />;
+      case 'die_screen':
+        return <DieScreen />;
       default:
         return null;
     }
@@ -281,7 +301,8 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
         activeEvent === 'glitch' && 'animate-glitch-long',
         activeEvent === 'tear' && 'animate-screen-tear',
         activeEvent === 'chromatic' && 'animate-chromatic-aberration',
-        activeEvent === 'lag' && 'animate-lag'
+        activeEvent === 'lag' && 'animate-lag',
+        activeEvent === 'red_screen' && 'animate-red-screen'
       )}
       style={{
         backgroundImage: `linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)`,
@@ -313,8 +334,18 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
         />
       )}
 
+      {isChapterFourTriggered && browserController && terminalWriterRef.current && location && (
+        <ChapterFourManager
+            browser={browserController}
+            terminal={terminalWriterRef.current}
+            location={location}
+            triggerEvent={triggerEvent}
+            openApp={openApp}
+        />
+      )}
 
-      {activeEvent !== 'bsod' && (
+
+      {activeEvent !== 'bsod' && activeEvent !== 'die_screen' && (
         <>
             <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">
                 CAUCHEMAR VIRTUEL
