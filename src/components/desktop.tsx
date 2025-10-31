@@ -37,6 +37,8 @@ type OpenApp = {
   instanceId: number;
   appId: AppId;
   zIndex: number;
+  initialX?: number;
+  initialY?: number;
 };
 
 interface DesktopProps {
@@ -154,11 +156,11 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
   };
 
 
-  const openApp = useCallback((appId: AppId) => {
+  const openApp = useCallback((appId: AppId, options: { x?: number, y?: number } = {}) => {
     const instanceId = nextInstanceIdRef.current;
     
     // Prevent re-opening chat in chapter 1
-    if (appId === 'chat' && !isChapterTwoTriggered) {
+    if (appId === 'chat' && !isChapterTwoTriggered && !isCorrupted) {
         const chatApp = openApps.find(app => app.appId === 'chat');
         if (chatApp) {
             bringToFront(chatApp.instanceId);
@@ -172,11 +174,17 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
     }
     
     nextInstanceIdRef.current += 1;
+
+    const config = appConfig[appId];
+    const initialX = options.x ?? (1920 / 2) - (config.width / 2);
+    const initialY = options.y ?? (1080 / 2) - (config.height / 2);
     
     const newApp: OpenApp = {
         instanceId: instanceId,
         appId: appId,
         zIndex: nextZIndex,
+        initialX,
+        initialY
     };
 
     setOpenApps(prev => [...prev, newApp]);
@@ -186,11 +194,23 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps]);
+  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps, appConfig, isCorrupted]);
 
   // Chapter 1 Effects & Post-Crash
   useEffect(() => {
-    openApp('chat');
+    if (isCorrupted) {
+      // Spam corrupted chat windows
+      for (let i = 0; i < 20; i++) {
+        setTimeout(() => {
+          const x = Math.random() * (1920 - 400);
+          const y = Math.random() * (1080 - 600);
+          openApp('chat', { x, y });
+        }, i * 100);
+      }
+    } else {
+      // Normal boot sequence
+      openApp('chat');
+    }
 
     setActiveEvent('chromatic');
     const timer1 = setTimeout(() => setIsGlitching(true), 200);
@@ -305,11 +325,6 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
                 : appConfig[app.appId];
 
                 const AppComponent = currentAppConfig.component;
-
-                const initialPosition = desktopRef.current ? {
-                    x: (1920 / 2) - (currentAppConfig.width / 2),
-                    y: (1080 / 2) - (currentAppConfig.height / 2),
-                } : { x: 0, y: 0 };
                 
                 return (
                     <div key={app.instanceId} onMouseDown={() => bringToFront(app.instanceId)} style={{ zIndex: app.zIndex, position: 'absolute' }}>
@@ -318,8 +333,8 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
                           onClose={() => closeApp(app.instanceId)} 
                           width={currentAppConfig.width} 
                           height={currentAppConfig.height}
-                          initialX={initialPosition.x}
-                          initialY={initialPosition.y}
+                          initialX={app.initialX}
+                          initialY={app.initialY}
                         >
                             <AppComponent {...currentAppConfig.props} />
                         </Window>

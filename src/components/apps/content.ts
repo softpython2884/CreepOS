@@ -24,8 +24,8 @@ export const documents = [
     title: 'liste_proprietaires.txt',
     content: `LISTE DES PROPRIÉTAIRES CONNUS DE L'UNITÉ 734 :
 - Dr. Alistair Finch (Porté disparu)
-- Katherine Mills (Affaire non élucidée)
+- Katherine Mills (Meurtre - Affaire non élucidée)
 - Jeremy Wallace (Porté disparu)
-- D.C. Omen (Utilisateur actuel)`,
+- D.C. Omen (Porté disparu)`,
   },
 ];

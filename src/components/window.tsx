@@ -10,17 +10,24 @@ interface WindowProps {
   children: React.ReactNode;
   width: number;
   height: number;
-  initialX: number;
-  initialY: number;
+  initialX?: number;
+  initialY?: number;
 }
 
 export default function Window({ title, onClose, children, width, height, initialX, initialY }: WindowProps) {
   const nodeRef = useRef(null);
+  
+  const defaultPosition = {
+    x: initialX ?? 0,
+    y: initialY ?? 0,
+  };
+
   return (
     <Draggable 
         handle=".handle" 
         nodeRef={nodeRef}
-        defaultPosition={{x: initialX, y: initialY}}
+        defaultPosition={defaultPosition}
+        bounds="parent"
     >
         <div ref={nodeRef} style={{ width: `${width}px`, height: `${height}px`, position: 'absolute'}}>
             <Card className="w-full h-full bg-card/80 backdrop-blur-md border-accent/20 shadow-2xl shadow-primary/20 flex flex-col animate-in fade-in zoom-in-90 duration-300">
