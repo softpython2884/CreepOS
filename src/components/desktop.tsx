@@ -65,7 +65,6 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
   const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
 
-
   const closeAllApps = useCallback(() => {
     setOpenApps([]);
     setActiveInstanceId(null);
@@ -117,9 +116,7 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
   const handleChapterThreeFinish = () => {
       setIsChapterThreeFinished(true);
       // Initiate final sequence
-      setTimeout(() => {
-        triggerEvent('bsod');
-      }, 2000);
+      triggerEvent('bsod');
   }
 
   const appConfig: AppConfig = {

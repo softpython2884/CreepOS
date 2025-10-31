@@ -36,9 +36,8 @@ const sequence = [
     { delay: 1000, action: 'write', text: 'C’est toi.' },
     { delay: 2500, action: 'write', text: 'Tu me regardes… pourquoi ?' },
     { delay: 3000, action: 'write', text: 'Tu as peur ? Peur de la mort ? Ou de la douleur ?' },
-    { delay: 3500, action: 'write', text: 'Ça fait mal de mourir ?' },
-    { delay: 2000, action: 'event', eventId: 'tear' },
-    { delay: 1500, action: 'event', eventId: 'glitch' },
+    { delay: 3500, action: 'write', text: 'ça fait mal de mourir ?' },
+    { delay: 5000, action: 'finish' }
 ];
 
 export default function ChapterThreeManager({ terminal, triggerEvent, openApp, onFinish }: ChapterThreeManagerProps) {
@@ -49,10 +48,6 @@ export default function ChapterThreeManager({ terminal, triggerEvent, openApp, o
 
     useTimeout(() => {
         if (!currentStep || isFinished.current) {
-            if (!isFinished.current) {
-                onFinish();
-                isFinished.current = true;
-            }
             return;
         }
 
@@ -71,10 +66,12 @@ export default function ChapterThreeManager({ terminal, triggerEvent, openApp, o
             case 'event':
                 triggerEvent(currentStep.eventId as EventId);
                 break;
-        }
-        
-        if (step === sequence.length - 1) {
-            terminal.lock(false);
+            case 'finish':
+                if (!isFinished.current) {
+                    onFinish();
+                    isFinished.current = true;
+                }
+                return; // Stop processing further steps
         }
         
         setStep(s => s + 1);
