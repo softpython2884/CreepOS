@@ -53,6 +53,7 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
 
   useEffect(() => {
     if (isCorrupted) {
+      addMessage('ai', corruptedLoopMessage);
       const interval = setInterval(() => {
         addMessage('ai', corruptedLoopMessage);
       }, 2000);
@@ -124,7 +125,7 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
               {msg.sender === 'user' && <User className="w-6 h-6 text-muted-foreground flex-shrink-0 mt-1" />}
             </div>
           ))}
-          {isPending && (
+          {isPending && !isCorrupted && (
              <div className="flex items-start gap-3 justify-start animate-in fade-in duration-500">
                 <Bot className="w-6 h-6 text-accent animate-pulse" />
                 <div className="max-w-sm rounded-lg px-4 py-2 text-sm bg-secondary flex items-center space-x-1">

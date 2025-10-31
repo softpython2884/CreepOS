@@ -92,7 +92,7 @@
   }
 
   #viewport {
-    transform: scale(min(calc(100vw / 1920), calc(100vh / 1080)));
+    scale: min(calc(100vw / 1920), calc(100vh / 1080));
     overflow: hidden;
   }
 }

@@ -201,8 +201,8 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   useEffect(() => {
     if (isCorrupted) {
-      for (let i = 0; i < 20; i++) {
-        setTimeout(() => openApp('chat', { x: Math.random() * (1920 - 400), y: Math.random() * (1080 - 600) }), i * 100);
+      for (let i = 0; i < 10; i++) {
+        setTimeout(() => openApp('chat', { x: Math.random() * (1920 - 400), y: Math.random() * (1080 - 600) }), i * 150);
       }
     } else if (isDefenseMode) {
         openApp('chatbot');
