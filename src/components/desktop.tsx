@@ -254,13 +254,10 @@ export default function Desktop() {
                 : appConfig[app.appId];
 
                 const AppComponent = currentAppConfig.component;
-                
-                const jitterX = (Math.random() - 0.5) * 40;
-                const jitterY = (Math.random() - 0.5) * 40;
 
                 const initialPosition = desktopRef.current ? {
-                    x: (desktopRef.current.getBoundingClientRect().width / 2) - (currentAppConfig.width / 2) + jitterX,
-                    y: (desktopRef.current.getBoundingClientRect().height / 2) - (currentAppConfig.height / 2) + jitterY,
+                    x: (desktopRef.current.getBoundingClientRect().width / 2) - (currentAppConfig.width / 2),
+                    y: (desktopRef.current.getBoundingClientRect().height / 2) - (currentAppConfig.height / 2),
                 } : { x: 0, y: 0 };
                 
                 return (
