@@ -12,9 +12,9 @@ interface AudioManagerProps {
 // Base64 encoded silent WAV file to enable autoplay
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
-// Using free sound effects from Pixabay
+// Using free sound effects from Pixabay and other sources
 const sounds: Record<NonNullable<SoundEvent>, { src: string; volume: number; loop?: boolean }> = {
-    scream: { src: 'https://cdn.pixabay.com/audio/2022/10/24/audio_92452b4b3d.mp3', volume: 0.7 },
+    scream: { src: 'https://cdn.pixabay.com/audio/2022/10/24/audio_92452b4b3d.mp3', volume: 0.8 },
     glitch: { src: 'https://cdn.pixabay.com/audio/2022/11/17/audio_34b7f5a03d.mp3', volume: 0.3 },
     click: { src: 'https://cdn.pixabay.com/audio/2022/03/15/audio_24e03b1365.mp3', volume: 0.5 },
     close: { src: 'https://cdn.pixabay.com/audio/2022/03/22/audio_60370cb9ac.mp3', volume: 0.4 },

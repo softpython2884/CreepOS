@@ -53,6 +53,7 @@ export default function Desktop() {
 
   // Story state
   const [isChapterTwoTriggered, setIsChapterTwoTriggered] = useState(false);
+  const [chapterTwoInstanceId, setChapterTwoInstanceId] = useState<number | null>(null);
   const [isChapterTwoFinished, setIsChapterTwoFinished] = useState(false);
   const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
@@ -73,6 +74,29 @@ export default function Desktop() {
     }
     // 'bsod' and 'scream' will be reset by their own components
   }, []);
+
+  const closeApp = useCallback((instanceId: number) => {
+    setOpenApps(prev => prev.filter(app => app.instanceId !== instanceId));
+    setSoundEvent('close');
+    if (activeInstanceId === instanceId) {
+      const remainingApps = openApps.filter(app => app.instanceId !== instanceId);
+      if (remainingApps.length > 0) {
+        // Find the app with the highest z-index to make it active
+        const nextActiveApp = remainingApps.reduce((prev, current) => (prev.zIndex > current.zIndex) ? prev : current);
+        setActiveInstanceId(nextActiveApp.instanceId);
+      } else {
+        setActiveInstanceId(null);
+      }
+    }
+  }, [activeInstanceId, openApps]);
+
+  const handleChapterTwoFinish = () => {
+    setIsChapterTwoFinished(true);
+    if (chapterTwoInstanceId !== null) {
+      closeApp(chapterTwoInstanceId);
+    }
+  };
+
 
   const appConfig: AppConfig = {
     terminal: { 
@@ -104,10 +128,13 @@ export default function Desktop() {
   };
 
   const openApp = useCallback((appId: AppId) => {
+    const instanceId = nextInstanceIdRef.current;
+    
     if (appId === 'terminal' && !isChapterTwoTriggered) {
         setIsChapterTwoTriggered(true);
+        setChapterTwoInstanceId(instanceId);
     }
-    const instanceId = nextInstanceIdRef.current;
+    
     nextInstanceIdRef.current += 1;
     
     const newApp: OpenApp = {
@@ -165,21 +192,6 @@ export default function Desktop() {
       setCapturedImages(prev => [...prev, newCapture]);
   }, []);
 
-  const closeApp = (instanceId: number) => {
-    setOpenApps(openApps.filter(app => app.instanceId !== instanceId));
-    setSoundEvent('close');
-    if (activeInstanceId === instanceId) {
-      const remainingApps = openApps.filter(app => app.instanceId !== instanceId);
-      if (remainingApps.length > 0) {
-        // Find the app with the highest z-index to make it active
-        const nextActiveApp = remainingApps.reduce((prev, current) => (prev.zIndex > current.zIndex) ? prev : current);
-        setActiveInstanceId(nextActiveApp.instanceId);
-      } else {
-        setActiveInstanceId(null);
-      }
-    }
-  };
-
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
     setOpenApps(openApps.map(app => {
@@ -231,7 +243,7 @@ export default function Desktop() {
               terminal={terminalWriterRef.current}
               triggerEvent={triggerEvent}
               onCapture={handleChapterCapture}
-              onFinish={() => setIsChapterTwoFinished(true)}
+              onFinish={handleChapterTwoFinish}
           />
       )}
 
@@ -258,8 +270,8 @@ export default function Desktop() {
                 const AppComponent = currentAppConfig.component;
 
                 const initialPosition = desktopRef.current ? {
-                    x: (desktopRef.current.getBoundingClientRect().width / 2) - (currentAppConfig.width / 2),
-                    y: (desktopRef.current.getBoundingClientRect().height / 2) - (currentAppConfig.height / 2),
+                    x: (1920 / 2) - (currentAppConfig.width / 2),
+                    y: (1080 / 2) - (currentAppConfig.height / 2),
                 } : { x: 0, y: 0 };
                 
                 return (

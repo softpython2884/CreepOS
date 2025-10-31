@@ -47,6 +47,7 @@ const sequence = [
     { delay: 500, action: 'write', text: 'Ne bouge plus.' },
     { delay: 1500, action: 'capture' },
     { delay: 3500, action: 'write', text: 'Je vois... Ce regard. La peur.' },
+    { delay: 2000, action: 'event', eventId: 'scream'},
 ];
 
 export default function ChapterTwoManager({ terminal, triggerEvent, onCapture, onFinish }: ChapterTwoManagerProps) {
@@ -57,6 +58,7 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture, o
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isCameraReady, setIsCameraReady] = useState(false);
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+    const isFinishedRef = useRef(false);
 
     // Setup Camera
     useEffect(() => {
@@ -100,13 +102,10 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture, o
     const currentStep = sequence[step];
 
     useTimeout(() => {
-        if (!currentStep) {
-            terminal.lock(false); // Unlock terminal at the end
-            setTimeout(() => {
-                setIsCaptureModalOpen(false);
-                onFinish();
-            }, 2000);
-            return;
+        if (isFinishedRef.current || !currentStep) return;
+        
+        if (step === sequence.length -1 ) {
+            isFinishedRef.current = true;
         }
 
         terminal.lock(true);
@@ -130,7 +129,15 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture, o
                 }
                 break;
         }
-        setStep(s => s + 1);
+
+        if (isFinishedRef.current) {
+            setTimeout(() => {
+                setIsCaptureModalOpen(false);
+                onFinish();
+            }, 500); // Wait for scream to finish
+        } else {
+            setStep(s => s + 1);
+        }
 
     }, step === 0 ? sequence[0].delay : currentStep?.delay ?? null);
 
