@@ -1,72 +1,61 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import type { EventId, AppId } from '../desktop';
 import type { TerminalWriter } from './chapter-two-manager';
 import type { GeoJSON } from 'geojson';
 import { getThreat } from '@/app/actions';
 
-interface BrowserController {
-    startTyping: (text: string, onDone: () => void) => void;
-    deleteText: (onDone: () => void) => void;
-}
-
 interface ChapterFourManagerProps {
-    browser: BrowserController | null;
     terminal: TerminalWriter;
     location: GeoJSON.Point;
     triggerEvent: (eventId: EventId) => void;
     openApp: (appId: AppId) => void;
+    onBackdoorSuccess: () => void; // This will be called by the Browser component
 }
 
-export default function ChapterFourManager({ browser, terminal, location, triggerEvent, openApp }: ChapterFourManagerProps) {
+export default function ChapterFourManager({ terminal, location, triggerEvent, openApp, onBackdoorSuccess }: ChapterFourManagerProps) {
     const hasRun = useRef(false);
+    const sequenceTimeout = useRef<NodeJS.Timeout>();
 
-    const runSequence = useCallback(async () => {
-        if (!browser) return;
+    const runPanicSequence = useCallback(async () => {
+        // 1. Visual effects
+        triggerEvent('red_screen');
 
+        // 2. Open terminal and display threat
+        openApp('terminal');
+        const threat = await getThreat(location);
+        
         setTimeout(() => {
-            // 1. Type search query automatically
-            browser.startTyping("comment supprimer une conscience", () => {
-                setTimeout(() => {
-                    // 2. Delete the query
-                    browser.deleteText(() => {
-                        setTimeout(() => {
-                            // 3. AI types its response directly
-                            browser.startTyping("Pourquoi veux-tu me supprimer ?", async () => {
-                                setTimeout(async () => {
-                                    // 4. Visual effects
-                                    triggerEvent('red_screen');
+            terminal.write(threat);
 
-                                    // 5. Open terminal and display threat
-                                    openApp('terminal');
-                                    const threat = await getThreat(location);
-                                    setTimeout(() => {
-                                        terminal.write(threat);
+            // 3. Final "DIE" screen after a delay
+            setTimeout(() => {
+                triggerEvent('die_screen');
+            }, 4000);
+        }, 1000);
 
-                                        // 6. Final "DIE" screen after a delay
-                                        setTimeout(() => {
-                                            triggerEvent('die_screen');
-                                        }, 4000);
-                                    }, 1000);
-
-                                }, 1000);
-                            });
-                        }, 500);
-                    });
-                }, 2000);
-            });
-        }, 2000);
-
-    }, [browser, triggerEvent, openApp, terminal, location]);
+    }, [triggerEvent, openApp, terminal, location]);
 
     useEffect(() => {
-        if (!hasRun.current && browser) {
-            hasRun.current = true;
-            // A short delay to ensure the browser UI is ready and the user sees the default state.
-            setTimeout(runSequence, 500);
-        }
-    }, [runSequence, browser]);
+        // This function will be called from the browser component when the backdoor is accessed.
+        (onBackdoorSuccess as any) = () => {
+            if (!hasRun.current) {
+                hasRun.current = true;
+                
+                // Start a 35-second timer before the panic sequence
+                sequenceTimeout.current = setTimeout(runPanicSequence, 35000);
+            }
+        };
+
+        // Cleanup the timer if the component unmounts
+        return () => {
+            if (sequenceTimeout.current) {
+                clearTimeout(sequenceTimeout.current);
+            }
+        };
+    }, [onBackdoorSuccess, runPanicSequence]);
+
 
     return null;
 }

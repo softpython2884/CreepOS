@@ -12,6 +12,7 @@ interface BrowserController {
 
 interface BrowserProps {
     setBrowserController?: (controller: BrowserController) => void;
+    onBackdoorSuccess?: () => void;
 }
 
 const WelcomePage = ({ searchQuery }: { searchQuery: string }) => (
@@ -30,7 +31,7 @@ const WelcomePage = ({ searchQuery }: { searchQuery: string }) => (
   </div>
 );
 
-const LoginPage = () => {
+const LoginPage = ({ onSuccess }: { onSuccess?: () => void }) => {
     const [password, setPassword] = useState('');
     const [status, setStatus] = useState<'idle'|'error'|'success'>('idle');
 
@@ -38,6 +39,7 @@ const LoginPage = () => {
         e.preventDefault();
         if (password === '7421') {
             setStatus('success');
+            onSuccess?.();
         } else {
             setStatus('error');
             setTimeout(() => setStatus('idle'), 2000);
@@ -79,14 +81,14 @@ Fragment de fichier trouvé :
 };
 
 
-export default function Browser({ setBrowserController }: BrowserProps) {
+export default function Browser({ setBrowserController, onBackdoorSuccess }: BrowserProps) {
     const [activeTab, setActiveTab] = useState('home');
     const [searchQuery, setSearchQuery] = useState('');
     const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const sites = [
         { id: 'home', name: 'Accueil', component: <WelcomePage searchQuery={searchQuery} /> },
-        { id: 'backdoor', name: 'Porte Dérobée', component: <LoginPage /> },
+        { id: 'backdoor', name: 'Porte Dérobée', component: <LoginPage onSuccess={onBackdoorSuccess} /> },
     ];
     const currentSite = sites.find(s => s.id === activeTab);
 

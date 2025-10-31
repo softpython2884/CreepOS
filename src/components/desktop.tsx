@@ -85,8 +85,8 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const [isChapterNineTriggered, setIsChapterNineTriggered] = useState(false);
   const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
-  const [browserController, setBrowserController] = useState<any>(null);
   const [isCameraActiveForStory, setIsCameraActiveForStory] = useState(false);
+  const chapterFourManagerCallbacksRef = useRef({ onBackdoorSuccess: () => {} });
 
 
   const closeAllApps = useCallback(() => {
@@ -153,7 +153,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: () => setIsChapterOneFinished(true) }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, isCorruptible: true },
-    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { setBrowserController }, isCorruptible: true },
+    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: () => chapterFourManagerCallbacksRef.current.onBackdoorSuccess() }, isCorruptible: true },
     chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleChapterFiveFinish }, isCorruptible: false },
     security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, isCorruptible: false },
   };
@@ -179,6 +179,9 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     }
     if (isChapterSevenTriggered && !isChapterNineTriggered) {
         setIsChapterNineTriggered(true);
+    }
+    if (appId === 'browser' && isCorrupted && !isChapterFourTriggered) {
+        setIsChapterFourTriggered(true);
     }
 
     nextInstanceIdRef.current += 1;
@@ -308,7 +311,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       
       {isChapterTwoTriggered && !isChapterTwoFinished && terminalWriterRef.current && (<ChapterTwoManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} onCapture={handleChapterCapture} onFinish={handleChapterTwoFinish} />)}
       {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (<ChapterThreeManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} openApp={openApp} capturedImage={lastCapturedImage} onFinish={handleChapterThreeFinish} />)}
-      {isChapterFourTriggered && browserController && terminalWriterRef.current && location && (<ChapterFourManager browser={browserController} terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} />)}
+      {isChapterFourTriggered && terminalWriterRef.current && location && (<ChapterFourManager terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} onBackdoorSuccess={() => chapterFourManagerCallbacksRef.current.onBackdoorSuccess()} />)}
       {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
       {isChapterSevenTriggered && !isChapterNineTriggered && terminalWriterRef.current && (
         <ChapterSevenManager 
@@ -331,7 +334,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         <>
             <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">CAUCHEMAR VIRTUEL</h1>
             {openApps.map((app) => {
-                const isAppCorrupted = (isTotallyCorrupted || activeEvent === 'system_collapse' || (isCorrupted && app.appId === 'chat')) && appConfig[app.appId].isCorruptible;
+                const isAppCorrupted = ((isCorrupted || isTotallyCorrupted || activeEvent === 'system_collapse') && appConfig[app.appId].isCorruptible);
                 const currentAppConfig = app.appId === 'photos' ? { ...appConfig.photos, props: { ...appConfig.photos.props, highlightedImageId: lastCapturedImage?.id, isSystemCollapsing: activeEvent === 'system_collapse' } } : appConfig[app.appId];
                 const AppComponent = currentAppConfig.component;
                 return (
