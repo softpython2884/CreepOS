@@ -1,54 +1,85 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useActionState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { User, Lock, Power } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Desktop from '@/components/desktop';
+import { generateBootSound } from './actions';
 
 type MachineState = 'off' | 'booting' | 'login' | 'desktop';
 
 const bootLines = [
-  'Virtual Nightmare OS v1.3 Initializing...',
-  'Memory check: 640KB OK',
-  'Loading kernel...',
-  'Mounting virtual file system...',
-  'Initializing HYPNET services...',
-  'Searching for L\'Ombre...',
-  'WARN: AI core signature mismatch. Continuing at own risk.',
-  'Starting UI...',
-  'Welcome to Cauchemar Virtuel.',
-  ''
+    'SUBSYSTEM OS v0.9 -- BETA',
+    'Initializing...',
+    'Welcome, D.C. Omen.',
+    'Initializing user profile...',
 ];
 
 const BootScreen = ({ onBootComplete }: { onBootComplete: () => void }) => {
     const [lines, setLines] = useState<string[]>([]);
-  
+    const [showGlitch, setShowGlitch] = useState(false);
+    const [ttsState, ttsAction] = useActionState(generateBootSound, { audioDataUri: undefined, error: undefined });
+    const audioRef = useRef<HTMLAudioElement>(null);
+
     useEffect(() => {
-      const bootTimeout = setTimeout(() => {
-        let i = 0;
-        const intervalId = setInterval(() => {
-          setLines(prev => [...prev, bootLines[i]]);
-          i++;
-          if (i === bootLines.length) {
-            clearInterval(intervalId);
+        const bootTimeout = setTimeout(() => {
+            let i = 0;
+            const intervalId = setInterval(() => {
+                if(i < bootLines.length) {
+                    setLines(prev => [...prev, bootLines[i]]);
+                }
+
+                // After last line, trigger TTS
+                if (i === bootLines.length -1) {
+                    const formData = new FormData();
+                    formData.append('text', 'Bonjour D.C. Omen. Initialisation du profil utilisateur...');
+                    ttsAction(formData);
+                }
+
+                i++;
+
+                if (i > bootLines.length) {
+                    clearInterval(intervalId);
+                }
+            }, 800);
+        }, 500);
+
+        return () => clearTimeout(bootTimeout);
+    }, [onBootComplete, ttsAction]);
+    
+    useEffect(() => {
+        if (ttsState.audioDataUri && audioRef.current) {
+            audioRef.current.src = ttsState.audioDataUri;
+            audioRef.current.play().then(() => {
+                // After audio plays, trigger glitch
+                setTimeout(() => {
+                    setLines(prev => [...prev, '> ERROR: corrupted memory segment at 0x7A11BF.']);
+                    setShowGlitch(true);
+                    setTimeout(() => {
+                        setShowGlitch(false);
+                        setTimeout(onBootComplete, 1000);
+                    }, 500);
+                }, 500);
+            }).catch(e => console.error("Audio playback failed", e));
+        }
+        if (ttsState.error) {
+            console.error("TTS Error:", ttsState.error);
+            // If TTS fails, continue the sequence
             setTimeout(onBootComplete, 1000);
-          }
-        }, 300);
-      }, 500);
-  
-      return () => clearTimeout(bootTimeout);
-    }, [onBootComplete]);
-  
+        }
+    }, [ttsState, onBootComplete]);
+
     return (
-      <div className="bg-black text-green-400 font-code p-4 w-full h-full flex flex-col justify-center">
+      <div className={cn("bg-black text-green-400 font-code p-4 w-full h-full flex flex-col justify-center", showGlitch && "animate-glitch-short animate-chromatic-aberration")}>
         <div className="whitespace-pre-wrap">
           {lines.map((line, i) => (
             <p key={i} className="animate-typing">{line}</p>
           ))}
-          <span className="animate-blink">_</span>
+          {!ttsState.audioDataUri && lines.length === bootLines.length && <span className="animate-blink">_</span>}
         </div>
+        <audio ref={audioRef} />
       </div>
     );
 };
@@ -68,7 +99,7 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
     return (
         <div className="w-full h-full flex items-center justify-center bg-background">
             <form onSubmit={handleLogin} className="w-full max-w-xs text-center p-8 bg-card rounded-lg shadow-2xl shadow-primary/20 animate-in fade-in zoom-in-95">
-                <h1 className="text-2xl font-headline text-primary opacity-70 mb-2">Virtual Nightmare OS</h1>
+                <h1 className="text-2xl font-headline text-primary opacity-70 mb-2">SUBSYSTEM OS</h1>
                 <p className="text-sm text-muted-foreground mb-6">Enter credentials to proceed</p>
                 <div className="relative mb-4">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -77,6 +108,7 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
                         onChange={(e) => setUsername(e.target.value)}
                         className="pl-10 text-center" 
                         placeholder="Username"
+                        readOnly
                     />
                 </div>
                 <div className="relative mb-6">

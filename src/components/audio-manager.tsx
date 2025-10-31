@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
-export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | null;
+export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | null;
 
 interface AudioManagerProps {
   event: SoundEvent;
@@ -13,12 +13,13 @@ interface AudioManagerProps {
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
 // Using free sound effects from Pixabay
-const sounds: Record<NonNullable<SoundEvent>, { src: string; volume: number }> = {
+const sounds: Record<NonNullable<SoundEvent>, { src: string; volume: number; loop?: boolean }> = {
     scream: { src: 'https://cdn.pixabay.com/audio/2022/10/24/audio_92452b4b3d.mp3', volume: 0.7 },
     glitch: { src: 'https://cdn.pixabay.com/audio/2022/11/17/audio_34b7f5a03d.mp3', volume: 0.3 },
     click: { src: 'https://cdn.pixabay.com/audio/2022/03/15/audio_24e03b1365.mp3', volume: 0.5 },
     close: { src: 'https://cdn.pixabay.com/audio/2022/03/22/audio_60370cb9ac.mp3', volume: 0.4 },
     bsod: { src: 'https://cdn.pixabay.com/audio/2022/11/19/audio_2c96cbe26b.mp3', volume: 0.5 },
+    fan: { src: 'https://cdn.pixabay.com/audio/2022/01/18/audio_b724f79493.mp3', volume: 0.1, loop: true },
 };
 
 const ambientSound = {
@@ -28,6 +29,7 @@ const ambientSound = {
 
 export default function AudioManager({ event, onEnd }: AudioManagerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const fanAudioRef = useRef<HTMLAudioElement>(null);
   const ambientAudioRef = useRef<HTMLAudioElement>(null);
 
   // Play ambient sound on mount
@@ -67,7 +69,36 @@ export default function AudioManager({ event, onEnd }: AudioManagerProps) {
   }, []);
 
   useEffect(() => {
-    if (event && audioRef.current) {
+    const fanAudio = fanAudioRef.current;
+
+    const playFanSound = async () => {
+        if (fanAudio) {
+            try {
+                const sound = sounds['fan'];
+                fanAudio.src = sound.src;
+                fanAudio.volume = sound.volume;
+                fanAudio.loop = sound.loop || false;
+                await fanAudio.play();
+            } catch (error) {
+                console.warn('Could not play fan sound:', error);
+            }
+        }
+    };
+
+    if (event === 'fan') {
+        playFanSound();
+    }
+
+    return () => {
+      if (fanAudio && event === 'fan') {
+          fanAudio.pause();
+      }
+    };
+  }, [event]);
+
+
+  useEffect(() => {
+    if (event && audioRef.current && event !== 'fan') {
       const sound = sounds[event];
       if (sound) {
         audioRef.current.src = sound.src;
@@ -80,6 +111,7 @@ export default function AudioManager({ event, onEnd }: AudioManagerProps) {
   return (
     <>
       <audio ref={audioRef} onEnded={onEnd} />
+      <audio ref={fanAudioRef} loop />
       <audio ref={ambientAudioRef} loop />
     </>
   );

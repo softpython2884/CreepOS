@@ -47,7 +47,7 @@ export default function Desktop() {
   const [capturedImages, setCapturedImages] = useState<ImagePlaceholder[]>([]);
   const [location, setLocation] = useState<GeoJSON.Point | null>(null);
   const [activeEvent, setActiveEvent] = useState<EventId>('none');
-  const [soundEvent, setSoundEvent] = useState<SoundEvent | null>(null);
+  const [soundEvent, setSoundEvent] = useState<SoundEvent | null>('fan');
 
   const triggerEvent = useCallback((eventId: EventId) => {
     setActiveEvent(eventId);
