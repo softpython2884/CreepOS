@@ -134,8 +134,8 @@ export default function Home() {
     }
 
     return (
-        <main className="min-h-screen w-full flex justify-center items-center bg-black">
-            <div id="viewport" className="relative w-[1920px] h-[1080px] max-w-full max-h-full scale-[.8] sm:scale-100 bg-background overflow-hidden">
+        <main className="h-screen w-screen flex justify-center items-center bg-black">
+            <div id="viewport" className="relative w-[1920px] h-[1080px] bg-background">
                 {renderState()}
             </div>
         </main>

@@ -73,4 +73,9 @@
   body {
     @apply bg-background text-foreground overflow-hidden;
   }
+
+  #viewport {
+    transform: scale(min(calc(100vw / 1920), calc(100vh / 1080)));
+    overflow: hidden;
+  }
 }
