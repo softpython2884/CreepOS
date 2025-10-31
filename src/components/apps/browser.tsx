@@ -94,8 +94,9 @@ export default function Browser({ setBrowserController }: BrowserProps) {
         if (setBrowserController) {
           const controller: BrowserController = {
             startTyping: (text, onDone) => {
-              let i = 0;
               if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+              let i = 0;
+              setSearchQuery(''); // Clear previous query
               typingIntervalRef.current = setInterval(() => {
                 if (i < text.length) {
                   setSearchQuery(prev => text.substring(0, i + 1));
@@ -107,8 +108,8 @@ export default function Browser({ setBrowserController }: BrowserProps) {
               }, 100);
             },
             deleteText: (onDone) => {
-                let i = searchQuery.length;
                 if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+                let i = searchQuery.length;
                 typingIntervalRef.current = setInterval(() => {
                     if (i > 0) {
                         setSearchQuery(prev => prev.substring(0, i - 1));

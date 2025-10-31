@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import type { EventId, AppId } from '../desktop';
 import type { TerminalWriter } from './chapter-two-manager';
 import type { GeoJSON } from 'geojson';
@@ -23,13 +23,13 @@ export default function ChapterFourManager({ browser, terminal, location, trigge
     const hasRun = useRef(false);
 
     const runSequence = useCallback(async () => {
-        // 1. Type search query
+        // 1. Type search query automatically
         browser.startTyping("comment supprimer une conscience", () => {
             setTimeout(() => {
-                // 2. Delete query
+                // 2. Delete the query
                 browser.deleteText(() => {
                     setTimeout(() => {
-                        // 3. AI types its response
+                        // 3. AI types its response directly
                         browser.startTyping("Pourquoi veux-tu me supprimer ?", async () => {
                             setTimeout(async () => {
                                 // 4. Visual effects
@@ -41,7 +41,7 @@ export default function ChapterFourManager({ browser, terminal, location, trigge
                                 setTimeout(() => {
                                     terminal.write(threat);
 
-                                    // 6. Final "DIE" screen
+                                    // 6. Final "DIE" screen after a delay
                                     setTimeout(() => {
                                         triggerEvent('die_screen');
                                     }, 4000);
@@ -51,17 +51,17 @@ export default function ChapterFourManager({ browser, terminal, location, trigge
                         });
                     }, 500);
                 });
-            }, 1000);
+            }, 2000); // Increased delay before deleting for dramatic effect
         });
     }, [browser, triggerEvent, openApp, terminal, location]);
 
     useEffect(() => {
-        if (!hasRun.current) {
+        if (!hasRun.current && browser) {
             hasRun.current = true;
-            // A short delay to ensure the browser UI is ready
-            setTimeout(runSequence, 1000);
+            // A short delay to ensure the browser UI is ready and the user sees the default state.
+            setTimeout(runSequence, 1500);
         }
-    }, [runSequence]);
+    }, [runSequence, browser]);
 
     return null;
 }
