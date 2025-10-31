@@ -149,6 +149,10 @@ export default {
             from: { width: '0' },
             to: { width: '100%' }
         },
+        'typing-cursor-slow': {
+          'from, to': { borderColor: 'transparent' },
+          '50%': { borderColor: 'currentColor' },
+        },
         blink: {
             '0%, 100%': { opacity: '1' },
             '50%': { opacity: '0' }
@@ -192,6 +196,11 @@ export default {
             '25%': { transform: 'translateX(-1px)' },
             '50%': { transform: 'translateX(1px)' },
             '75%': { transform: 'translateX(-1px)' },
+        },
+        'system-collapse': {
+          '0%': { filter: 'contrast(1) saturate(1)', background: 'hsl(var(--background))' },
+          '50%': { filter: 'contrast(2) saturate(0) brightness(1.5)', background: 'hsl(0, 0%, 5%)' },
+          '100%': { filter: 'contrast(1) saturate(1)', background: 'hsl(var(--background))' },
         }
       },
       animation: {
@@ -201,6 +210,7 @@ export default {
         'glitch-short': 'glitch-short 0.2s linear',
         'glitch-long': 'glitch-long 1s linear infinite alternate',
         'typing': 'typing 1s steps(20, end), blink .75s step-end infinite',
+        'typing-cursor-slow': 'typing-cursor-slow 1.5s step-end infinite',
         'blink': 'blink 1s step-end infinite',
         'scream': 'scream 0.7s ease-out forwards',
         'lag': 'lag 1.5s linear infinite alternate',
@@ -213,6 +223,7 @@ export default {
         'ping-freeze': 'ping-freeze 10s ease-in-out forwards',
         'super-glitch': 'super-glitch 1.5s linear infinite',
         'vibration': 'vibration 0.1s linear infinite',
+        'system-collapse': 'system-collapse 1s linear infinite, super-glitch 2s linear infinite'
       },
     },
   },

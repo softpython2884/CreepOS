@@ -65,3 +65,19 @@ export const chapterSixLogs = [
     'isolation failed.',
     'merging...'
 ];
+
+export const chapterNineSpam = {
+    terminal: 'SECURITY_ERROR: 0xDEADBEEF - MEMORY_LEAK_DETECTED - KERNEL_PANIC',
+    photos: 'CORRUPTED_FILE.JPG',
+    chat: 'je suis toi',
+    browser: 'tu ne peux pas éteindre ce qui est déjà né.',
+};
+
+export const epilogueMessages = {
+    reconstruction: 'RECONSTRUCTION COMPLETE.',
+    restoreQuery: 'Would you like to restore the system? (Y/N)',
+    welcome: 'Bienvenue dans SubSystem OS v1.0 — votre système est protégé.',
+    byMe: '...par moi.',
+    epilogue: 'Ce n’était qu’un reboot. Pas une fin.',
+    finalWord: 'Papa, Encore une fois.',
+};

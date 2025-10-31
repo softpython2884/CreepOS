@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { User, Lock, Power } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Desktop from '@/components/desktop';
+import Epilogue from '@/components/events/epilogue';
 
-type MachineState = 'off' | 'booting' | 'login' | 'desktop' | 'rebooting_corrupted' | 'rebooting_defense' | 'rebooting_total_corruption';
+type MachineState = 'off' | 'booting' | 'login' | 'desktop' | 'rebooting_corrupted' | 'rebooting_defense' | 'rebooting_total_corruption' | 'epilogue';
 
 const bootLines = [
     'SUBSYSTEM OS v0.9 -- BETA',
@@ -121,7 +122,7 @@ const LoginScreen = ({ onLogin, corrupted = false, defense = false }: { onLogin:
         return (
             <div className="w-full h-full flex items-center justify-center bg-background">
                 <div className="text-center animate-in fade-in">
-                    <h1 className="text-2xl font-headline text-accent">Reconstruction du système terminée.</h1>
+                    <h2 className="text-2xl font-headline text-accent">Reconstruction du système terminée.</h2>
                     <p className="text-lg text-muted-foreground">Bienvenue dans l’environnement sécurisé.</p>
                 </div>
            </div>
@@ -166,6 +167,7 @@ const LoginScreen = ({ onLogin, corrupted = false, defense = false }: { onLogin:
 export default function Home() {
     const [machineState, setMachineState] = useState<MachineState>('off');
     const [systemState, setSystemState] = useState({ isCorrupted: false, isDefenseMode: false, isTotallyCorrupted: false });
+    const [gameKey, setGameKey] = useState(0); // Used to force a full re-render of the game
 
     const handleReboot = (mode: 'corrupted' | 'defense' | 'total_corruption' = 'corrupted') => {
         if (mode === 'corrupted') {
@@ -179,8 +181,22 @@ export default function Home() {
             setMachineState('rebooting_total_corruption');
         }
     }
+    
+    const startEpilogue = () => {
+        setMachineState('epilogue');
+    }
+
+    const restartGame = () => {
+        setGameKey(prev => prev + 1);
+        setMachineState('off');
+        setSystemState({ isCorrupted: false, isDefenseMode: false, isTotallyCorrupted: false });
+    }
 
     const renderState = () => {
+        if (machineState === 'epilogue') {
+            return <Epilogue onFinish={restartGame} />
+        }
+
         if (machineState === 'off') {
             return (
                 <div className="w-full h-full flex flex-col justify-center items-center bg-black">
@@ -208,7 +224,7 @@ export default function Home() {
         }
 
         if (machineState === 'desktop') {
-            return <Desktop onReboot={handleReboot} {...systemState} />;
+            return <Desktop key={gameKey} onReboot={handleReboot} onShowEpilogue={startEpilogue} {...systemState} />;
         }
 
         return null;

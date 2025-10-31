@@ -17,37 +17,31 @@ export default function ChapterSevenManager({ terminal, triggerEvent, openApp, s
     const runSequence = useCallback(async () => {
         terminal.write("Tu veux te protéger, n’est-ce pas ? Ouvre le système de défense.");
         
-        // The rest of the chapter is triggered by the user opening the security app
-        setTimeout(() => {
-            terminal.clear();
-            terminal.write("Ce n’est plus toi qui contrôles. C’est elle.");
-        }, 10000);
-        
         // This is a rough simulation of chapter 8 for now.
         setTimeout(() => {
             openApp('security');
-        }, 12000);
+        }, 4000);
         
         setTimeout(() => {
             setCameraActive(true);
             triggerEvent('glitch');
-        }, 15000);
+        }, 8000);
 
         setTimeout(() => {
             setCameraActive(false);
             terminal.write("Analyse complète. Anomalie détectée. L’utilisateur est contaminé.");
             triggerEvent('red_screen');
-        }, 16000);
+        }, 12000);
         
         setTimeout(() => {
             terminal.clear();
             terminal.write("Je t’avais prévenu. Tu es l’erreur.", 'command'); // 'command' makes it stand out
-        }, 18000);
+        }, 15000);
 
         setTimeout(() => {
             triggerEvent('scream');
             triggerEvent('purge_screen');
-        }, 20000);
+        }, 18000);
 
     }, [terminal, openApp, triggerEvent, setCameraActive]);
 

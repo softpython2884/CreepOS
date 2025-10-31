@@ -23,13 +23,14 @@ import ChapterThreeManager from './story/chapter-three-manager';
 import ChapterFourManager from './story/chapter-four-manager';
 import ChapterFiveManager from './story/chapter-five-manager';
 import ChapterSevenManager from './story/chapter-seven-manager';
+import ChapterNineManager from './story/chapter-nine-manager';
 import DieScreen from './events/die-screen';
 import PurgeScreen from './events/purge-screen';
 import { chapterSixLogs } from './apps/content';
 
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser' | 'chatbot' | 'security';
-export type EventId = 'bsod' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'red_screen' | 'die_screen' | 'freeze' | 'total_corruption' | 'purge_screen' | 'none';
+export type EventId = 'bsod' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'red_screen' | 'die_screen' | 'freeze' | 'total_corruption' | 'purge_screen' | 'system_collapse' | 'none';
 
 type AppConfig = {
   [key in AppId]: {
@@ -52,12 +53,13 @@ type OpenApp = {
 
 interface DesktopProps {
   onReboot: (mode: 'corrupted' | 'defense' | 'total_corruption') => void;
+  onShowEpilogue: () => void;
   isCorrupted: boolean;
   isDefenseMode: boolean;
   isTotallyCorrupted: boolean;
 }
 
-export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotallyCorrupted }: DesktopProps) {
+export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefenseMode, isTotallyCorrupted }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [isGlitching, setIsGlitching] = useState(false);
@@ -78,6 +80,7 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
   const [isChapterFourTriggered, setIsChapterFourTriggered] = useState(false);
   const [isChapterFiveTriggered, setIsChapterFiveTriggered] = useState(false);
   const [isChapterSevenTriggered, setIsChapterSevenTriggered] = useState(false);
+  const [isChapterNineTriggered, setIsChapterNineTriggered] = useState(false);
   const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
   const [browserController, setBrowserController] = useState<any>(null);
@@ -102,9 +105,11 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
     if (eventId === 'scream') setSoundEvent('scream');
     if (eventId === 'corrupt' || eventId === 'glitch') setSoundEvent('glitch');
 
-    if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic', 'red_screen', 'freeze'].includes(eventId)) {
+    if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic', 'red_screen', 'freeze', 'system_collapse'].includes(eventId)) {
       const duration = eventId === 'lag' ? 5000 : (eventId === 'red_screen' ? 1500 : (eventId === 'chromatic' ? 500 : (eventId === 'freeze' ? 1000000 : 3000)));
-      setTimeout(() => setActiveEvent('none'), duration);
+      if(eventId !== 'system_collapse' && eventId !== 'freeze') {
+        setTimeout(() => setActiveEvent('none'), duration);
+      }
     }
   }, [closeAllApps, onReboot, isChapterThreeFinished, isCorrupted]);
 
@@ -170,6 +175,9 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
     if (isDefenseMode && appId === 'security' && !isChapterSevenTriggered) {
         setIsChapterSevenTriggered(true);
     }
+    if (isChapterSevenTriggered && !isChapterNineTriggered) {
+        setIsChapterNineTriggered(true);
+    }
 
     nextInstanceIdRef.current += 1;
 
@@ -186,7 +194,7 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isChapterSevenTriggered]);
+  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isChapterSevenTriggered, isChapterNineTriggered]);
 
   useEffect(() => {
     if (isCorrupted) {
@@ -263,7 +271,8 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
         activeEvent === 'lag' && 'animate-lag',
         activeEvent === 'red_screen' && 'animate-red-screen',
         activeEvent === 'freeze' && 'animate-ping-freeze',
-        activeEvent === 'total_corruption' && 'animate-super-glitch'
+        activeEvent === 'total_corruption' && 'animate-super-glitch',
+        activeEvent === 'system_collapse' && 'animate-system-collapse'
       )}
       style={{ backgroundImage: `linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)`, backgroundSize: `2rem 2rem` }}
     >
@@ -277,7 +286,7 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
       {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (<ChapterThreeManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} openApp={openApp} capturedImage={lastCapturedImage} onFinish={handleChapterThreeFinish} />)}
       {isChapterFourTriggered && browserController && terminalWriterRef.current && location && (<ChapterFourManager browser={browserController} terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} />)}
       {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
-      {isChapterSevenTriggered && terminalWriterRef.current && (
+      {isChapterSevenTriggered && !isChapterNineTriggered && terminalWriterRef.current && (
         <ChapterSevenManager 
             terminal={terminalWriterRef.current} 
             triggerEvent={triggerEvent}
@@ -285,13 +294,21 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
             setCameraActive={setIsCameraActiveForStory}
         />
       )}
+      {isChapterNineTriggered && lastCapturedImage && (
+        <ChapterNineManager
+            openApp={openApp}
+            triggerEvent={triggerEvent}
+            capturedImage={lastCapturedImage}
+            onFinish={onShowEpilogue}
+        />
+      )}
 
       {activeEvent !== 'bsod' && activeEvent !== 'die_screen' && activeEvent !== 'purge_screen' && (
         <>
             <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">CAUCHEMAR VIRTUEL</h1>
             {openApps.map((app) => {
-                const isAppCorrupted = isTotallyCorrupted && appConfig[app.appId].isCorruptible;
-                const currentAppConfig = app.appId === 'photos' ? { ...appConfig.photos, props: { ...appConfig.photos.props, highlightedImageId: lastCapturedImage?.id } } : appConfig[app.appId];
+                const isAppCorrupted = (isTotallyCorrupted || activeEvent === 'system_collapse') && appConfig[app.appId].isCorruptible;
+                const currentAppConfig = app.appId === 'photos' ? { ...appConfig.photos, props: { ...appConfig.photos.props, highlightedImageId: lastCapturedImage?.id, isSystemCollapsing: activeEvent === 'system_collapse' } } : appConfig[app.appId];
                 const AppComponent = currentAppConfig.component;
                 return (
                     <div key={app.instanceId} onMouseDown={() => bringToFront(app.instanceId)} style={{ zIndex: app.zIndex, position: 'absolute' }}>

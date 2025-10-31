@@ -13,9 +13,10 @@ import { cn } from '@/lib/utils';
 interface PhotoViewerProps {
   extraImages?: ImagePlaceholder[];
   highlightedImageId?: string;
+  isSystemCollapsing?: boolean;
 }
 
-export default function PhotoViewer({ extraImages = [], highlightedImageId }: PhotoViewerProps) {
+export default function PhotoViewer({ extraImages = [], highlightedImageId, isSystemCollapsing = false }: PhotoViewerProps) {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isImageDeforming, setIsImageDeforming] = useState(false);
   
@@ -35,28 +36,39 @@ export default function PhotoViewer({ extraImages = [], highlightedImageId }: Ph
     }
   }, [highlightedImageId]);
 
+  const getImageToDisplay = (image: ImagePlaceholder) => {
+    if (isSystemCollapsing && image.id.startsWith('capture-')) {
+        const lastCaptured = extraImages[extraImages.length - 1];
+        if (lastCaptured) return lastCaptured;
+    }
+    return image;
+  }
 
   return (
     <ScrollArea className="h-full bg-card">
       <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
         {allImages.map((image, index) => {
           const isHighlighted = image.id === highlightedImageId;
+          const displayImage = getImageToDisplay(image);
+          
           return (
-            <Dialog key={image.id || index} onOpenChange={(open) => !open && setZoomLevel(1)}>
+            <Dialog key={`${displayImage.id}-${index}`} onOpenChange={(open) => !open && setZoomLevel(1)}>
               <DialogTrigger asChild>
                 <div className={cn("aspect-square relative group cursor-pointer overflow-hidden rounded-md", 
-                  isHighlighted && "animate-pulse-strong"
+                  isHighlighted && "animate-pulse-strong",
+                  isSystemCollapsing && "animate-glitch"
                 )}>
                   <Image
-                    src={image.imageUrl}
-                    alt={image.description}
+                    src={displayImage.imageUrl}
+                    alt={displayImage.description}
                     fill
                     className={cn(
                       "object-cover transition-transform duration-300 group-hover:scale-110",
-                      isHighlighted && isImageDeforming && "animate-image-deform"
+                      isHighlighted && isImageDeforming && "animate-image-deform",
+                      isSystemCollapsing && "animate-image-deform"
                     )}
                     sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                    data-ai-hint={image.imageHint}
+                    data-ai-hint={displayImage.imageHint}
                   />
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <ZoomIn className="text-white h-10 w-10" />
@@ -66,13 +78,13 @@ export default function PhotoViewer({ extraImages = [], highlightedImageId }: Ph
               <DialogContent className="max-w-4xl h-auto bg-black/80 border-accent/20 backdrop-blur-md p-2">
                 <div className="relative w-full h-[80vh] overflow-hidden flex items-center justify-center">
                    <Image
-                      src={image.imageUrl}
-                      alt={image.description}
+                      src={displayImage.imageUrl}
+                      alt={displayImage.description}
                       fill
                       className="object-contain transition-transform duration-300"
                       style={{ transform: `scale(${zoomLevel})` }}
                       sizes="90vw"
-                      data-ai-hint={image.imageHint}
+                      data-ai-hint={displayImage.imageHint}
                     />
                 </div>
                 <div className="absolute bottom-4 right-4 flex gap-2">
