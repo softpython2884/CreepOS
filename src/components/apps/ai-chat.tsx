@@ -53,13 +53,15 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
 
   useEffect(() => {
     if (isCorrupted) {
-      addMessage('ai', corruptedLoopMessage);
+      const initialMessage = () => addMessage('ai', corruptedLoopMessage);
+      initialMessage(); // Add message immediately
       const interval = setInterval(() => {
         addMessage('ai', corruptedLoopMessage);
       }, 2000);
       setIsReadOnly(true);
       return () => clearInterval(interval);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCorrupted]);
 
   useEffect(() => {

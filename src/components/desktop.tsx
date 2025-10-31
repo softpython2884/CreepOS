@@ -150,7 +150,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
-    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: () => setIsChapterOneFinished(true), isCorrupted: isCorrupted }, isCorruptible: true },
+    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: () => setIsChapterOneFinished(true) }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { setBrowserController }, isCorruptible: true },
@@ -201,9 +201,37 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setTimeout(() => setIsGlitching(false), 200);
   }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isChapterSevenTriggered, isChapterNineTriggered]);
 
+  const bringToFront = (instanceId: number) => {
+    if (instanceId === activeInstanceId) return;
+
+    setOpenApps(prevApps => {
+        const app = prevApps.find(a => a.instanceId === instanceId);
+        if (!app) return prevApps;
+        
+        const config = appConfig[app.appId];
+        const randomXOffset = (Math.random() - 0.5) * 200;
+        const randomYOffset = (Math.random() - 0.5) * 200;
+        const x = (1920 / 2) - (config.width / 2) + randomXOffset;
+        const y = (1080 / 2) - (config.height / 2) + randomYOffset;
+
+        return prevApps.map(app => 
+            app.instanceId === instanceId 
+                ? { ...app, zIndex: nextZIndex, x, y } 
+                : app
+        );
+    });
+    
+    setActiveInstanceId(instanceId);
+    setNextZIndex(prev => prev + 1);
+  };
+
+
   useEffect(() => {
     if (isCorrupted) {
-      openApp('chat');
+      openApp('chat', { 
+        x: (1920 / 2) - (appConfig.chat.width / 2),
+        y: (1080 / 2) - (appConfig.chat.height / 2)
+      });
     } else if (isDefenseMode) {
         openApp('chatbot');
     } else if (isTotallyCorrupted) {
@@ -242,30 +270,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       setLastCapturedImage(newCapture);
       setCapturedImages(prev => [...prev, newCapture]);
   }, []);
-
-  const bringToFront = (instanceId: number) => {
-    if (instanceId === activeInstanceId) return;
-
-    setOpenApps(prevApps => {
-        const app = prevApps.find(a => a.instanceId === instanceId);
-        if (!app) return prevApps;
-        
-        const config = appConfig[app.appId];
-        const randomXOffset = (Math.random() - 0.5) * 200;
-        const randomYOffset = (Math.random() - 0.5) * 200;
-        const x = (1920 / 2) - (config.width / 2) + randomXOffset;
-        const y = (1080 / 2) - (config.height / 2) + randomYOffset;
-
-        return prevApps.map(app => 
-            app.instanceId === instanceId 
-                ? { ...app, zIndex: nextZIndex, x, y } 
-                : app
-        );
-    });
-    
-    setActiveInstanceId(instanceId);
-    setNextZIndex(prev => prev + 1);
-};
 
   const renderEvent = () => {
     switch (activeEvent) {
@@ -327,7 +331,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         <>
             <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">CAUCHEMAR VIRTUEL</h1>
             {openApps.map((app) => {
-                const isAppCorrupted = (isTotallyCorrupted || activeEvent === 'system_collapse') && appConfig[app.appId].isCorruptible;
+                const isAppCorrupted = (isTotallyCorrupted || activeEvent === 'system_collapse' || (isCorrupted && app.appId === 'chat')) && appConfig[app.appId].isCorruptible;
                 const currentAppConfig = app.appId === 'photos' ? { ...appConfig.photos, props: { ...appConfig.photos.props, highlightedImageId: lastCapturedImage?.id, isSystemCollapsing: activeEvent === 'system_collapse' } } : appConfig[app.appId];
                 const AppComponent = currentAppConfig.component;
                 return (
