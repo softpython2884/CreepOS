@@ -126,14 +126,6 @@ export default {
             '90%': { transform: 'translate(-5px,-5px) skew(1deg)' },
             '100%': { transform: 'translate(0,0) skew(0deg)' },
         },
-        'screen-tear': {
-            '0%': { clipPath: 'inset(0 0 0 0)' },
-            '20%': { clipPath: 'inset(10% 0 15% 0)' },
-            '40%': { clipPath: 'inset(5% 0 20% 0)' },
-            '60%': { clipPath: 'inset(25% 0 5% 0)' },
-            '80%': { clipPath: 'inset(15% 0 10% 0)' },
-            '100%': { clipPath: 'inset(0 0 0 0)' },
-        },
         'chromatic-aberration': {
             '0%, 100%': { filter: 'url(#chromatic-aberration-filter-0)' },
             '50%': { filter: 'url(#chromatic-aberration-filter-1)' },
@@ -214,7 +206,6 @@ export default {
         'blink': 'blink 1s step-end infinite',
         'scream': 'scream 0.7s ease-out forwards',
         'lag': 'lag 1.5s linear infinite alternate',
-        'screen-tear': 'screen-tear 0.5s ease-in-out infinite alternate',
         'chromatic-aberration': 'chromatic-aberration 1s steps(1, end) infinite',
         'image-deform': 'image-deform 4s ease-in-out forwards, screen-tear 2s ease-in-out infinite alternate',
         'pulse-strong': 'pulse-strong 2s infinite',
