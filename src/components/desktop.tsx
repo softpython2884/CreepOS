@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, createRef } from 'react';
 import Dock from '@/components/dock';
 import Window from '@/components/window';
 import Terminal from '@/components/apps/terminal';
@@ -50,6 +50,7 @@ type OpenApp = {
   zIndex: number;
   x: number;
   y: number;
+  nodeRef: React.RefObject<HTMLDivElement>;
 };
 
 interface DesktopProps {
@@ -189,7 +190,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     const x = options.x ?? (1920 / 2) - (config.width / 2) + randomXOffset;
     const y = options.y ?? (1080 / 2) - (config.height / 2) + randomYOffset;
     
-    const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, x, y };
+    const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, x, y, nodeRef: createRef<HTMLDivElement>() };
 
     setOpenApps(prev => [...prev, newApp]);
     setActiveInstanceId(instanceId);
@@ -202,7 +203,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   useEffect(() => {
     if (isCorrupted) {
-        openApp('chat');
+      openApp('chat');
     } else if (isDefenseMode) {
         openApp('chatbot');
     } else if (isTotallyCorrupted) {
@@ -246,7 +247,10 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     if (instanceId === activeInstanceId) return;
 
     setOpenApps(prevApps => {
-        const config = appConfig[prevApps.find(a => a.instanceId === instanceId)!.appId];
+        const app = prevApps.find(a => a.instanceId === instanceId);
+        if (!app) return prevApps;
+        
+        const config = appConfig[app.appId];
         const randomXOffset = (Math.random() - 0.5) * 200;
         const randomYOffset = (Math.random() - 0.5) * 200;
         const x = (1920 / 2) - (config.width / 2) + randomXOffset;
@@ -300,7 +304,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       
       {isChapterTwoTriggered && !isChapterTwoFinished && terminalWriterRef.current && (<ChapterTwoManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} onCapture={handleChapterCapture} onFinish={handleChapterTwoFinish} />)}
       {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (<ChapterThreeManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} openApp={openApp} capturedImage={lastCapturedImage} onFinish={handleChapterThreeFinish} />)}
-      {isChapterFourTriggered && terminalWriterRef.current && location && (<ChapterFourManager browser={browserController} terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} />)}
+      {isChapterFourTriggered && browserController && terminalWriterRef.current && location && (<ChapterFourManager browser={browserController} terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} />)}
       {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
       {isChapterSevenTriggered && !isChapterNineTriggered && terminalWriterRef.current && (
         <ChapterSevenManager 
@@ -332,9 +336,10 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                       handle=".handle"
                       defaultPosition={{x: app.x, y: app.y}}
                       bounds="parent"
+                      nodeRef={app.nodeRef}
                       onStart={() => bringToFront(app.instanceId)}
                     >
-                      <div style={{ zIndex: app.zIndex, position: 'absolute' }}>
+                      <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
                           <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} isCorrupted={isAppCorrupted}>
                               <AppComponent {...currentAppConfig.props} isCorrupted={isAppCorrupted}/>
                           </Window>

@@ -1,8 +1,8 @@
-import { useRef } from 'react';
 import { X, Skull } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import React from 'react';
 
 interface WindowProps {
   title: string;
