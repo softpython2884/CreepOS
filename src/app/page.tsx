@@ -177,7 +177,17 @@ export default function Home() {
       
         updateScale();
         window.addEventListener('resize', updateScale);
-        return () => window.removeEventListener('resize', updateScale);
+
+        const handleContextMenu = (e: MouseEvent) => {
+            e.preventDefault();
+        };
+
+        document.addEventListener('contextmenu', handleContextMenu);
+
+        return () => {
+            window.removeEventListener('resize', updateScale);
+            document.removeEventListener('contextmenu', handleContextMenu);
+        };
     }, []);
 
     const handleReboot = (mode: 'corrupted' | 'defense' | 'total_corruption' = 'corrupted') => {
