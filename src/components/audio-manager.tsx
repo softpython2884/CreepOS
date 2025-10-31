@@ -12,18 +12,18 @@ interface AudioManagerProps {
 // Base64 encoded silent WAV file to enable autoplay
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
-// Using free sound effects from Pixabay and other sources
+// Using free sound effects from various sources
 const sounds: Record<NonNullable<SoundEvent>, { src: string; volume: number; loop?: boolean }> = {
     scream: { src: 'https://www.myinstants.com/media/sounds/funtime-josh-screamer.mp3', volume: 0.8 },
-    glitch: { src: 'https://cdn.pixabay.com/audio/2022/11/17/audio_34b7f5a03d.mp3', volume: 0.3 },
-    click: { src: 'https://cdn.pixabay.com/audio/2022/03/15/audio_24e03b1365.mp3', volume: 0.5 },
-    close: { src: 'https://cdn.pixabay.com/audio/2022/03/22/audio_60370cb9ac.mp3', volume: 0.4 },
-    bsod: { src: 'https://cdn.pixabay.com/audio/2022/11/19/audio_2c96cbe26b.mp3', volume: 0.5 },
-    fan: { src: 'https://cdn.pixabay.com/audio/2022/01/18/audio_b724f79493.mp3', volume: 0.1, loop: true },
+    glitch: { src: 'https://cdn.freesound.org/previews/25/25921_37876-lq.mp3', volume: 0.3 },
+    click: { src: 'https://cdn.freesound.org/previews/434/434818_6472661-lq.mp3', volume: 0.5 },
+    close: { src: 'https://cdn.freesound.org/previews/434/434819_6472661-lq.mp3', volume: 0.4 },
+    bsod: { src: 'https://cdn.freesound.org/previews/36/36991_130343-lq.mp3', volume: 0.5 },
+    fan: { src: 'https://cdn.freesound.org/previews/34/344379_5121236-lq.mp3', volume: 0.1, loop: true },
 };
 
 const ambientSound = {
-    src: 'https://cdn.pixabay.com/audio/2024/05/27/audio_96500f73f5.mp3',
+    src: 'https://cdn.freesound.org/previews/702/702752_13282424-lq.mp3',
     volume: 0.1
 };
 

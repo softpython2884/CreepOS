@@ -48,7 +48,7 @@ export default function ChapterFourManager({ terminal, location, triggerEvent, o
             }
         };
 
-        setBackdoorSuccessCallback(() => handleBackdoorSuccess);
+        setBackdoorSuccessCallback(handleBackdoorSuccess);
 
         // Cleanup the timer if the component unmounts
         return () => {
