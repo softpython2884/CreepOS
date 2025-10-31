@@ -47,8 +47,8 @@ type OpenApp = {
   instanceId: number;
   appId: AppId;
   zIndex: number;
-  initialX?: number;
-  initialY?: number;
+  x: number;
+  y: number;
 };
 
 interface DesktopProps {
@@ -182,10 +182,13 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     nextInstanceIdRef.current += 1;
 
     const config = appConfig[appId];
-    const initialX = options.x ?? (1920 / 2) - (config.width / 2);
-    const initialY = options.y ?? (1080 / 2) - (config.height / 2);
+    // Center with some random offset
+    const randomXOffset = (Math.random() - 0.5) * 200;
+    const randomYOffset = (Math.random() - 0.5) * 200;
+    const x = options.x ?? (1920 / 2) - (config.width / 2) + randomXOffset;
+    const y = options.y ?? (1080 / 2) - (config.height / 2) + randomYOffset;
     
-    const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, initialX, initialY };
+    const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, x, y };
 
     setOpenApps(prev => [...prev, newApp]);
     setActiveInstanceId(instanceId);
@@ -312,7 +315,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                 const AppComponent = currentAppConfig.component;
                 return (
                     <div key={app.instanceId} onMouseDown={() => bringToFront(app.instanceId)} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                        <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} initialX={app.initialX} initialY={app.initialY} isCorrupted={isAppCorrupted}>
+                        <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} x={app.x} y={app.y} isCorrupted={isAppCorrupted}>
                             <AppComponent {...currentAppConfig.props} isCorrupted={isAppCorrupted}/>
                         </Window>
                     </div>
