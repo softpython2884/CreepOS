@@ -30,6 +30,10 @@ export default function CameraCapture({ onCapture, enabled }: CameraCaptureProps
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
+        // Flip the image horizontally
+        context.translate(video.videoWidth, 0);
+        context.scale(-1, 1);
+        
         context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
         
         const imageUri = canvas.toDataURL('image/jpeg');

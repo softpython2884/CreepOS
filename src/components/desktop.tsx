@@ -148,10 +148,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     }, 2000);
   }
 
-  const setBackdoorSuccessCallback = (callback: () => void) => {
-    backdoorSuccessCallbackRef.current = callback;
-  }
-
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
     chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: () => setIsChapterOneFinished(true), isCorrupted }, isCorruptible: true },
@@ -309,7 +305,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       
       {isChapterTwoTriggered && !isChapterTwoFinished && terminalWriterRef.current && (<ChapterTwoManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} onCapture={handleChapterCapture} onFinish={handleChapterTwoFinish} />)}
       {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (<ChapterThreeManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} openApp={openApp} capturedImage={lastCapturedImage} onFinish={handleChapterThreeFinish} />)}
-      {isChapterFourTriggered && terminalWriterRef.current && location && (<ChapterFourManager terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} setBackdoorSuccessCallback={setBackdoorSuccessCallback}/>)}
+      {isChapterFourTriggered && terminalWriterRef.current && location && (<ChapterFourManager terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} setBackdoorSuccessCallback={(cb) => { backdoorSuccessCallbackRef.current = cb; }}/>)}
       {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
       {isChapterSevenTriggered && !isChapterNineTriggered && terminalWriterRef.current && (
         <ChapterSevenManager 
