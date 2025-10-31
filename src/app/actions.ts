@@ -2,6 +2,7 @@
 
 import { chatWithAI as chatWithAIFlow, ChatWithAIInput } from '@/ai/flows/chat-with-ai';
 import { generateInitialHint as generateInitialHintFlow, GenerateInitialHintInput } from '@/ai/flows/generate-initial-hint';
+import { chatCorrupted as chatCorruptedFlow, ChatCorruptedInput } from '@/ai/flows/chat-corrupted-flow';
 import { z } from 'zod';
 import type { GeoJSON } from 'geojson';
 
@@ -14,9 +15,21 @@ const hintSchema = z.object({
   userPrompt: z.string().min(1),
 });
 
+const corruptedChatSchema = z.object({
+    prompt: z.string(),
+    messageHistory: z.preprocess((val) => {
+        if (typeof val === 'string') return JSON.parse(val);
+        return val;
+    }, z.array(z.string())),
+});
+
 interface ActionState {
   response?: string;
   error?: string;
+}
+
+interface CorruptedActionState extends ActionState {
+    shouldFinish?: boolean;
 }
 
 export async function chatWithAI(prevState: ActionState, formData: FormData): Promise<ActionState> {
@@ -59,6 +72,25 @@ export async function generateInitialHint(prevState: ActionState, formData: Form
     return { error: 'Failed to get a hint. Try again later.' };
   }
 }
+
+export async function chatCorrupted(prevState: CorruptedActionState, formData: FormData): Promise<CorruptedActionState> {
+    const messageHistoryJson = formData.get('messageHistory') as string;
+    const validatedFields = corruptedChatSchema.safeParse({
+      prompt: formData.get('prompt'),
+      messageHistory: messageHistoryJson ? JSON.parse(messageHistoryJson) : [],
+    });
+  
+    if (!validatedFields.success) {
+      return { error: 'Invalid input.' };
+    }
+  
+    try {
+      const result = await chatCorruptedFlow(validatedFields.data as ChatCorruptedInput);
+      return result;
+    } catch (e) {
+      return { error: 'AI failed to respond.' };
+    }
+  }
 
 export async function getThreat(location: GeoJSON.Point): Promise<string> {
     const city = await getCityFromLocation(location);

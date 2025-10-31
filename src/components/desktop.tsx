@@ -8,6 +8,7 @@ import AIChat from '@/components/apps/ai-chat';
 import PhotoViewer from '@/components/apps/photo-viewer';
 import DocumentFolder from '@/components/apps/document-folder';
 import Browser from '@/components/apps/browser';
+import Chatbot from '@/components/apps/chatbot'; // New app for chapter 5
 import { cn } from '@/lib/utils';
 import CameraCapture from './camera-capture';
 import type { ImagePlaceholder } from '@/lib/placeholder-images';
@@ -19,11 +20,13 @@ import AudioManager, { SoundEvent } from './audio-manager';
 import ChapterTwoManager, { type TerminalWriter } from './story/chapter-two-manager';
 import ChapterThreeManager from './story/chapter-three-manager';
 import ChapterFourManager from './story/chapter-four-manager';
+import ChapterFiveManager from './story/chapter-five-manager';
 import DieScreen from './events/die-screen';
+import { chapterSixLogs } from './apps/content';
 
 
-export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser';
-export type EventId = 'bsod' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'red_screen' | 'die_screen' | 'none';
+export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser' | 'chatbot';
+export type EventId = 'bsod' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'red_screen' | 'die_screen' | 'freeze' | 'total_corruption' | 'none';
 
 type AppConfig = {
   [key in AppId]: {
@@ -32,6 +35,7 @@ type AppConfig = {
     width: number;
     height: number;
     props?: any;
+    isCorruptible?: boolean;
   };
 };
 
@@ -44,11 +48,13 @@ type OpenApp = {
 };
 
 interface DesktopProps {
-  onReboot: () => void;
+  onReboot: (mode: 'corrupted' | 'defense' | 'total_corruption') => void;
   isCorrupted: boolean;
+  isDefenseMode: boolean;
+  isTotallyCorrupted: boolean;
 }
 
-export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
+export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotallyCorrupted }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [isGlitching, setIsGlitching] = useState(false);
@@ -67,12 +73,10 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
   const [isChapterTwoFinished, setIsChapterTwoFinished] = useState(false);
   const [isChapterThreeFinished, setIsChapterThreeFinished] = useState(false);
   const [isChapterFourTriggered, setIsChapterFourTriggered] = useState(false);
+  const [isChapterFiveTriggered, setIsChapterFiveTriggered] = useState(false);
   const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
-  const [browserController, setBrowserController] = useState<{
-    startTyping: (text: string, onDone: () => void) => void;
-    deleteText: (onDone: () => void) => void;
-  } | null>(null);
+  const [browserController, setBrowserController] = useState<any>(null);
 
   const closeAllApps = useCallback(() => {
     setOpenApps([]);
@@ -84,20 +88,19 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
         closeAllApps();
         setSoundEvent('bsod');
         setActiveEvent('bsod');
+        setTimeout(() => onReboot(isChapterThreeFinished ? 'defense' : 'corrupted'), 8000);
         return;
     }
     setActiveEvent(eventId);
 
-    // Trigger sounds for specific events
     if (eventId === 'scream') setSoundEvent('scream');
     if (eventId === 'corrupt' || eventId === 'glitch') setSoundEvent('glitch');
 
-    if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic', 'red_screen'].includes(eventId)) {
-      // These events are temporary visual effects
-      const duration = eventId === 'lag' ? 5000 : (eventId === 'red_screen' ? 1500 : (eventId === 'chromatic' ? 500 : 3000));
+    if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic', 'red_screen', 'freeze'].includes(eventId)) {
+      const duration = eventId === 'lag' ? 5000 : (eventId === 'red_screen' ? 1500 : (eventId === 'chromatic' ? 500 : (eventId === 'freeze' ? 1000000 : 3000)));
       setTimeout(() => setActiveEvent('none'), duration);
     }
-  }, [closeAllApps]);
+  }, [closeAllApps, onReboot, isChapterThreeFinished]);
 
   const closeApp = useCallback((instanceId: number) => {
     setOpenApps(prev => prev.filter(app => app.instanceId !== instanceId));
@@ -105,7 +108,6 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
     if (activeInstanceId === instanceId) {
       const remainingApps = openApps.filter(app => app.instanceId !== instanceId);
       if (remainingApps.length > 0) {
-        // Find the app with the highest z-index to make it active
         const nextActiveApp = remainingApps.reduce((prev, current) => (prev.zIndex > current.zIndex) ? prev : current);
         setActiveInstanceId(nextActiveApp.instanceId);
       } else {
@@ -123,87 +125,49 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
 
   const handleChapterThreeFinish = () => {
       setIsChapterThreeFinished(true);
-      // Initiate final sequence
       triggerEvent('bsod');
   }
 
-  const appConfig: AppConfig = {
-    terminal: { 
-        title: 'Terminal', 
-        component: Terminal, 
-        width: 600, 
-        height: 400,
-        props: { 
-            triggerEvent,
-            setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer,
-        }
-    },
-    chat: { 
-        title: 'Néo', 
-        component: AIChat, 
-        width: 400, 
-        height: 600,
-        props: { 
-          location, 
-          isChapterOne: !isChapterOneFinished && !isCorrupted, 
-          onChapterOneFinish: () => setIsChapterOneFinished(true),
-          isCorrupted: isCorrupted,
-        }
-    },
-    photos: { 
-        title: 'Photo Viewer', 
-        component: PhotoViewer, 
-        width: 600, 
-        height: 400,
-        props: { extraImages: capturedImages }
-    },
-    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400 },
-    browser: { 
-        title: 'Hypnet Explorer', 
-        component: Browser, 
-        width: 800, 
-        height: 600,
-        props: {
-            setBrowserController: setBrowserController
-        }
-    },
-  };
+  const handleChapterFiveFinish = () => {
+    triggerEvent('freeze');
+    setTimeout(() => {
+        onReboot('total_corruption');
+    }, 2000);
+  }
 
+  const appConfig: AppConfig = {
+    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
+    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: () => setIsChapterOneFinished(true), isCorrupted }, isCorruptible: true },
+    photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
+    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, isCorruptible: true },
+    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { setBrowserController }, isCorruptible: true },
+    chatbot: { title: 'Chatbot', component: Chatbot, width: 400, height: 500, isCorruptible: false },
+  };
 
   const openApp = useCallback((appId: AppId, options: { x?: number, y?: number } = {}) => {
     const instanceId = nextInstanceIdRef.current;
-    
-    if (appId === 'browser' && isCorrupted && !isChapterFourTriggered) {
-        setIsChapterFourTriggered(true);
-    }
 
-    // Prevent re-opening chat in chapter 1
+    if (appId === 'browser' && isCorrupted && !isChapterFourTriggered) setIsChapterFourTriggered(true);
     if (appId === 'chat' && !isChapterTwoTriggered && !isCorrupted) {
         const chatApp = openApps.find(app => app.appId === 'chat');
-        if (chatApp) {
-            bringToFront(chatApp.instanceId);
-            return;
-        }
+        if (chatApp) { bringToFront(chatApp.instanceId); return; }
     }
-    
     if (appId === 'terminal' && isChapterOneFinished && !isChapterTwoTriggered) {
         setIsChapterTwoTriggered(true);
         setChapterTwoInstanceId(instanceId);
     }
-    
+    if (isDefenseMode && !isChapterFiveTriggered) {
+        setIsChapterFiveTriggered(true);
+        appId = 'chatbot';
+    }
+
     nextInstanceIdRef.current += 1;
 
     const config = appConfig[appId];
     const initialX = options.x ?? (1920 / 2) - (config.width / 2);
     const initialY = options.y ?? (1080 / 2) - (config.height / 2);
     
-    const newApp: OpenApp = {
-        instanceId: instanceId,
-        appId: appId,
-        zIndex: nextZIndex,
-        initialX,
-        initialY
-    };
+    const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, initialX, initialY };
 
     setOpenApps(prev => [...prev, newApp]);
     setActiveInstanceId(instanceId);
@@ -212,81 +176,65 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps, appConfig, isCorrupted, isChapterFourTriggered]);
+  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps, appConfig, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered]);
 
-  // Chapter 1 Effects & Post-Crash
   useEffect(() => {
     if (isCorrupted) {
-      // Spam corrupted chat windows
       for (let i = 0; i < 20; i++) {
-        setTimeout(() => {
-          const x = Math.random() * (1920 - 400);
-          const y = Math.random() * (1080 - 600);
-          openApp('chat', { x, y });
-        }, i * 100);
+        setTimeout(() => openApp('chat', { x: Math.random() * (1920 - 400), y: Math.random() * (1080 - 600) }), i * 100);
       }
-    } else {
-      // Normal boot sequence
+    } else if (isDefenseMode) {
+        openApp('chatbot');
+    } else if (isTotallyCorrupted) {
+        // Handled by Chapter 6 effects
+    }
+    else {
       openApp('chat');
     }
-
     setActiveEvent('chromatic');
     const timer1 = setTimeout(() => setIsGlitching(true), 200);
-    const timer2 = setTimeout(() => {
-      setActiveEvent('none');
-      setIsGlitching(false);
-    }, 500);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
+    const timer2 = setTimeout(() => { setActiveEvent('none'); setIsGlitching(false); }, 500);
+    return () => { clearTimeout(timer1); clearTimeout(timer2); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCorrupted]);
+  }, [isCorrupted, isDefenseMode, isTotallyCorrupted]);
+
+  useEffect(() => {
+    if (isTotallyCorrupted && terminalWriterRef.current) {
+        triggerEvent('total_corruption');
+        const terminal = terminalWriterRef.current;
+        openApp('terminal', { x: 50, y: 50 });
+        setTimeout(() => {
+            chapterSixLogs.forEach((log, i) => {
+                setTimeout(() => terminal.write(log), i * 500);
+            });
+        }, 1000);
+    }
+  }, [isTotallyCorrupted, openApp, triggerEvent]);
 
   const handleNewCapture = (imageUri: string) => {
-    const newCapture: ImagePlaceholder = {
-      id: `capture-${Date.now()}`,
-      description: "It's you.",
-      imageUrl: imageUri,
-      imageHint: "self portrait"
-    };
+    const newCapture: ImagePlaceholder = { id: `capture-${Date.now()}`, description: "It's you.", imageUrl: imageUri, imageHint: "self portrait" };
     setCapturedImages(prev => [...prev, newCapture]);
   };
   
   const handleChapterCapture = useCallback((imageUri: string) => {
-      const newCapture: ImagePlaceholder = {
-          id: `story-capture-${Date.now()}`,
-          description: "...",
-          imageUrl: imageUri,
-          imageHint: "self portrait"
-      };
+      const newCapture: ImagePlaceholder = { id: `story-capture-${Date.now()}`, description: "...", imageUrl: imageUri, imageHint: "self portrait" };
       setLastCapturedImage(newCapture);
       setCapturedImages(prev => [...prev, newCapture]);
   }, []);
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
-    setOpenApps(openApps.map(app => {
-      if (app.instanceId === instanceId) {
-        return { ...app, zIndex: nextZIndex };
-      }
-      return app;
-    }));
+    setOpenApps(openApps.map(app => (app.instanceId === instanceId) ? { ...app, zIndex: nextZIndex } : app));
     setActiveInstanceId(instanceId);
     setNextZIndex(nextZIndex + 1);
   };
 
   const renderEvent = () => {
     switch (activeEvent) {
-      case 'bsod':
-        return <BlueScreen onReboot={onReboot} />;
-      case 'scream':
-        return <Screamer onFinish={() => setActiveEvent('none')} />;
-      case 'die_screen':
-        return <DieScreen />;
-      default:
-        return null;
+      case 'bsod': return <BlueScreen onReboot={() => {}} />;
+      case 'scream': return <Screamer onFinish={() => setActiveEvent('none')} />;
+      case 'die_screen': return <DieScreen />;
+      default: return null;
     }
   }
 
@@ -296,18 +244,17 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
       className={cn(
         "h-full w-full font-code relative overflow-hidden flex flex-col justify-center items-center p-4",
         isGlitching && 'animate-glitch-short',
-        isCorrupted && 'corrupted',
+        (isCorrupted || isTotallyCorrupted) && 'corrupted',
         activeEvent === 'corrupt' && 'animate-glitch',
         activeEvent === 'glitch' && 'animate-glitch-long',
         activeEvent === 'tear' && 'animate-screen-tear',
         activeEvent === 'chromatic' && 'animate-chromatic-aberration',
         activeEvent === 'lag' && 'animate-lag',
-        activeEvent === 'red_screen' && 'animate-red-screen'
+        activeEvent === 'red_screen' && 'animate-red-screen',
+        activeEvent === 'freeze' && 'animate-ping-freeze',
+        activeEvent === 'total_corruption' && 'animate-super-glitch'
       )}
-      style={{
-        backgroundImage: `linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)`,
-        backgroundSize: `2rem 2rem`
-      }}
+      style={{ backgroundImage: `linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)`, backgroundSize: `2rem 2rem` }}
     >
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
       
@@ -315,69 +262,30 @@ export default function Desktop({ onReboot, isCorrupted }: DesktopProps) {
       <GpsTracker onLocationUpdate={setLocation} />
       <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
       
-      {isChapterTwoTriggered && !isChapterTwoFinished && terminalWriterRef.current && (
-          <ChapterTwoManager 
-              terminal={terminalWriterRef.current}
-              triggerEvent={triggerEvent}
-              onCapture={handleChapterCapture}
-              onFinish={handleChapterTwoFinish}
-          />
-      )}
-
-      {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (
-        <ChapterThreeManager
-          terminal={terminalWriterRef.current}
-          triggerEvent={triggerEvent}
-          openApp={openApp}
-          capturedImage={lastCapturedImage}
-          onFinish={handleChapterThreeFinish}
-        />
-      )}
-
-      {isChapterFourTriggered && browserController && terminalWriterRef.current && location && (
-        <ChapterFourManager
-            browser={browserController}
-            terminal={terminalWriterRef.current}
-            location={location}
-            triggerEvent={triggerEvent}
-            openApp={openApp}
-        />
-      )}
-
+      {isChapterTwoTriggered && !isChapterTwoFinished && terminalWriterRef.current && (<ChapterTwoManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} onCapture={handleChapterCapture} onFinish={handleChapterTwoFinish} />)}
+      {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (<ChapterThreeManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} openApp={openApp} capturedImage={lastCapturedImage} onFinish={handleChapterThreeFinish} />)}
+      {isChapterFourTriggered && browserController && terminalWriterRef.current && location && (<ChapterFourManager browser={browserController} terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} />)}
+      {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
 
       {activeEvent !== 'bsod' && activeEvent !== 'die_screen' && (
         <>
-            <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">
-                CAUCHEMAR VIRTUEL
-            </h1>
+            <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">CAUCHEMAR VIRTUEL</h1>
             {openApps.map((app) => {
-                const currentAppConfig = app.appId === 'photos'
-                ? { ...appConfig.photos, props: { ...appConfig.photos.props, highlightedImageId: lastCapturedImage?.id } }
-                : appConfig[app.appId];
-
+                const isAppCorrupted = isTotallyCorrupted && appConfig[app.appId].isCorruptible;
+                const currentAppConfig = app.appId === 'photos' ? { ...appConfig.photos, props: { ...appConfig.photos.props, highlightedImageId: lastCapturedImage?.id } } : appConfig[app.appId];
                 const AppComponent = currentAppConfig.component;
-                
                 return (
                     <div key={app.instanceId} onMouseDown={() => bringToFront(app.instanceId)} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                        <Window 
-                          title={currentAppConfig.title} 
-                          onClose={() => closeApp(app.instanceId)} 
-                          width={currentAppConfig.width} 
-                          height={currentAppConfig.height}
-                          initialX={app.initialX}
-                          initialY={app.initialY}
-                        >
-                            <AppComponent {...currentAppConfig.props} />
+                        <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} initialX={app.initialX} initialY={app.initialY} isCorrupted={isAppCorrupted}>
+                            <AppComponent {...currentAppConfig.props} isCorrupted={isAppCorrupted}/>
                         </Window>
                     </div>
                 )
             })}
-            <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} />
+            <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} isCorrupted={isTotallyCorrupted} />
         </>
       )}
-
       {renderEvent()}
-
     </main>
   );
 }

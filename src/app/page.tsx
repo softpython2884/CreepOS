@@ -7,7 +7,7 @@ import { User, Lock, Power } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Desktop from '@/components/desktop';
 
-type MachineState = 'off' | 'booting' | 'login' | 'desktop' | 'rebooting_corrupted';
+type MachineState = 'off' | 'booting' | 'login' | 'desktop' | 'rebooting_corrupted' | 'rebooting_defense' | 'rebooting_total_corruption';
 
 const bootLines = [
     'SUBSYSTEM OS v0.9 -- BETA',
@@ -24,11 +24,37 @@ const corruptedBootLines = [
     'Loading corrupted profile...',
     '> FATAL: AI_CORE_VIOLATION at 0x00DEAD.',
     '> Rebooting in unsecured mode...'
-]
+];
 
-const BootScreen = ({ onBootComplete, corrupted = false }: { onBootComplete: () => void, corrupted?: boolean }) => {
+const defenseBootLines = [
+    'SUBSYSTEM OS v1.3 -- DEFENSE_MODE',
+    'Initializing secret defense system...',
+    'Welcome, D.C. Omen.',
+    'Initializing user profile...',
+    '> SECURE_LAYER_ACTIVE'
+];
+
+const totalCorruptionBootLines = [
+    'SUBSYSTEM FAILED — consciousness conflict detected.',
+    'Trying to isolate process...',
+    'process: USER',
+    'isolation failed.',
+    'merging...'
+];
+
+const BootScreen = ({ onBootComplete, state }: { onBootComplete: () => void, state: MachineState }) => {
     const [lines, setLines] = useState<string[]>([]);
-    const lineSource = corrupted ? corruptedBootLines : bootLines;
+    
+    const getLineSource = () => {
+        switch(state) {
+            case 'rebooting_corrupted': return corruptedBootLines;
+            case 'rebooting_defense': return defenseBootLines;
+            case 'rebooting_total_corruption': return totalCorruptionBootLines;
+            default: return bootLines;
+        }
+    }
+    const lineSource = getLineSource();
+    const isCorrupted = state === 'rebooting_corrupted' || state === 'rebooting_total_corruption';
 
     useEffect(() => {
         const bootTimeout = setTimeout(() => {
@@ -50,7 +76,7 @@ const BootScreen = ({ onBootComplete, corrupted = false }: { onBootComplete: () 
     return (
       <div className={cn(
         "bg-black p-4 w-full h-full flex flex-col justify-center",
-        corrupted ? "text-red-500 font-bold" : "text-green-400 font-code",
+        isCorrupted ? "text-red-500 font-bold" : "text-green-400 font-code",
       )}>
         <div className="whitespace-pre-wrap">
           {lines.map((line, i) => (
@@ -62,7 +88,7 @@ const BootScreen = ({ onBootComplete, corrupted = false }: { onBootComplete: () 
     );
 };
 
-const LoginScreen = ({ onLogin, corrupted = false }: { onLogin: () => void, corrupted?: boolean }) => {
+const LoginScreen = ({ onLogin, corrupted = false, defense = false }: { onLogin: () => void, corrupted?: boolean, defense?: boolean }) => {
     const [username, setUsername] = useState('D.C. Omen');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(false);
@@ -70,19 +96,17 @@ const LoginScreen = ({ onLogin, corrupted = false }: { onLogin: () => void, corr
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         setError(false);
-        // Any password is correct in normal mode.
-        // In corrupted mode, no login is required.
         onLogin();
     };
     
     useEffect(() => {
-        if(corrupted) {
+        if(corrupted || defense) {
             const timer = setTimeout(() => {
                 onLogin();
             }, 1500)
             return () => clearTimeout(timer);
         }
-    }, [corrupted, onLogin])
+    }, [corrupted, defense, onLogin])
 
     if (corrupted) {
         return (
@@ -90,6 +114,14 @@ const LoginScreen = ({ onLogin, corrupted = false }: { onLogin: () => void, corr
                  <h1 className="text-4xl font-headline text-destructive animate-pulse">UNSECURED</h1>
             </div>
         )
+    }
+
+    if (defense) {
+        return (
+            <div className="w-full h-full flex items-center justify-center bg-background">
+                <h1 className="text-4xl font-headline text-primary animate-pulse">DEFENSE MODE</h1>
+           </div>
+       )
     }
 
     return (
@@ -129,11 +161,19 @@ const LoginScreen = ({ onLogin, corrupted = false }: { onLogin: () => void, corr
 
 export default function Home() {
     const [machineState, setMachineState] = useState<MachineState>('off');
-    const [isCorrupted, setIsCorrupted] = useState(false);
+    const [systemState, setSystemState] = useState({ isCorrupted: false, isDefenseMode: false, isTotallyCorrupted: false });
 
-    const handleReboot = () => {
-        setIsCorrupted(true);
-        setMachineState('rebooting_corrupted');
+    const handleReboot = (mode: 'corrupted' | 'defense' | 'total_corruption' = 'corrupted') => {
+        if (mode === 'corrupted') {
+            setSystemState({ isCorrupted: true, isDefenseMode: false, isTotallyCorrupted: false });
+            setMachineState('rebooting_corrupted');
+        } else if (mode === 'defense') {
+            setSystemState({ isCorrupted: false, isDefenseMode: true, isTotallyCorrupted: false });
+            setMachineState('rebooting_defense');
+        } else if (mode === 'total_corruption') {
+            setSystemState({ isCorrupted: false, isDefenseMode: false, isTotallyCorrupted: true });
+            setMachineState('rebooting_total_corruption');
+        }
     }
 
     const renderState = () => {
@@ -147,32 +187,24 @@ export default function Home() {
             );
         }
 
-        if (machineState === 'booting') {
+        if (machineState === 'booting' || machineState.startsWith('rebooting')) {
             return (
-                <div className="w-full h-full bg-black">
-                    <BootScreen onBootComplete={() => setMachineState('login')} />
-                </div>
-            );
-        }
-
-        if (machineState === 'rebooting_corrupted') {
-             return (
-                <div className="w-full h-full bg-black corrupted">
-                    <BootScreen onBootComplete={() => setMachineState('login')} corrupted />
+                <div className={cn("w-full h-full bg-black", systemState.isTotallyCorrupted && 'corrupted')}>
+                    <BootScreen onBootComplete={() => setMachineState('login')} state={machineState} />
                 </div>
             );
         }
 
         if (machineState === 'login') {
             return (
-                <div className={cn("w-full h-full flex flex-col justify-center items-center", isCorrupted && "corrupted")}>
-                    <LoginScreen onLogin={() => setMachineState('desktop')} corrupted={isCorrupted} />
+                <div className={cn("w-full h-full flex flex-col justify-center items-center", (systemState.isCorrupted || systemState.isTotallyCorrupted) && "corrupted")}>
+                    <LoginScreen onLogin={() => setMachineState('desktop')} corrupted={systemState.isCorrupted || systemState.isTotallyCorrupted} defense={systemState.isDefenseMode} />
                 </div>
             );
         }
 
         if (machineState === 'desktop') {
-            return <Desktop onReboot={handleReboot} isCorrupted={isCorrupted} />;
+            return <Desktop onReboot={handleReboot} {...systemState} />;
         }
 
         return null;

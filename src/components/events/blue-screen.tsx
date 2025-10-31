@@ -14,7 +14,7 @@ export default function BlueScreen({ onReboot }: BlueScreenProps) {
             setProgress(prev => {
                 if (prev >= 100) {
                     clearInterval(interval);
-                    onReboot();
+                    // onReboot is now called from Desktop.tsx after a timeout
                     return 100;
                 }
                 return prev + 1;

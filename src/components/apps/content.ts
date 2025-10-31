@@ -29,3 +29,11 @@ export const documents = [
 - D.C. Omen (Porté disparu)`,
   },
 ];
+
+export const chapterSixLogs = [
+    'SUBSYSTEM FAILED — consciousness conflict detected.',
+    'trying to isolate process...',
+    'process: USER',
+    'isolation failed.',
+    'merging...'
+];
