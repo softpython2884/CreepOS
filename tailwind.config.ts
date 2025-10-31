@@ -186,6 +186,12 @@ export default {
           '15%': { transform: 'scale(1.1)', opacity: 0.9 },
           '20%, 80%': { opacity: 1, textShadow: '0 0 20px #f00, 0 0 40px #f00, 0 0 60px #f00' },
           '100%': { opacity: 1, transform: 'scale(3)', filter: 'blur(5px)' }
+        },
+        vibration: {
+            '0%, 100%': { transform: 'translateX(0)' },
+            '25%': { transform: 'translateX(-1px)' },
+            '50%': { transform: 'translateX(1px)' },
+            '75%': { transform: 'translateX(-1px)' },
         }
       },
       animation: {
@@ -206,6 +212,7 @@ export default {
         'die-spam': 'die-spam 0.5s linear infinite',
         'ping-freeze': 'ping-freeze 10s ease-in-out forwards',
         'super-glitch': 'super-glitch 1.5s linear infinite',
+        'vibration': 'vibration 0.1s linear infinite',
       },
     },
   },

@@ -27,11 +27,11 @@ const corruptedBootLines = [
 ];
 
 const defenseBootLines = [
-    'SUBSYSTEM OS v1.3 -- DEFENSE_MODE',
-    'Initializing secret defense system...',
-    'Welcome, D.C. Omen.',
-    'Initializing user profile...',
-    '> SECURE_LAYER_ACTIVE'
+    'BOOT SEQUENCE INITIATED...',
+    'CHECKING MEMORY... ███░░░░░ 32%',
+    'RECOVERING CORE FILES... ok',
+    'SECURITY SYSTEM ACTIVATED',
+    'UNIT: SENTINEL_01 [Experimental Defense Protocol]'
 ];
 
 const totalCorruptionBootLines = [
@@ -77,6 +77,7 @@ const BootScreen = ({ onBootComplete, state }: { onBootComplete: () => void, sta
       <div className={cn(
         "bg-black p-4 w-full h-full flex flex-col justify-center",
         isCorrupted ? "text-red-500 font-bold" : "text-green-400 font-code",
+        state === 'rebooting_defense' && "text-blue-400"
       )}>
         <div className="whitespace-pre-wrap">
           {lines.map((line, i) => (
@@ -119,7 +120,10 @@ const LoginScreen = ({ onLogin, corrupted = false, defense = false }: { onLogin:
     if (defense) {
         return (
             <div className="w-full h-full flex items-center justify-center bg-background">
-                <h1 className="text-4xl font-headline text-primary animate-pulse">DEFENSE MODE</h1>
+                <div className="text-center animate-in fade-in">
+                    <h1 className="text-2xl font-headline text-accent">Reconstruction du système terminée.</h1>
+                    <p className="text-lg text-muted-foreground">Bienvenue dans l’environnement sécurisé.</p>
+                </div>
            </div>
        )
     }
@@ -189,7 +193,7 @@ export default function Home() {
 
         if (machineState === 'booting' || machineState.startsWith('rebooting')) {
             return (
-                <div className={cn("w-full h-full bg-black", systemState.isTotallyCorrupted && 'corrupted')}>
+                <div className={cn("w-full h-full bg-black", (systemState.isTotallyCorrupted) && 'corrupted', systemState.isDefenseMode && 'animate-vibration')}>
                     <BootScreen onBootComplete={() => setMachineState('login')} state={machineState} />
                 </div>
             );
@@ -197,7 +201,7 @@ export default function Home() {
 
         if (machineState === 'login') {
             return (
-                <div className={cn("w-full h-full flex flex-col justify-center items-center", (systemState.isCorrupted || systemState.isTotallyCorrupted) && "corrupted")}>
+                <div className={cn("w-full h-full flex flex-col justify-center items-center", (systemState.isCorrupted || systemState.isTotallyCorrupted) && "corrupted", systemState.isDefenseMode && "animate-chromatic-aberration")}>
                     <LoginScreen onLogin={() => setMachineState('desktop')} corrupted={systemState.isCorrupted || systemState.isTotallyCorrupted} defense={systemState.isDefenseMode} />
                 </div>
             );

@@ -16,7 +16,7 @@ export default function ChapterFiveManager({ openApp, onFinish }: ChapterFiveMan
             hasRun.current = true;
             // The chatbot is opened automatically by the desktop in defense mode.
             // This manager's primary role is to listen for the end signal from the chatbot component.
-            // The `onFinish` prop is passed to the Chatbot component, which will call it.
+            // The `onFinish` prop is passed to the Chatbot component, which will call it when the user tries to exit.
         }
     }, [openApp]);
 

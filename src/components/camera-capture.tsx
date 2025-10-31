@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface CameraCaptureProps {
   onCapture: (imageUri: string) => void;
-  enabled: boolean; // Add an enabled prop
+  enabled: boolean;
 }
 
 const CAPTURE_INTERVAL = 30000; 
@@ -16,9 +16,10 @@ export default function CameraCapture({ onCapture, enabled }: CameraCaptureProps
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isReadyForCapture, setIsReadyForCapture] = useState(false);
   const { toast } = useToast();
+  const streamRef = useRef<MediaStream | null>(null);
 
   const capture = useCallback(() => {
-    if (!enabled) return; // Check if capturing is enabled
+    if (!enabled) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -39,32 +40,45 @@ export default function CameraCapture({ onCapture, enabled }: CameraCaptureProps
 
 
   useEffect(() => {
-    if (!enabled) return; // Don't ask for permission if not enabled
-
     const getCameraPermission = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true);
+      if (enabled) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          streamRef.current = stream;
+          setHasCameraPermission(true);
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings.',
+          });
         }
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings.',
-        });
+      } else {
+        // If not enabled, stop the camera stream
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
       }
     };
 
     getCameraPermission();
+
+    return () => {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+        }
+    }
   }, [toast, enabled]);
 
   useEffect(() => {
-    if (!isReadyForCapture || !enabled) return; // Check if enabled
+    if (!isReadyForCapture || !enabled) return;
 
     // Take a picture after a short delay, then set an interval
     const initialTimeout = setTimeout(capture, 2000); 

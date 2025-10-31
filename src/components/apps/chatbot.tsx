@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useActionState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { chatCorrupted } from '@/app/actions';
 import { Bot, User, CornerDownLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
+import { useFormState } from 'react-dom';
 
 interface Message {
   id: number;
@@ -25,7 +26,7 @@ export default function Chatbot({ onFinish }: ChatbotProps) {
   const [messages, setMessages] = useState<Message[]>([
     { id: Date.now(), sender: 'ai', text: 'Je te comprends.' }
   ]);
-  const [chatState, chatFormAction, isChatPending] = useActionState(chatCorrupted, initialActionState);
+  const [chatState, chatFormAction, isChatPending] = useFormState(chatCorrupted, initialActionState);
   const formRef = useRef<HTMLFormElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -56,6 +57,8 @@ export default function Chatbot({ onFinish }: ChatbotProps) {
     const prompt = formData.get('prompt') as string;
     if (prompt.trim()) {
       addMessage('user', prompt);
+      const messageHistory = messages.filter(m => m.sender === 'ai').map(m => m.text);
+      formData.append('messageHistory', JSON.stringify(messageHistory));
       chatFormAction(formData);
       formRef.current?.reset();
     }

@@ -9,6 +9,7 @@ import PhotoViewer from '@/components/apps/photo-viewer';
 import DocumentFolder from '@/components/apps/document-folder';
 import Browser from '@/components/apps/browser';
 import Chatbot from '@/components/apps/chatbot'; // New app for chapter 5
+import SecurityApp from './apps/security-app';
 import { cn } from '@/lib/utils';
 import CameraCapture from './camera-capture';
 import type { ImagePlaceholder } from '@/lib/placeholder-images';
@@ -21,12 +22,14 @@ import ChapterTwoManager, { type TerminalWriter } from './story/chapter-two-mana
 import ChapterThreeManager from './story/chapter-three-manager';
 import ChapterFourManager from './story/chapter-four-manager';
 import ChapterFiveManager from './story/chapter-five-manager';
+import ChapterSevenManager from './story/chapter-seven-manager';
 import DieScreen from './events/die-screen';
+import PurgeScreen from './events/purge-screen';
 import { chapterSixLogs } from './apps/content';
 
 
-export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser' | 'chatbot';
-export type EventId = 'bsod' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'red_screen' | 'die_screen' | 'freeze' | 'total_corruption' | 'none';
+export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser' | 'chatbot' | 'security';
+export type EventId = 'bsod' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'red_screen' | 'die_screen' | 'freeze' | 'total_corruption' | 'purge_screen' | 'none';
 
 type AppConfig = {
   [key in AppId]: {
@@ -74,9 +77,12 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
   const [isChapterThreeFinished, setIsChapterThreeFinished] = useState(false);
   const [isChapterFourTriggered, setIsChapterFourTriggered] = useState(false);
   const [isChapterFiveTriggered, setIsChapterFiveTriggered] = useState(false);
+  const [isChapterSevenTriggered, setIsChapterSevenTriggered] = useState(false);
   const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
   const [browserController, setBrowserController] = useState<any>(null);
+  const [isCameraActiveForStory, setIsCameraActiveForStory] = useState(false);
+
 
   const closeAllApps = useCallback(() => {
     setOpenApps([]);
@@ -88,7 +94,7 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
         closeAllApps();
         setSoundEvent('bsod');
         setActiveEvent('bsod');
-        setTimeout(() => onReboot(isChapterThreeFinished ? 'defense' : 'corrupted'), 8000);
+        setTimeout(() => onReboot(isChapterThreeFinished && !isCorrupted ? 'defense' : 'corrupted'), 8000);
         return;
     }
     setActiveEvent(eventId);
@@ -100,7 +106,7 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
       const duration = eventId === 'lag' ? 5000 : (eventId === 'red_screen' ? 1500 : (eventId === 'chromatic' ? 500 : (eventId === 'freeze' ? 1000000 : 3000)));
       setTimeout(() => setActiveEvent('none'), duration);
     }
-  }, [closeAllApps, onReboot, isChapterThreeFinished]);
+  }, [closeAllApps, onReboot, isChapterThreeFinished, isCorrupted]);
 
   const closeApp = useCallback((instanceId: number) => {
     setOpenApps(prev => prev.filter(app => app.instanceId !== instanceId));
@@ -141,7 +147,8 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { setBrowserController }, isCorruptible: true },
-    chatbot: { title: 'Chatbot', component: Chatbot, width: 400, height: 500, isCorruptible: false },
+    chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleChapterFiveFinish }, isCorruptible: false },
+    security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, isCorruptible: false },
   };
 
   const openApp = useCallback((appId: AppId, options: { x?: number, y?: number } = {}) => {
@@ -160,6 +167,9 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
         setIsChapterFiveTriggered(true);
         appId = 'chatbot';
     }
+    if (isDefenseMode && appId === 'security' && !isChapterSevenTriggered) {
+        setIsChapterSevenTriggered(true);
+    }
 
     nextInstanceIdRef.current += 1;
 
@@ -176,7 +186,7 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps, appConfig, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered]);
+  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isChapterSevenTriggered]);
 
   useEffect(() => {
     if (isCorrupted) {
@@ -234,6 +244,7 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
       case 'bsod': return <BlueScreen onReboot={() => {}} />;
       case 'scream': return <Screamer onFinish={() => setActiveEvent('none')} />;
       case 'die_screen': return <DieScreen />;
+      case 'purge_screen': return <PurgeScreen />;
       default: return null;
     }
   }
@@ -258,7 +269,7 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
     >
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
       
-      <CameraCapture onCapture={handleNewCapture} enabled={false} />
+      <CameraCapture onCapture={handleNewCapture} enabled={isCameraActiveForStory} />
       <GpsTracker onLocationUpdate={setLocation} />
       <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
       
@@ -266,8 +277,16 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
       {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (<ChapterThreeManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} openApp={openApp} capturedImage={lastCapturedImage} onFinish={handleChapterThreeFinish} />)}
       {isChapterFourTriggered && browserController && terminalWriterRef.current && location && (<ChapterFourManager browser={browserController} terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} />)}
       {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
+      {isChapterSevenTriggered && terminalWriterRef.current && (
+        <ChapterSevenManager 
+            terminal={terminalWriterRef.current} 
+            triggerEvent={triggerEvent}
+            openApp={openApp}
+            setCameraActive={setIsCameraActiveForStory}
+        />
+      )}
 
-      {activeEvent !== 'bsod' && activeEvent !== 'die_screen' && (
+      {activeEvent !== 'bsod' && activeEvent !== 'die_screen' && activeEvent !== 'purge_screen' && (
         <>
             <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">CAUCHEMAR VIRTUEL</h1>
             {openApps.map((app) => {
@@ -282,7 +301,7 @@ export default function Desktop({ onReboot, isCorrupted, isDefenseMode, isTotall
                     </div>
                 )
             })}
-            <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} isCorrupted={isTotallyCorrupted} />
+            <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} isCorrupted={isTotallyCorrupted} isDefenseMode={isDefenseMode} />
         </>
       )}
       {renderEvent()}
