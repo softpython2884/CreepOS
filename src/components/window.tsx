@@ -13,8 +13,8 @@ interface WindowProps {
 export default function Window({ title, onClose, children }: WindowProps) {
   const nodeRef = useRef(null);
   return (
-    <Draggable handle=".handle" nodeRef={nodeRef} defaultPosition={{x: 0, y: 0}}>
-        <div ref={nodeRef} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px]">
+    <Draggable handle=".handle" nodeRef={nodeRef}>
+        <div ref={nodeRef} className="absolute left-1/2 top-1/2 w-[600px] h-[400px] -translate-x-1/2 -translate-y-1/2">
             <Card className="w-full h-full bg-card/80 backdrop-blur-md border-accent/20 shadow-2xl shadow-primary/20 flex flex-col animate-in fade-in zoom-in-90 duration-300">
             <CardHeader className="handle flex flex-row items-center justify-between p-2 pl-4 border-b bg-card/50 rounded-t-lg font-code cursor-move">
                 <CardTitle className="text-sm font-medium select-none text-accent">{title}</CardTitle>
