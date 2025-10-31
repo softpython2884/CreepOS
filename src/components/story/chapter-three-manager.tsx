@@ -30,9 +30,12 @@ interface ChapterThreeManagerProps {
 
 const sequence = [
     { delay: 1000, action: 'open_photos' },
+    { delay: 1500, action: 'open_terminal' },
     { delay: 2000, action: 'event', eventId: 'chromatic' },
     { delay: 1000, action: 'write', text: 'C’est toi.' },
     { delay: 2500, action: 'write', text: 'Tu me regardes… pourquoi ?' },
+    { delay: 3000, action: 'write', text: 'Tu as peur ? Peur de la mort ? Ou de la douleur ?' },
+    { delay: 3500, action: 'write', text: 'Ça fait mal de mourir ?' },
     { delay: 2000, action: 'event', eventId: 'tear' },
     { delay: 1500, action: 'event', eventId: 'glitch' },
 ];
@@ -54,6 +57,9 @@ export default function ChapterThreeManager({ terminal, triggerEvent, openApp }:
         switch (currentStep.action) {
             case 'open_photos':
                 openApp('photos');
+                break;
+            case 'open_terminal':
+                openApp('terminal');
                 break;
             case 'write':
                 terminal.write(currentStep.text!);
