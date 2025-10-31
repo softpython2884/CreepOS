@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { type EventId } from '../desktop';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import Image from 'next/image';
 
 // Custom hook for managing timeouts
@@ -134,6 +134,7 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture }:
             {/* Modal to display the captured image */}
             <Dialog open={isCaptureModalOpen} onOpenChange={setIsCaptureModalOpen}>
                 <DialogContent className="max-w-4xl h-auto bg-black/80 border-accent/20 backdrop-blur-md p-2">
+                    <DialogTitle className="sr-only">A photo of you</DialogTitle>
                     <div className="relative w-full h-[80vh]">
                         {capturedImage && (
                             <Image

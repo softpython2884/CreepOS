@@ -18,11 +18,13 @@ interface Message {
 
 interface AIChatProps {
     location: GeoJSON.Point | null;
+    isChapterOne?: boolean;
 }
 
 const initialActionState = { response: undefined, error: undefined };
+const chapterOneWelcome = "Bonjour, D.C. Omen. Je suis L'Ombre, votre assistant personnel. Je suis là pour vous aider dans toutes vos tâches quotidiennes, qu'il s'agisse de recherches, de la gestion de vos e-mails, ou de toute autre chose. N'hésitez pas à me solliciter.";
 
-export default function AIChat({ location }: AIChatProps) {
+export default function AIChat({ location, isChapterOne = false }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatState, chatFormAction, isChatPending] = useActionState(chatWithAI, initialActionState);
   const [hintState, hintFormAction, isHintPending] = useActionState(generateInitialHint, initialActionState);
@@ -33,6 +35,13 @@ export default function AIChat({ location }: AIChatProps) {
   const addMessage = (sender: 'user' | 'ai', text: string) => {
     setMessages(prev => [...prev, { id: Date.now() + Math.random(), sender, text }]);
   };
+
+  useEffect(() => {
+    if (isChapterOne) {
+        addMessage('ai', chapterOneWelcome);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isChapterOne]);
 
   useEffect(() => {
     if (chatState.response) {

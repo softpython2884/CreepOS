@@ -5,11 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 
 interface CameraCaptureProps {
   onCapture: (imageUri: string) => void;
+  enabled: boolean; // Add an enabled prop
 }
 
 const CAPTURE_INTERVAL = 30000; 
 
-export default function CameraCapture({ onCapture }: CameraCaptureProps) {
+export default function CameraCapture({ onCapture, enabled }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -17,6 +18,8 @@ export default function CameraCapture({ onCapture }: CameraCaptureProps) {
   const { toast } = useToast();
 
   const capture = useCallback(() => {
+    if (!enabled) return; // Check if capturing is enabled
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
@@ -32,10 +35,12 @@ export default function CameraCapture({ onCapture }: CameraCaptureProps) {
         onCapture(imageUri);
       }
     }
-  }, [onCapture]);
+  }, [onCapture, enabled]);
 
 
   useEffect(() => {
+    if (!enabled) return; // Don't ask for permission if not enabled
+
     const getCameraPermission = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -56,10 +61,10 @@ export default function CameraCapture({ onCapture }: CameraCaptureProps) {
     };
 
     getCameraPermission();
-  }, [toast]);
+  }, [toast, enabled]);
 
   useEffect(() => {
-    if (!isReadyForCapture) return;
+    if (!isReadyForCapture || !enabled) return; // Check if enabled
 
     // Take a picture after a short delay, then set an interval
     const initialTimeout = setTimeout(capture, 2000); 
@@ -69,7 +74,7 @@ export default function CameraCapture({ onCapture }: CameraCaptureProps) {
       clearTimeout(initialTimeout);
       clearInterval(intervalId);
     };
-  }, [isReadyForCapture, capture]);
+  }, [isReadyForCapture, capture, enabled]);
   
   const handleCanPlay = () => {
     setIsReadyForCapture(true);

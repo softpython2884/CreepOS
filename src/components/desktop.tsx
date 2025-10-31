@@ -53,9 +53,62 @@ export default function Desktop() {
   // Story state
   const [isChapterTwoTriggered, setIsChapterTwoTriggered] = useState(false);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
+  
+  const appConfig: AppConfig = {
+    terminal: { 
+        title: 'Terminal', 
+        component: Terminal, 
+        width: 600, 
+        height: 400,
+        props: { 
+            triggerEvent,
+            setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer,
+        }
+    },
+    chat: { 
+        title: 'AI Assistant [L\'Ombre]', 
+        component: AIChat, 
+        width: 600, 
+        height: 400,
+        props: { location, isChapterOne: true }
+    },
+    photos: { 
+        title: 'Photo Viewer', 
+        component: PhotoViewer, 
+        width: 600, 
+        height: 400,
+        props: { extraImages: capturedImages }
+    },
+    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400 },
+    browser: { title: 'Web Browser', component: Browser, width: 800, height: 600 },
+  };
+
+  const openApp = (appId: AppId) => {
+    if (appId === 'terminal' && !isChapterTwoTriggered) {
+        setIsChapterTwoTriggered(true);
+    }
+    const instanceId = nextInstanceId;
+    const newApp: OpenApp = {
+        instanceId: instanceId,
+        appId: appId,
+        zIndex: nextZIndex,
+    };
+
+    setOpenApps(prev => [...prev, newApp]);
+    setActiveInstanceId(instanceId);
+    setNextZIndex(prev => prev + 1);
+    setNextInstanceId(prev => prev + 1);
+    
+    setSoundEvent('click');
+    setIsGlitching(true);
+    setTimeout(() => setIsGlitching(false), 200);
+  };
 
   // Chapter 1 Effects on Login
   useEffect(() => {
+    // Open the chat app on startup for the story
+    openApp('chat');
+
     setActiveEvent('chromatic');
     const timer1 = setTimeout(() => setIsGlitching(true), 200);
     const timer2 = setTimeout(() => {
@@ -67,6 +120,7 @@ export default function Desktop() {
       clearTimeout(timer1);
       clearTimeout(timer2);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const triggerEvent = useCallback((eventId: EventId) => {
@@ -104,56 +158,6 @@ export default function Desktop() {
           imageHint: "self portrait"
       }]);
   }, []);
-
-  const appConfig: AppConfig = {
-    terminal: { 
-        title: 'Terminal', 
-        component: Terminal, 
-        width: 600, 
-        height: 400,
-        props: { 
-            triggerEvent,
-            setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer,
-        }
-    },
-    chat: { 
-        title: 'AI Assistant [L\'Ombre]', 
-        component: AIChat, 
-        width: 600, 
-        height: 400,
-        props: { location }
-    },
-    photos: { 
-        title: 'Photo Viewer', 
-        component: PhotoViewer, 
-        width: 600, 
-        height: 400,
-        props: { extraImages: capturedImages }
-    },
-    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400 },
-    browser: { title: 'Web Browser', component: Browser, width: 800, height: 600 },
-  };
-
-  const openApp = (appId: AppId) => {
-    if (appId === 'terminal' && !isChapterTwoTriggered) {
-        setIsChapterTwoTriggered(true);
-    }
-    const instanceId = nextInstanceId;
-    const newApp: OpenApp = {
-        instanceId: instanceId,
-        appId: appId,
-        zIndex: nextZIndex,
-    };
-
-    setOpenApps(prev => [...prev, newApp]);
-    setActiveInstanceId(instanceId);
-    setNextZIndex(prev => prev + 1);
-    setNextInstanceId(prev => prev + 1);
-    
-    setSoundEvent('click');
-    setIsGlitching(true);
-    setTimeout(() => setIsGlitching(false), 200);
-  };
 
   const closeApp = (instanceId: number) => {
     setOpenApps(openApps.filter(app => app.instanceId !== instanceId));
@@ -212,7 +216,7 @@ export default function Desktop() {
     >
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
       
-      <CameraCapture onCapture={handleNewCapture} />
+      {/* <CameraCapture onCapture={handleNewCapture} /> */}
       <GpsTracker onLocationUpdate={setLocation} />
       <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
       {isChapterTwoTriggered && terminalWriterRef.current && (
