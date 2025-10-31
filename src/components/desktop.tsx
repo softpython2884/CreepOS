@@ -83,7 +83,7 @@ export default function Desktop() {
         }
     },
     chat: { 
-        title: 'AI Assistant [L\'Ombre]', 
+        title: 'Néo', 
         component: AIChat, 
         width: 600, 
         height: 400,

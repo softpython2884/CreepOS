@@ -22,12 +22,13 @@ interface AIChatProps {
 }
 
 const initialActionState = { response: undefined, error: undefined };
-const chapterOneWelcome = "Bonjour, D.C. Omen. Je suis L'Ombre, votre assistant personnel. Je suis là pour vous aider dans toutes vos tâches quotidiennes, qu'il s'agisse de recherches, de la gestion de vos e-mails, ou de toute autre chose. N'hésitez pas à me solliciter.";
+const chapterOneWelcome = "Bonjour, D.C. Omen. Je suis Néo, votre assistant personnel. Je suis là pour vous aider dans toutes vos tâches quotidiennes. Je vous laisse découvrir votre nouvel environnement.";
 
 export default function AIChat({ location, isChapterOne = false }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatState, chatFormAction, isChatPending] = useActionState(chatWithAI, initialActionState);
   const [hintState, hintFormAction, isHintPending] = useActionState(generateInitialHint, initialActionState);
+  const [isReadOnly, setIsReadOnly] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -39,6 +40,9 @@ export default function AIChat({ location, isChapterOne = false }: AIChatProps) 
   useEffect(() => {
     if (isChapterOne) {
         addMessage('ai', chapterOneWelcome);
+        setTimeout(() => {
+          setIsReadOnly(true);
+        }, 1000);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isChapterOne]);
@@ -68,6 +72,7 @@ export default function AIChat({ location, isChapterOne = false }: AIChatProps) 
   }, [messages]);
 
   const handleFormSubmit = (formData: FormData) => {
+    if (isReadOnly) return;
     const prompt = formData.get('prompt') as string;
     if (prompt.trim()) {
       addMessage('user', prompt);
@@ -80,6 +85,7 @@ export default function AIChat({ location, isChapterOne = false }: AIChatProps) 
   };
   
   const handleHintClick = () => {
+    if (isReadOnly) return;
     const formData = new FormData();
     formData.append('userPrompt', 'I am stuck, please give me a hint.');
     addMessage('user', 'I need a hint.');
@@ -115,11 +121,17 @@ export default function AIChat({ location, isChapterOne = false }: AIChatProps) 
       </ScrollArea>
       <div className="p-2 border-t">
         <form ref={formRef} action={handleFormSubmit} className="flex items-center gap-2">
-          <Input name="prompt" placeholder="Message L'Ombre..." className="flex-1 bg-input border-0 focus-visible:ring-1 focus-visible:ring-ring" autoComplete="off" disabled={isPending} />
-          <Button type="submit" size="icon" disabled={isPending}>
+          <Input 
+            name="prompt" 
+            placeholder={isReadOnly ? "Connection lost..." : "Message Néo..."}
+            className="flex-1 bg-input border-0 focus-visible:ring-1 focus-visible:ring-ring" 
+            autoComplete="off" 
+            disabled={isPending || isReadOnly} 
+          />
+          <Button type="submit" size="icon" disabled={isPending || isReadOnly}>
             <CornerDownLeft size={16} />
           </Button>
-          <Button type="button" size="icon" variant="outline" onClick={handleHintClick} disabled={isPending} aria-label="Get a hint">
+          <Button type="button" size="icon" variant="outline" onClick={handleHintClick} disabled={isPending || isReadOnly} aria-label="Get a hint">
             <BrainCircuit size={16}/>
           </Button>
         </form>
