@@ -102,35 +102,45 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
 export default function Home() {
     const [machineState, setMachineState] = useState<MachineState>('off');
 
-    if (machineState === 'off') {
-        return (
-            <main className="min-h-screen w-full flex flex-col justify-center items-center bg-black">
-                <Button variant="outline" size="lg" className="gap-2 text-lg p-8 animate-pulse" onClick={() => setMachineState('booting')}>
-                    <Power /> Start System
-                </Button>
-            </main>
-        );
+    const renderState = () => {
+        if (machineState === 'off') {
+            return (
+                <div className="w-full h-full flex flex-col justify-center items-center bg-black">
+                    <Button variant="outline" size="lg" className="gap-2 text-lg p-8 animate-pulse" onClick={() => setMachineState('booting')}>
+                        <Power /> Start System
+                    </Button>
+                </div>
+            );
+        }
+
+        if (machineState === 'booting') {
+            return (
+                <div className="w-full h-full bg-black">
+                    <BootScreen onBootComplete={() => setMachineState('login')} />
+                </div>
+            );
+        }
+
+        if (machineState === 'login') {
+            return (
+                <div className="w-full h-full flex flex-col justify-center items-center">
+                    <LoginScreen onLogin={() => setMachineState('desktop')} />
+                </div>
+            );
+        }
+
+        if (machineState === 'desktop') {
+            return <Desktop />;
+        }
+
+        return null;
     }
 
-    if (machineState === 'booting') {
-        return (
-             <main className="min-h-screen w-full bg-black">
-                <BootScreen onBootComplete={() => setMachineState('login')} />
-            </main>
-        );
-    }
-
-    if (machineState === 'login') {
-        return (
-            <main className="min-h-screen w-full flex flex-col justify-center items-center">
-                <LoginScreen onLogin={() => setMachineState('desktop')} />
-            </main>
-        );
-    }
-
-    if (machineState === 'desktop') {
-        return <Desktop />;
-    }
-
-    return null;
+    return (
+        <main className="min-h-screen w-full flex justify-center items-center bg-black">
+            <div id="viewport" className="relative w-full max-w-[1920px] h-[1080px] max-h-screen aspect-video bg-background">
+                {renderState()}
+            </div>
+        </main>
+    );
 }

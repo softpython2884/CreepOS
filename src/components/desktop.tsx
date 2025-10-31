@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Dock from '@/components/dock';
 import Window from '@/components/window';
 import Terminal from '@/components/apps/terminal';
@@ -32,6 +32,8 @@ export default function Desktop() {
   const [isGlitching, setIsGlitching] = useState(false);
   const [nextZIndex, setNextZIndex] = useState(10);
   const [nextInstanceId, setNextInstanceId] = useState(0);
+  const desktopRef = useRef<HTMLDivElement>(null);
+
 
   const openApp = (appId: AppId) => {
     const instanceId = nextInstanceId;
@@ -66,6 +68,7 @@ export default function Desktop() {
   };
 
   const bringToFront = (instanceId: number) => {
+    if (instanceId === activeInstanceId) return;
     setOpenApps(openApps.map(app => {
       if (app.instanceId === instanceId) {
         return { ...app, zIndex: nextZIndex };
@@ -78,8 +81,9 @@ export default function Desktop() {
 
   return (
     <main 
+      ref={desktopRef}
       className={cn(
-        "min-h-screen w-full font-code relative overflow-hidden flex flex-col justify-center items-center p-4",
+        "h-full w-full font-code relative overflow-hidden flex flex-col justify-center items-center p-4",
         isGlitching && 'animate-glitch'
       )}
       style={{
@@ -95,8 +99,15 @@ export default function Desktop() {
 
       {openApps.map((app, index) => {
         const currentApp = appConfig[app.appId];
-        const initialX = (window.innerWidth / 2) - (currentApp.width / 2) + (index * 30);
-        const initialY = (window.innerHeight / 2) - (currentApp.height / 2) + (index * 30);
+        let initialX = 0;
+        let initialY = 0;
+
+        if (desktopRef.current) {
+            const desktopRect = desktopRef.current.getBoundingClientRect();
+            initialX = (desktopRect.width / 2) - (currentApp.width / 2) + (index * 30);
+            initialY = (desktopRect.height / 2) - (currentApp.height / 2) + (index * 30);
+        }
+        
         return (
             <div key={app.instanceId} onMouseDown={() => bringToFront(app.instanceId)} style={{ zIndex: app.zIndex, position: 'absolute' }}>
                 <Window 
