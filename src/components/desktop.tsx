@@ -95,6 +95,8 @@ export default function Desktop() {
 
       {openApps.map((app, index) => {
         const currentApp = appConfig[app.appId];
+        const initialX = (window.innerWidth / 2) - (currentApp.width / 2) + (index * 30);
+        const initialY = (window.innerHeight / 2) - (currentApp.height / 2) + (index * 30);
         return (
             <div key={app.instanceId} onMouseDown={() => bringToFront(app.instanceId)} style={{ zIndex: app.zIndex, position: 'absolute' }}>
                 <Window 
@@ -102,8 +104,8 @@ export default function Desktop() {
                   onClose={() => closeApp(app.instanceId)} 
                   width={currentApp.width} 
                   height={currentApp.height}
-                  initialX={(window.innerWidth / 2) - (currentApp.width / 2) + (index * 30)}
-                  initialY={(window.innerHeight / 2) - (currentApp.height / 2) + (index * 30)}
+                  initialX={initialX}
+                  initialY={initialY}
                 >
                     {currentApp.component}
                 </Window>
