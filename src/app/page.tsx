@@ -220,7 +220,7 @@ export default function Home() {
 
         if (machineState === 'booting' || machineState.startsWith('rebooting')) {
             return (
-                <div className={cn("w-full h-full bg-black", (systemState.isTotallyCorrupted) && 'corrupted', systemState.isDefenseMode && 'animate-vibration')}>
+                <div className={cn("w-full h-full bg-black cursor-none", (systemState.isTotallyCorrupted) && 'corrupted', systemState.isDefenseMode && 'animate-vibration')}>
                     <BootScreen onBootComplete={() => setMachineState('login')} state={machineState} />
                 </div>
             );
