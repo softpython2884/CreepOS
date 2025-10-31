@@ -39,7 +39,7 @@ export default function Terminal({ triggerEvent }: TerminalProps) {
 
     switch (command.toLowerCase()) {
       case 'help':
-        newHistory.push({ type: 'output', content: 'Available commands: help, ls, cat [filename], clear' });
+        newHistory.push({ type: 'output', content: 'Available commands: help, ls, cat [filename], clear, bsod, scream, lag, corrupt, glitch, tear, chromatic' });
         break;
       case 'ls':
         const fileList = documents.map(doc => doc.title).join('\n');
@@ -73,6 +73,18 @@ export default function Terminal({ triggerEvent }: TerminalProps) {
       case 'corrupt':
         triggerEvent('corrupt');
         newHistory.push({ type: 'output', content: 'WARNING: File system integrity compromised.' });
+        break;
+      case 'glitch':
+        triggerEvent('glitch');
+        newHistory.push({ type: 'output', content: 'Display driver unstable.' });
+        break;
+      case 'tear':
+        triggerEvent('tear');
+        newHistory.push({ type: 'output', content: 'VSYNC failure.' });
+        break;
+      case 'chromatic':
+        triggerEvent('chromatic');
+        newHistory.push({ type: 'output', content: 'Color calibration error.' });
         break;
       case '':
         break;

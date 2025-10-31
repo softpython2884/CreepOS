@@ -23,6 +23,16 @@ export default function RootLayout({
       <body className={cn("font-body antialiased", "bg-background")}>
         {children}
         <Toaster />
+        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" className="absolute w-0 h-0">
+          <defs>
+            <filter id="chromatic-aberration-filter-0">
+              <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" />
+            </filter>
+            <filter id="chromatic-aberration-filter-1">
+              <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 1 0 0.05 0  0 0 1 0.05 0  0 0 0 1 0" />
+            </filter>
+          </defs>
+        </svg>
       </body>
     </html>
   );

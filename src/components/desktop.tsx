@@ -15,10 +15,11 @@ import GpsTracker from './gps-tracker';
 import type { GeoJSON } from 'geojson';
 import BlueScreen from './events/blue-screen';
 import Screamer from './events/screamer';
+import AudioManager, { SoundEvent } from './audio-manager';
 
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser';
-export type EventId = 'bsod' | 'scream' | 'lag' | 'corrupt' | 'none';
+export type EventId = 'bsod' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'none';
 
 type AppConfig = {
   [key in AppId]: {
@@ -46,13 +47,21 @@ export default function Desktop() {
   const [capturedImages, setCapturedImages] = useState<ImagePlaceholder[]>([]);
   const [location, setLocation] = useState<GeoJSON.Point | null>(null);
   const [activeEvent, setActiveEvent] = useState<EventId>('none');
+  const [soundEvent, setSoundEvent] = useState<SoundEvent | null>(null);
 
   const triggerEvent = useCallback((eventId: EventId) => {
     setActiveEvent(eventId);
 
-    if (eventId === 'lag' || eventId === 'corrupt') {
+    // Trigger sounds for specific events
+    if (eventId === 'scream') setSoundEvent('scream');
+    if (eventId === 'corrupt' || eventId === 'glitch') setSoundEvent('glitch');
+    if (eventId === 'bsod') setSoundEvent('bsod');
+
+
+    if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic'].includes(eventId)) {
       // These events are temporary visual effects
-      setTimeout(() => setActiveEvent('none'), eventId === 'lag' ? 5000 : 3000);
+      const duration = eventId === 'lag' ? 5000 : 3000;
+      setTimeout(() => setActiveEvent('none'), duration);
     }
     // 'bsod' and 'scream' will be reset by their own components
   }, []);
@@ -105,14 +114,15 @@ export default function Desktop() {
     setActiveInstanceId(instanceId);
     setNextZIndex(prev => prev + 1);
     setNextInstanceId(prev => prev + 1);
-
-    // Trigger a brief glitch effect when opening an app
+    
+    setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
   };
 
   const closeApp = (instanceId: number) => {
     setOpenApps(openApps.filter(app => app.instanceId !== instanceId));
+    setSoundEvent('close');
     if (activeInstanceId === instanceId) {
       const remainingApps = openApps.filter(app => app.instanceId !== instanceId);
       if (remainingApps.length > 0) {
@@ -155,6 +165,9 @@ export default function Desktop() {
         "h-full w-full font-code relative overflow-hidden flex flex-col justify-center items-center p-4",
         isGlitching && 'animate-glitch-short',
         activeEvent === 'corrupt' && 'animate-glitch',
+        activeEvent === 'glitch' && 'animate-glitch-long',
+        activeEvent === 'tear' && 'animate-screen-tear',
+        activeEvent === 'chromatic' && 'animate-chromatic-aberration',
         activeEvent === 'lag' && 'animate-lag'
       )}
       style={{
@@ -166,6 +179,7 @@ export default function Desktop() {
       
       <CameraCapture onCapture={handleNewCapture} />
       <GpsTracker onLocationUpdate={setLocation} />
+      <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
 
       {activeEvent !== 'bsod' && (
         <>
