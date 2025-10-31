@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import Draggable from 'react-draggable';
 import { X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,9 +11,10 @@ interface WindowProps {
 }
 
 export default function Window({ title, onClose, children }: WindowProps) {
+  const nodeRef = useRef(null);
   return (
-    <Draggable handle=".handle">
-        <div className="absolute w-[600px] h-[400px]">
+    <Draggable handle=".handle" nodeRef={nodeRef}>
+        <div ref={nodeRef} className="absolute w-[600px] h-[400px]">
             <Card className="w-full h-full bg-card/80 backdrop-blur-md border-accent/20 shadow-2xl shadow-primary/20 flex flex-col animate-in fade-in zoom-in-90 duration-300">
             <CardHeader className="handle flex flex-row items-center justify-between p-2 pl-4 border-b bg-card/50 rounded-t-lg font-code cursor-move">
                 <CardTitle className="text-sm font-medium select-none text-accent">{title}</CardTitle>
