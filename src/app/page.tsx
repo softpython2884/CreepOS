@@ -113,11 +113,19 @@ export default function Home() {
     }
 
     if (machineState === 'booting') {
-        return <BootScreen onBootComplete={() => setMachineState('login')} />;
+        return (
+             <main className="min-h-screen w-full bg-black">
+                <BootScreen onBootComplete={() => setMachineState('login')} />
+            </main>
+        );
     }
 
     if (machineState === 'login') {
-        return <LoginScreen onLogin={() => setMachineState('desktop')} />;
+        return (
+            <main className="min-h-screen w-full flex flex-col justify-center items-center">
+                <LoginScreen onLogin={() => setMachineState('desktop')} />
+            </main>
+        );
     }
 
     if (machineState === 'desktop') {
