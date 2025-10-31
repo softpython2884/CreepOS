@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
+import type { GeoJSON } from 'geojson';
 
 interface Message {
   id: number;
@@ -15,9 +16,13 @@ interface Message {
   text: string;
 }
 
+interface AIChatProps {
+    location: GeoJSON.Point | null;
+}
+
 const initialActionState = { response: undefined, error: undefined };
 
-export default function AIChat() {
+export default function AIChat({ location }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatState, chatFormAction, isChatPending] = useActionState(chatWithAI, initialActionState);
   const [hintState, hintFormAction, isHintPending] = useActionState(generateInitialHint, initialActionState);
@@ -57,6 +62,9 @@ export default function AIChat() {
     const prompt = formData.get('prompt') as string;
     if (prompt.trim()) {
       addMessage('user', prompt);
+      if (location) {
+        formData.append('location', JSON.stringify(location));
+      }
       chatFormAction(formData);
       formRef.current?.reset();
     }

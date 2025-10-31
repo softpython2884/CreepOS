@@ -11,6 +11,8 @@ import Browser from '@/components/apps/browser';
 import { cn } from '@/lib/utils';
 import CameraCapture from './camera-capture';
 import type { ImagePlaceholder } from '@/lib/placeholder-images';
+import GpsTracker from './gps-tracker';
+import type { GeoJSON } from 'geojson';
 
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser';
@@ -39,6 +41,7 @@ export default function Desktop() {
   const [nextInstanceId, setNextInstanceId] = useState(0);
   const desktopRef = useRef<HTMLDivElement>(null);
   const [capturedImages, setCapturedImages] = useState<ImagePlaceholder[]>([]);
+  const [location, setLocation] = useState<GeoJSON.Point | null>(null);
 
   const handleNewCapture = (imageUri: string) => {
     const newCapture: ImagePlaceholder = {
@@ -52,7 +55,13 @@ export default function Desktop() {
 
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400 },
-    chat: { title: 'AI Assistant [L\'Ombre]', component: AIChat, width: 600, height: 400 },
+    chat: { 
+        title: 'AI Assistant [L\'Ombre]', 
+        component: AIChat, 
+        width: 600, 
+        height: 400,
+        props: { location }
+    },
     photos: { 
         title: 'Photo Viewer', 
         component: PhotoViewer, 
@@ -123,6 +132,7 @@ export default function Desktop() {
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
       
       <CameraCapture onCapture={handleNewCapture} />
+      <GpsTracker onLocationUpdate={setLocation} />
 
       <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">
         CAUCHEMAR VIRTUEL

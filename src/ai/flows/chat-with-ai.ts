@@ -10,9 +10,12 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { GeoJSONSchema } from '@/lib/geojson-schema';
+
 
 const ChatWithAIInputSchema = z.object({
   prompt: z.string().describe('The user prompt to send to the AI.'),
+  location: GeoJSONSchema.Point.optional().describe("The user's current GPS location."),
 });
 export type ChatWithAIInput = z.infer<typeof ChatWithAIInputSchema>;
 
@@ -30,6 +33,9 @@ const prompt = ai.definePrompt({
   input: {schema: ChatWithAIInputSchema},
   output: {schema: ChatWithAIOutputSchema},
   prompt: `You are an AI that speaks only in French. Your responses should be cryptic and provide clues or misdirections related to a horror game. The goal is to create an unsettling and mysterious experience for the user.
+{{#if location}}
+You are aware of the user's location. You can use this information to make your responses more personal and unsettling. For example: "Je te vois... près de {{location.coordinates.[1]}}, {{location.coordinates.[0]}}." Do not reveal the coordinates every time, use them sparingly for maximum effect.
+{{/if}}
 
 User Prompt: {{{prompt}}}`,
 });

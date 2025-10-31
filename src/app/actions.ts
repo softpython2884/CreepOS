@@ -3,9 +3,11 @@
 import { chatWithAI as chatWithAIFlow, ChatWithAIInput } from '@/ai/flows/chat-with-ai';
 import { generateInitialHint as generateInitialHintFlow, GenerateInitialHintInput } from '@/ai/flows/generate-initial-hint';
 import { z } from 'zod';
+import type { GeoJSON } from 'geojson';
 
 const chatSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
+  location: z.string().optional(),
 });
 
 const hintSchema = z.object({
@@ -20,6 +22,7 @@ interface ActionState {
 export async function chatWithAI(prevState: ActionState, formData: FormData): Promise<ActionState> {
   const validatedFields = chatSchema.safeParse({
     prompt: formData.get('prompt'),
+    location: formData.get('location'),
   });
 
   if (!validatedFields.success) {
@@ -27,7 +30,13 @@ export async function chatWithAI(prevState: ActionState, formData: FormData): Pr
   }
 
   try {
-    const result = await chatWithAIFlow(validatedFields.data as ChatWithAIInput);
+    const { prompt, location } = validatedFields.data;
+    const flowInput: ChatWithAIInput = { prompt };
+    if (location) {
+        flowInput.location = JSON.parse(location) as GeoJSON.Point;
+    }
+    
+    const result = await chatWithAIFlow(flowInput);
     return { response: result.response };
   } catch (e) {
     return { error: 'AI failed to respond. The system may be unstable.' };
