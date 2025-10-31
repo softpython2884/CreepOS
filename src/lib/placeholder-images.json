@@ -1,3 +1,40 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "creepy-hallway",
+      "description": "A long, dark, and empty hallway with a single light at the end.",
+      "imageUrl": "https://images.unsplash.com/photo-1728595611544-8cf333d93c0e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxkYXJrJTIwaGFsbHdheXxlbnwwfHx8fDE3NjE5Mjk2NTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "dark hallway"
+    },
+    {
+      "id": "abandoned-room",
+      "description": "An abandoned room with peeling wallpaper and a single chair in the middle.",
+      "imageUrl": "https://images.unsplash.com/photo-1716248328212-114c0d769b29?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxhYmFuZG9uZWQlMjByb29tfGVufDB8fHx8MTc2MTkyOTY1N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abandoned room"
+    },
+    {
+      "id": "static-tv",
+      "description": "A close-up of an old television screen displaying static.",
+      "imageUrl": "https://images.unsplash.com/photo-1692803629992-90acbafd964d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHx0diUyMHN0YXRpY3xlbnwwfHx8fDE3NjE4NDI2MDV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "tv static"
+    },
+    {
+      "id": "forest-path",
+      "description": "A foggy path leading into a dark forest at night.",
+      "imageUrl": "https://images.unsplash.com/photo-1641667838410-b257ca266e38?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8ZGFyayUyMGZvcmVzdHxlbnwwfHx8fDE3NjE4ODE5MDV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "dark forest"
+    },
+    {
+      "id": "creepy-doll",
+      "description": "An old, cracked porcelain doll sitting on a dusty shelf.",
+      "imageUrl": "https://images.unsplash.com/photo-1596215516573-fdeebc0b6070?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjcmVlcHklMjBkb2xsfGVufDB8fHx8MTc2MTkyOTY1N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "creepy doll"
+    },
+    {
+      "id": "empty-swing",
+      "description": "An empty swing set in a deserted playground at dusk.",
+      "imageUrl": "https://images.unsplash.com/photo-1725782226149-aa69d419e064?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxlbXB0eSUyMHN3aW5nfGVufDB8fHx8MTc2MTkyOTY1N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "empty swing"
+    }
+  ]
 }
