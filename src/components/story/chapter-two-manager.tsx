@@ -45,19 +45,19 @@ const sequence = [
     { delay: 400, action: 'write', text: '> thoughts.tmp' },
     { delay: 2000, action: 'event', eventId: 'lag' },
     { delay: 500, action: 'write', text: 'Ne bouge plus.' },
-    { delay: 1500, action: 'capture' },
+    { delay: 1500, action: 'capture' }, // This will now show live feed and take a pic in background
     { delay: 3500, action: 'write', text: 'Je vois... Ce regard. La peur.' },
-    { delay: 2000, action: 'event', eventId: 'scream'},
+    { delay: 2000, action: 'scream_and_close'},
 ];
 
 export default function ChapterTwoManager({ terminal, triggerEvent, onCapture, onFinish }: ChapterTwoManagerProps) {
     const [step, setStep] = useState(0);
-    const [capturedImage, setCapturedImage] = useState<string | null>(null);
-    const [isCaptureModalOpen, setIsCaptureModalOpen] = useState(false);
-    const videoRef = useRef<HTMLVideoElement>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const hiddenVideoRef = useRef<HTMLVideoElement>(null);
+    const liveVideoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [isCameraReady, setIsCameraReady] = useState(false);
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+    const mediaStreamRef = useRef<MediaStream | null>(null);
     const isFinishedRef = useRef(false);
 
     // Setup Camera
@@ -65,8 +65,9 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture, o
         const getCameraPermission = async () => {
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            if (videoRef.current) {
-              videoRef.current.srcObject = stream;
+            mediaStreamRef.current = stream;
+            if (hiddenVideoRef.current) {
+              hiddenVideoRef.current.srcObject = stream;
             }
             setHasCameraPermission(true);
           } catch (error) {
@@ -77,15 +78,18 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture, o
         getCameraPermission();
       }, []);
 
-    const handleCanPlay = () => {
-        setIsCameraReady(true);
-    };
+    // When the modal video element is available, attach the stream
+    useEffect(() => {
+        if (isModalOpen && liveVideoRef.current && mediaStreamRef.current) {
+            liveVideoRef.current.srcObject = mediaStreamRef.current;
+        }
+    }, [isModalOpen]);
 
     const takePicture = useCallback(() => {
-        const video = videoRef.current;
+        const video = hiddenVideoRef.current;
         const canvas = canvasRef.current;
     
-        if (video && canvas && video.videoWidth > 0) {
+        if (video && canvas && video.videoWidth > 0 && hasCameraPermission) {
           const context = canvas.getContext('2d');
           if (context) {
             canvas.width = video.videoWidth;
@@ -93,77 +97,72 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture, o
             context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
             const imageUri = canvas.toDataURL('image/jpeg');
             onCapture(imageUri);
-            setCapturedImage(imageUri);
-            setIsCaptureModalOpen(true);
           }
         }
-      }, [onCapture]);
+      }, [onCapture, hasCameraPermission]);
       
     const currentStep = sequence[step];
 
     useTimeout(() => {
         if (isFinishedRef.current || !currentStep) return;
         
-        if (step === sequence.length -1 ) {
-            isFinishedRef.current = true;
-        }
-
-        terminal.lock(true);
-
-        switch (currentStep.action) {
-            case 'write':
-                terminal.write(currentStep.text!);
-                break;
-            case 'write_command':
-                terminal.write(currentStep.text!, 'command');
-                break;
-            case 'event':
-                triggerEvent(currentStep.eventId as EventId);
-                break;
-            case 'capture':
-                if (isCameraReady && hasCameraPermission) {
-                    takePicture();
-                } else {
-                   // If camera fails, just skip to next step.
-                   console.warn("Camera not ready or no permission, skipping capture.");
-                }
-                break;
-        }
-
-        if (isFinishedRef.current) {
-            setTimeout(() => {
-                setIsCaptureModalOpen(false);
-                onFinish();
-            }, 500); // Wait for scream to finish
-        } else {
+        const executeStep = () => {
+            if (step >= sequence.length -1 ) {
+                isFinishedRef.current = true;
+            }
+    
+            terminal.lock(true);
+    
+            switch (currentStep.action) {
+                case 'write':
+                    terminal.write(currentStep.text!);
+                    break;
+                case 'write_command':
+                    terminal.write(currentStep.text!, 'command');
+                    break;
+                case 'event':
+                    triggerEvent(currentStep.eventId as EventId);
+                    break;
+                case 'capture':
+                    if (hasCameraPermission) {
+                        setIsModalOpen(true);
+                        // Also take a picture for chapter 3 in the background
+                        setTimeout(takePicture, 500);
+                    } else {
+                       console.warn("Camera not ready or no permission, skipping capture.");
+                    }
+                    break;
+                case 'scream_and_close':
+                    setIsModalOpen(false);
+                    triggerEvent('scream');
+                    setTimeout(() => {
+                        onFinish();
+                    }, 700); // match screamer duration
+                    return; // Don't advance step, onFinish will unmount
+            }
+            
             setStep(s => s + 1);
         }
 
-    }, step === 0 ? sequence[0].delay : currentStep?.delay ?? null);
+        executeStep();
+
+    }, currentStep?.delay ?? null);
 
 
     return (
         <>
             {/* Hidden elements for camera capture */}
             <div style={{ display: 'none' }}>
-                <video ref={videoRef} autoPlay muted playsInline onCanPlay={handleCanPlay} />
+                <video ref={hiddenVideoRef} autoPlay muted playsInline />
                 <canvas ref={canvasRef} />
             </div>
 
-            {/* Modal to display the captured image */}
-            <Dialog open={isCaptureModalOpen} onOpenChange={setIsCaptureModalOpen}>
+            {/* Modal to display the live feed */}
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogContent className="max-w-4xl h-auto bg-black/80 border-accent/20 backdrop-blur-md p-2">
-                    <DialogTitle className="sr-only">A photo of you</DialogTitle>
+                    <DialogTitle className="sr-only">You are being watched.</DialogTitle>
                     <div className="relative w-full h-[80vh]">
-                        {capturedImage && (
-                            <Image
-                                src={capturedImage}
-                                alt="A photo of you."
-                                fill
-                                className="object-contain animate-in fade-in"
-                                sizes="90vw"
-                            />
-                        )}
+                       <video ref={liveVideoRef} className="w-full h-full object-contain animate-in fade-in" autoPlay muted playsInline />
                     </div>
                 </DialogContent>
             </Dialog>
@@ -173,7 +172,7 @@ export default function ChapterTwoManager({ terminal, triggerEvent, onCapture, o
                     <Alert variant="destructive">
                         <AlertTitle>Camera Access Denied</AlertTitle>
                         <AlertDescription>
-                            Camera is required for the full experience. L'Ombre is watching...
+                            Camera is required for the full experience. Néo is watching...
                         </AlertDescription>
                     </Alert>
                 </div>

@@ -39,10 +39,10 @@ export default function PhotoViewer({ extraImages = [], highlightedImageId }: Ph
   return (
     <ScrollArea className="h-full bg-card">
       <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
-        {allImages.map((image) => {
+        {allImages.map((image, index) => {
           const isHighlighted = image.id === highlightedImageId;
           return (
-            <Dialog key={image.id} onOpenChange={(open) => !open && setZoomLevel(1)}>
+            <Dialog key={image.id || index} onOpenChange={(open) => !open && setZoomLevel(1)}>
               <DialogTrigger asChild>
                 <div className={cn("aspect-square relative group cursor-pointer overflow-hidden rounded-md", 
                   isHighlighted && "animate-pulse-strong"
