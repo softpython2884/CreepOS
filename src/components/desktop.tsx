@@ -44,7 +44,7 @@ export default function Desktop() {
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [isGlitching, setIsGlitching] = useState(false);
   const [nextZIndex, setNextZIndex] = useState(10);
-  const [nextInstanceId, setNextInstanceId] = useState(0);
+  const nextInstanceIdRef = useRef(0);
   const desktopRef = useRef<HTMLDivElement>(null);
   const [capturedImages, setCapturedImages] = useState<ImagePlaceholder[]>([]);
   const [location, setLocation] = useState<GeoJSON.Point | null>(null);
@@ -107,7 +107,9 @@ export default function Desktop() {
     if (appId === 'terminal' && !isChapterTwoTriggered) {
         setIsChapterTwoTriggered(true);
     }
-    const instanceId = nextInstanceId;
+    const instanceId = nextInstanceIdRef.current;
+    nextInstanceIdRef.current += 1;
+    
     const newApp: OpenApp = {
         instanceId: instanceId,
         appId: appId,
@@ -117,12 +119,11 @@ export default function Desktop() {
     setOpenApps(prev => [...prev, newApp]);
     setActiveInstanceId(instanceId);
     setNextZIndex(prev => prev + 1);
-    setNextInstanceId(prev => prev + 1);
     
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterTwoTriggered, nextInstanceId, nextZIndex]);
+  }, [isChapterTwoTriggered, nextZIndex]);
 
   // Chapter 1 Effects on Login
   useEffect(() => {
@@ -140,7 +141,8 @@ export default function Desktop() {
       clearTimeout(timer1);
       clearTimeout(timer2);
     };
-  }, [openApp]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleNewCapture = (imageUri: string) => {
     const newCapture: ImagePlaceholder = {
