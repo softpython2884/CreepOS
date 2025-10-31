@@ -20,22 +20,69 @@ const appConfig: Record<AppId, { title: string; component: JSX.Element }> = {
   browser: { title: 'Web Browser', component: <Browser /> },
 };
 
+type OpenApp = {
+  id: AppId;
+  zIndex: number;
+};
+
 export default function Home() {
+  const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeApp, setActiveApp] = useState<AppId | null>(null);
   const [isGlitching, setIsGlitching] = useState(false);
+  const [nextZIndex, setNextZIndex] = useState(10);
 
   const openApp = (appId: AppId) => {
+    
+    let appIsOpen = false;
+    let maxZIndex = 0;
+    
+    const updatedApps = openApps.map(app => {
+        maxZIndex = Math.max(maxZIndex, app.zIndex);
+        if (app.id === appId) {
+            appIsOpen = true;
+            return { ...app, zIndex: nextZIndex };
+        }
+        return app;
+    });
+
+    if (appIsOpen) {
+        setOpenApps(updatedApps);
+    } else {
+        setOpenApps([...openApps, { id: appId, zIndex: nextZIndex }]);
+    }
+    
     setActiveApp(appId);
+    setNextZIndex(nextZIndex + 1);
+
     // Trigger a brief glitch effect when opening an app
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
   };
 
-  const closeApp = () => {
-    setActiveApp(null);
+  const closeApp = (appId: AppId) => {
+    setOpenApps(openApps.filter(app => app.id !== appId));
+    if (activeApp === appId) {
+      const remainingApps = openApps.filter(app => app.id !== appId);
+      if (remainingApps.length > 0) {
+        // Find the app with the highest z-index to make it active
+        const nextActiveApp = remainingApps.reduce((prev, current) => (prev.zIndex > current.zIndex) ? prev : current);
+        setActiveApp(nextActiveApp.id);
+      } else {
+        setActiveApp(null);
+      }
+    }
   };
 
-  const currentApp = activeApp ? appConfig[activeApp] : null;
+  const bringToFront = (appId: AppId) => {
+    setOpenApps(openApps.map(app => {
+      if (app.id === appId) {
+        return { ...app, zIndex: nextZIndex };
+      }
+      return app;
+    }));
+    setActiveApp(appId);
+    setNextZIndex(nextZIndex + 1);
+  };
 
   return (
     <main 
@@ -54,11 +101,16 @@ export default function Home() {
         CAUCHEMAR VIRTUEL
       </h1>
 
-      {currentApp && (
-        <Window title={currentApp.title} onClose={closeApp}>
-          {currentApp.component}
-        </Window>
-      )}
+      {openApps.map((app) => {
+        const currentApp = appConfig[app.id];
+        return (
+            <div key={app.id} onMouseDown={() => bringToFront(app.id)} style={{ zIndex: app.zIndex }}>
+                <Window title={currentApp.title} onClose={() => closeApp(app.id)}>
+                    {currentApp.component}
+                </Window>
+            </div>
+        )
+      })}
 
       <Dock onAppClick={openApp} activeApp={activeApp} />
     </main>

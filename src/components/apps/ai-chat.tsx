@@ -22,7 +22,7 @@ export default function AIChat() {
   const [chatState, chatFormAction, isChatPending] = useActionState(chatWithAI, initialActionState);
   const [hintState, hintFormAction, isHintPending] = useActionState(generateInitialHint, initialActionState);
   const formRef = useRef<HTMLFormElement>(null);
-  const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const addMessage = (sender: 'user' | 'ai', text: string) => {
@@ -48,8 +48,8 @@ export default function AIChat() {
   }, [hintState]);
 
   useEffect(() => {
-    if (scrollAreaViewportRef.current) {
-      scrollAreaViewportRef.current.scrollTo({ top: scrollAreaViewportRef.current.scrollHeight, behavior: 'smooth' });
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
 
@@ -73,8 +73,8 @@ export default function AIChat() {
 
   return (
     <div className="h-full flex flex-col bg-card font-code">
-      <ScrollArea className="flex-1" viewportRef={scrollAreaViewportRef}>
-        <div className="space-y-4 p-4">
+      <ScrollArea className="flex-1">
+        <div className="space-y-4 p-4" ref={scrollAreaRef}>
           {messages.map((msg) => (
             <div key={msg.id} className={cn('flex items-start gap-3', msg.sender === 'user' ? 'justify-end' : 'justify-start')}>
               {msg.sender === 'ai' && <Bot className="w-6 h-6 text-accent flex-shrink-0 mt-1" />}
