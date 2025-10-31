@@ -149,7 +149,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
-    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: () => setIsChapterOneFinished(true), isCorrupted }, isCorruptible: true },
+    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: () => setIsChapterOneFinished(true), isCorrupted: isCorrupted }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { setBrowserController }, isCorruptible: true },
@@ -202,7 +202,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   useEffect(() => {
     if (isCorrupted) {
-      openApp('chat');
+        openApp('chat');
     } else if (isDefenseMode) {
         openApp('chatbot');
     } else if (isTotallyCorrupted) {
