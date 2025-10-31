@@ -169,6 +169,17 @@ export default function Home() {
     const [systemState, setSystemState] = useState({ isCorrupted: false, isDefenseMode: false, isTotallyCorrupted: false });
     const [gameKey, setGameKey] = useState(0); // Used to force a full re-render of the game
 
+    useEffect(() => {
+        const updateScale = () => {
+          const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+          document.documentElement.style.setProperty('--viewport-scale', scale.toString());
+        };
+      
+        updateScale();
+        window.addEventListener('resize', updateScale);
+        return () => window.removeEventListener('resize', updateScale);
+    }, []);
+
     const handleReboot = (mode: 'corrupted' | 'defense' | 'total_corruption' = 'corrupted') => {
         if (mode === 'corrupted') {
             setSystemState({ isCorrupted: true, isDefenseMode: false, isTotallyCorrupted: false });
@@ -232,7 +243,7 @@ export default function Home() {
 
     return (
         <main className="h-screen w-screen flex justify-center items-center bg-black">
-            <div id="viewport" className="relative w-[1920px] h-[1080px] bg-background">
+            <div id="viewport" className="absolute w-[1920px] h-[1080px] bg-background">
                 {renderState()}
             </div>
         </main>

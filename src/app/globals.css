@@ -6,6 +6,7 @@
   :root {
     --background: 0 0% 13%;
     --foreground: 0 0% 98%;
+    --viewport-scale: 1;
 
     --card: 0 0% 15%;
     --card-foreground: 0 0% 98%;
@@ -92,7 +93,8 @@
   }
 
   #viewport {
-    scale: min(calc(100vw / 1920), calc(100vh / 1080));
-    overflow: hidden;
+    transform: scale(var(--viewport-scale)) translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
   }
 }
