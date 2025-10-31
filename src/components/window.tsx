@@ -8,13 +8,15 @@ interface WindowProps {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  width: number;
+  height: number;
 }
 
-export default function Window({ title, onClose, children }: WindowProps) {
+export default function Window({ title, onClose, children, width, height }: WindowProps) {
   const nodeRef = useRef(null);
   return (
-    <Draggable handle=".handle" nodeRef={nodeRef}>
-        <div ref={nodeRef} className="absolute left-1/2 top-1/2 w-[600px] h-[400px] -translate-x-1/2 -translate-y-1/2">
+    <Draggable handle=".handle" nodeRef={nodeRef} positionOffset={{ x: '-50%', y: '-50%' }}>
+        <div ref={nodeRef} style={{ width: `${width}px`, height: `${height}px`}}>
             <Card className="w-full h-full bg-card/80 backdrop-blur-md border-accent/20 shadow-2xl shadow-primary/20 flex flex-col animate-in fade-in zoom-in-90 duration-300">
             <CardHeader className="handle flex flex-row items-center justify-between p-2 pl-4 border-b bg-card/50 rounded-t-lg font-code cursor-move">
                 <CardTitle className="text-sm font-medium select-none text-accent">{title}</CardTitle>

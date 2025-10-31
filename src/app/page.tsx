@@ -12,17 +12,19 @@ import { cn } from '@/lib/utils';
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser';
 
-const appConfig: Record<AppId, { title: string; component: JSX.Element }> = {
-  terminal: { title: 'Terminal', component: <Terminal /> },
-  chat: { title: 'AI Assistant [L\'Ombre]', component: <AIChat /> },
-  photos: { title: 'Photo Viewer', component: <PhotoViewer /> },
-  documents: { title: 'Documents', component: <DocumentFolder /> },
-  browser: { title: 'Web Browser', component: <Browser /> },
+const appConfig: Record<AppId, { title: string; component: JSX.Element; width: number; height: number; }> = {
+  terminal: { title: 'Terminal', component: <Terminal />, width: 600, height: 400 },
+  chat: { title: 'AI Assistant [L\'Ombre]', component: <AIChat />, width: 600, height: 400 },
+  photos: { title: 'Photo Viewer', component: <PhotoViewer />, width: 600, height: 400 },
+  documents: { title: 'Documents', component: <DocumentFolder />, width: 600, height: 400 },
+  browser: { title: 'Web Browser', component: <Browser />, width: 800, height: 600 },
 };
 
 type OpenApp = {
   id: AppId;
   zIndex: number;
+  x: number;
+  y: number;
 };
 
 export default function Home() {
@@ -34,10 +36,8 @@ export default function Home() {
   const openApp = (appId: AppId) => {
     
     let appIsOpen = false;
-    let maxZIndex = 0;
     
     const updatedApps = openApps.map(app => {
-        maxZIndex = Math.max(maxZIndex, app.zIndex);
         if (app.id === appId) {
             appIsOpen = true;
             return { ...app, zIndex: nextZIndex };
@@ -48,7 +48,12 @@ export default function Home() {
     if (appIsOpen) {
         setOpenApps(updatedApps);
     } else {
-        setOpenApps([...openApps, { id: appId, zIndex: nextZIndex }]);
+        const appMeta = appConfig[appId];
+        const appCount = openApps.filter(app => app.id === appId).length;
+        const x = (window.innerWidth / 2) - (appMeta.width / 2) + (appCount * 30);
+        const y = (window.innerHeight / 2) - (appMeta.height / 2) + (appCount * 30);
+
+        setOpenApps([...openApps, { id: appId, zIndex: nextZIndex, x, y }]);
     }
     
     setActiveApp(appId);
@@ -104,8 +109,8 @@ export default function Home() {
       {openApps.map((app) => {
         const currentApp = appConfig[app.id];
         return (
-            <div key={app.id} onMouseDown={() => bringToFront(app.id)} style={{ zIndex: app.zIndex }}>
-                <Window title={currentApp.title} onClose={() => closeApp(app.id)}>
+            <div key={app.id} onMouseDown={() => bringToFront(app.id)} style={{ zIndex: app.zIndex, position: 'absolute', left: `${app.x}px`, top: `${app.y}px`}}>
+                <Window title={currentApp.title} onClose={() => closeApp(app.id)} width={currentApp.width} height={currentApp.height}>
                     {currentApp.component}
                 </Window>
             </div>

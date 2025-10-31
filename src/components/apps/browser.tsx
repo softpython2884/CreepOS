@@ -89,7 +89,7 @@ export default function Browser() {
             </div>
         </div>
         
-        <div className="flex-grow relative">
+        <div className="flex-grow relative overflow-auto">
             {sites.map(site => (
                 <TabsContent key={site.id} value={site.id} className="m-0 h-full absolute inset-0 overflow-auto">
                     {site.component}
