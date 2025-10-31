@@ -1,20 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { PlaceHolderImages, type ImagePlaceholder } from '@/lib/placeholder-images';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-export default function PhotoViewer() {
+interface PhotoViewerProps {
+  extraImages?: ImagePlaceholder[];
+}
+
+export default function PhotoViewer({ extraImages = [] }: PhotoViewerProps) {
   const [zoomLevel, setZoomLevel] = useState(1);
+  
+  const allImages = useMemo(() => {
+    const combined = [...PlaceHolderImages, ...extraImages];
+    // Simple shuffle to make captured images appear at random positions
+    return combined.sort(() => Math.random() - 0.5);
+  }, [extraImages]);
+
 
   return (
     <ScrollArea className="h-full bg-card">
       <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
-        {PlaceHolderImages.map((image) => (
+        {allImages.map((image) => (
           <Dialog key={image.id} onOpenChange={(open) => !open && setZoomLevel(1)}>
             <DialogTrigger asChild>
               <div className="aspect-square relative group cursor-pointer overflow-hidden rounded-md">

@@ -9,15 +9,20 @@ import PhotoViewer from '@/components/apps/photo-viewer';
 import DocumentFolder from '@/components/apps/document-folder';
 import Browser from '@/components/apps/browser';
 import { cn } from '@/lib/utils';
+import CameraCapture from './camera-capture';
+import type { ImagePlaceholder } from '@/lib/placeholder-images';
+
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser';
 
-const appConfig: Record<AppId, { title: string; component: JSX.Element; width: number; height: number; }> = {
-  terminal: { title: 'Terminal', component: <Terminal />, width: 600, height: 400 },
-  chat: { title: 'AI Assistant [L\'Ombre]', component: <AIChat />, width: 600, height: 400 },
-  photos: { title: 'Photo Viewer', component: <PhotoViewer />, width: 600, height: 400 },
-  documents: { title: 'Documents', component: <DocumentFolder />, width: 600, height: 400 },
-  browser: { title: 'Web Browser', component: <Browser />, width: 800, height: 600 },
+type AppConfig = {
+  [key in AppId]: {
+    title: string;
+    component: (props: any) => JSX.Element;
+    width: number;
+    height: number;
+    props?: any;
+  };
 };
 
 type OpenApp = {
@@ -33,7 +38,31 @@ export default function Desktop() {
   const [nextZIndex, setNextZIndex] = useState(10);
   const [nextInstanceId, setNextInstanceId] = useState(0);
   const desktopRef = useRef<HTMLDivElement>(null);
+  const [capturedImages, setCapturedImages] = useState<ImagePlaceholder[]>([]);
 
+  const handleNewCapture = (imageUri: string) => {
+    const newCapture: ImagePlaceholder = {
+      id: `capture-${Date.now()}`,
+      description: "It's you.",
+      imageUrl: imageUri,
+      imageHint: "self portrait"
+    };
+    setCapturedImages(prev => [...prev, newCapture]);
+  };
+
+  const appConfig: AppConfig = {
+    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400 },
+    chat: { title: 'AI Assistant [L\'Ombre]', component: AIChat, width: 600, height: 400 },
+    photos: { 
+        title: 'Photo Viewer', 
+        component: PhotoViewer, 
+        width: 600, 
+        height: 400,
+        props: { extraImages: capturedImages }
+    },
+    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400 },
+    browser: { title: 'Web Browser', component: Browser, width: 800, height: 600 },
+  };
 
   const openApp = (appId: AppId) => {
     const instanceId = nextInstanceId;
@@ -93,32 +122,36 @@ export default function Desktop() {
     >
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
       
+      <CameraCapture onCapture={handleNewCapture} />
+
       <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">
         CAUCHEMAR VIRTUEL
       </h1>
 
       {openApps.map((app, index) => {
-        const currentApp = appConfig[app.appId];
+        const currentAppConfig = appConfig[app.appId];
+        const AppComponent = currentAppConfig.component;
+        
         let initialX = 0;
         let initialY = 0;
 
         if (desktopRef.current) {
             const desktopRect = desktopRef.current.getBoundingClientRect();
-            initialX = (desktopRect.width / 2) - (currentApp.width / 2) + (index * 30);
-            initialY = (desktopRect.height / 2) - (currentApp.height / 2) + (index * 30);
+            initialX = (desktopRect.width / 2) - (currentAppConfig.width / 2) + (index * 30);
+            initialY = (desktopRect.height / 2) - (currentAppConfig.height / 2) + (index * 30);
         }
         
         return (
             <div key={app.instanceId} onMouseDown={() => bringToFront(app.instanceId)} style={{ zIndex: app.zIndex, position: 'absolute' }}>
                 <Window 
-                  title={currentApp.title} 
+                  title={currentAppConfig.title} 
                   onClose={() => closeApp(app.instanceId)} 
-                  width={currentApp.width} 
-                  height={currentApp.height}
+                  width={currentAppConfig.width} 
+                  height={currentAppConfig.height}
                   initialX={initialX}
                   initialY={initialY}
                 >
-                    {currentApp.component}
+                    <AppComponent {...currentAppConfig.props} />
                 </Window>
             </div>
         )
