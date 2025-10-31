@@ -201,9 +201,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   useEffect(() => {
     if (isCorrupted) {
-      for (let i = 0; i < 3; i++) {
-        setTimeout(() => openApp('chat', { x: Math.random() * (1920 - 400), y: Math.random() * (1080 - 600) }), i * 150);
-      }
+      openApp('chat');
     } else if (isDefenseMode) {
         openApp('chatbot');
     } else if (isTotallyCorrupted) {
@@ -245,10 +243,24 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
-    setOpenApps(openApps.map(app => (app.instanceId === instanceId) ? { ...app, zIndex: nextZIndex } : app));
+
+    setOpenApps(prevApps => {
+        const config = appConfig[prevApps.find(a => a.instanceId === instanceId)!.appId];
+        const randomXOffset = (Math.random() - 0.5) * 200;
+        const randomYOffset = (Math.random() - 0.5) * 200;
+        const x = (1920 / 2) - (config.width / 2) + randomXOffset;
+        const y = (1080 / 2) - (config.height / 2) + randomYOffset;
+
+        return prevApps.map(app => 
+            app.instanceId === instanceId 
+                ? { ...app, zIndex: nextZIndex, x, y } 
+                : app
+        );
+    });
+    
     setActiveInstanceId(instanceId);
-    setNextZIndex(nextZIndex + 1);
-  };
+    setNextZIndex(prev => prev + 1);
+};
 
   const renderEvent = () => {
     switch (activeEvent) {
@@ -269,7 +281,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         (isCorrupted || isTotallyCorrupted) && 'corrupted',
         activeEvent === 'corrupt' && 'animate-glitch',
         activeEvent === 'glitch' && 'animate-glitch-long',
-        activeEvent === 'tear' && 'animate-screen-tear',
         activeEvent === 'chromatic' && 'animate-chromatic-aberration',
         activeEvent === 'lag' && 'animate-lag',
         activeEvent === 'red_screen' && 'animate-red-screen',
@@ -328,3 +339,5 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     </main>
   );
 }
+
+    
