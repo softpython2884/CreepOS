@@ -345,7 +345,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                       onStart={() => bringToFront(app.instanceId)}
                     >
                       <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} isCorrupted={isAppCorrupted}>
+                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentApp.width} height={currentApp.height} isCorrupted={isAppCorrupted}>
                               <AppComponent {...currentAppConfig.props}/>
                           </Window>
                       </div>
