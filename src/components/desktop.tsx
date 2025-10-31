@@ -54,6 +54,23 @@ export default function Desktop() {
   const [isChapterTwoTriggered, setIsChapterTwoTriggered] = useState(false);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
   
+  const triggerEvent = useCallback((eventId: EventId) => {
+    setActiveEvent(eventId);
+
+    // Trigger sounds for specific events
+    if (eventId === 'scream') setSoundEvent('scream');
+    if (eventId === 'corrupt' || eventId === 'glitch') setSoundEvent('glitch');
+    if (eventId === 'bsod') setSoundEvent('bsod');
+
+
+    if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic'].includes(eventId)) {
+      // These events are temporary visual effects
+      const duration = eventId === 'lag' ? 5000 : (eventId === 'chromatic' ? 500 : 3000);
+      setTimeout(() => setActiveEvent('none'), duration);
+    }
+    // 'bsod' and 'scream' will be reset by their own components
+  }, []);
+
   const appConfig: AppConfig = {
     terminal: { 
         title: 'Terminal', 
@@ -121,23 +138,6 @@ export default function Desktop() {
       clearTimeout(timer2);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const triggerEvent = useCallback((eventId: EventId) => {
-    setActiveEvent(eventId);
-
-    // Trigger sounds for specific events
-    if (eventId === 'scream') setSoundEvent('scream');
-    if (eventId === 'corrupt' || eventId === 'glitch') setSoundEvent('glitch');
-    if (eventId === 'bsod') setSoundEvent('bsod');
-
-
-    if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic'].includes(eventId)) {
-      // These events are temporary visual effects
-      const duration = eventId === 'lag' ? 5000 : (eventId === 'chromatic' ? 500 : 3000);
-      setTimeout(() => setActiveEvent('none'), duration);
-    }
-    // 'bsod' and 'scream' will be reset by their own components
   }, []);
 
   const handleNewCapture = (imageUri: string) => {
@@ -216,7 +216,7 @@ export default function Desktop() {
     >
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
       
-      {/* <CameraCapture onCapture={handleNewCapture} /> */}
+      <CameraCapture onCapture={handleNewCapture} enabled={false} />
       <GpsTracker onLocationUpdate={setLocation} />
       <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
       {isChapterTwoTriggered && terminalWriterRef.current && (
