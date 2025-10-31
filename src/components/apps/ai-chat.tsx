@@ -9,6 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import type { GeoJSON } from 'geojson';
+import type * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
+
 
 interface Message {
   id: number;
@@ -30,7 +32,7 @@ export default function AIChat({ location, isChapterOne = false }: AIChatProps) 
   const [hintState, hintFormAction, isHintPending] = useActionState(generateInitialHint, initialActionState);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const addMessage = (sender: 'user' | 'ai', text: string) => {
@@ -66,8 +68,8 @@ export default function AIChat({ location, isChapterOne = false }: AIChatProps) 
   }, [hintState]);
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+    if (viewportRef.current) {
+      viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
 
@@ -96,8 +98,8 @@ export default function AIChat({ location, isChapterOne = false }: AIChatProps) 
 
   return (
     <div className="h-full flex flex-col bg-card font-code">
-      <ScrollArea className="flex-1">
-        <div className="space-y-4 p-4" ref={scrollAreaRef}>
+      <ScrollArea className="flex-1" viewportRef={viewportRef}>
+        <div className="space-y-4 p-4">
           {messages.map((msg) => (
             <div key={msg.id} className={cn('flex items-start gap-3', msg.sender === 'user' ? 'justify-end' : 'justify-start')}>
               {msg.sender === 'ai' && <Bot className="w-6 h-6 text-accent flex-shrink-0 mt-1" />}
