@@ -14,12 +14,11 @@ const bootLines = [
     'Initializing...',
     'Welcome, D.C. Omen.',
     'Initializing user profile...',
+    '> ERROR: corrupted memory segment at 0x7A11BF.'
 ];
 
 const BootScreen = ({ onBootComplete }: { onBootComplete: () => void }) => {
     const [lines, setLines] = useState<string[]>([]);
-    const [showGlitch, setShowGlitch] = useState(false);
-    const [finishedTyping, setFinishedTyping] = useState(false);
 
     useEffect(() => {
         const bootTimeout = setTimeout(() => {
@@ -29,17 +28,7 @@ const BootScreen = ({ onBootComplete }: { onBootComplete: () => void }) => {
                     setLines(prev => [...prev, bootLines[i]]);
                 } else {
                     clearInterval(intervalId);
-                    setFinishedTyping(true);
-                    
-                    // Trigger glitch after typing is done
-                    setTimeout(() => {
-                        setLines(prev => [...prev, '> ERROR: corrupted memory segment at 0x7A11BF.']);
-                        setShowGlitch(true);
-                        setTimeout(() => {
-                            setShowGlitch(false);
-                            setTimeout(onBootComplete, 1000);
-                        }, 500);
-                    }, 500);
+                    setTimeout(onBootComplete, 1000);
                 }
                 i++;
             }, 800);
@@ -49,12 +38,12 @@ const BootScreen = ({ onBootComplete }: { onBootComplete: () => void }) => {
     }, [onBootComplete]);
 
     return (
-      <div className={cn("bg-black text-green-400 font-code p-4 w-full h-full flex flex-col justify-center", showGlitch && "animate-glitch-short animate-chromatic-aberration")}>
+      <div className="bg-black text-green-400 font-code p-4 w-full h-full flex flex-col justify-center">
         <div className="whitespace-pre-wrap">
           {lines.map((line, i) => (
             <p key={i} className="animate-typing">{line}</p>
           ))}
-          {finishedTyping && !showGlitch && <span className="animate-blink">_</span>}
+          {lines.length === bootLines.length && <span className="animate-blink">_</span>}
         </div>
       </div>
     );

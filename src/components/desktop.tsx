@@ -49,6 +49,21 @@ export default function Desktop() {
   const [activeEvent, setActiveEvent] = useState<EventId>('none');
   const [soundEvent, setSoundEvent] = useState<SoundEvent | null>('fan');
 
+  // Chapter 1 Effects on Login
+  useEffect(() => {
+    setActiveEvent('chromatic');
+    const timer1 = setTimeout(() => setIsGlitching(true), 200);
+    const timer2 = setTimeout(() => {
+      setActiveEvent('none');
+      setIsGlitching(false);
+    }, 500);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, []);
+
   const triggerEvent = useCallback((eventId: EventId) => {
     setActiveEvent(eventId);
 
@@ -60,7 +75,7 @@ export default function Desktop() {
 
     if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic'].includes(eventId)) {
       // These events are temporary visual effects
-      const duration = eventId === 'lag' ? 5000 : 3000;
+      const duration = eventId === 'lag' ? 5000 : (eventId === 'chromatic' ? 500 : 3000);
       setTimeout(() => setActiveEvent('none'), duration);
     }
     // 'bsod' and 'scream' will be reset by their own components
@@ -206,7 +221,7 @@ export default function Desktop() {
                         <Window 
                           title={currentAppConfig.title} 
                           onClose={() => closeApp(app.instanceId)} 
-                          width={currentAppConfig.width} 
+                          width={currentAppAfig.width} 
                           height={currentAppConfig.height}
                           initialX={initialX}
                           initialY={initialY}
