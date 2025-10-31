@@ -221,7 +221,7 @@ export default function Desktop() {
                         <Window 
                           title={currentAppConfig.title} 
                           onClose={() => closeApp(app.instanceId)} 
-                          width={currentAppAfig.width} 
+                          width={currentAppConfig.width} 
                           height={currentAppConfig.height}
                           initialX={initialX}
                           initialY={initialY}
