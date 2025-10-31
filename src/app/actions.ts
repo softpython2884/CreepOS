@@ -2,7 +2,6 @@
 
 import { chatWithAI as chatWithAIFlow, ChatWithAIInput } from '@/ai/flows/chat-with-ai';
 import { generateInitialHint as generateInitialHintFlow, GenerateInitialHintInput } from '@/ai/flows/generate-initial-hint';
-import { textToSpeech as textToSpeechFlow, TextToSpeechInput } from '@/ai/flows/text-to-speech';
 import { z } from 'zod';
 import type { GeoJSON } from 'geojson';
 
@@ -15,17 +14,8 @@ const hintSchema = z.object({
   userPrompt: z.string().min(1),
 });
 
-const ttsSchema = z.object({
-  text: z.string().min(1),
-});
-
 interface ActionState {
   response?: string;
-  error?: string;
-}
-
-interface TtsActionState {
-  audioDataUri?: string;
   error?: string;
 }
 
@@ -69,21 +59,3 @@ export async function generateInitialHint(prevState: ActionState, formData: Form
     return { error: 'Failed to get a hint. Try again later.' };
   }
 }
-
-export async function generateBootSound(prevState: TtsActionState, formData: FormData): Promise<TtsActionState> {
-    const validatedFields = ttsSchema.safeParse({
-      text: formData.get('text'),
-    });
-      
-    if (!validatedFields.success) {
-      return { error: 'Invalid text for TTS.' };
-    }
-      
-    try {
-      const result = await textToSpeechFlow(validatedFields.data as TextToSpeechInput);
-      return { audioDataUri: result.audioDataUri };
-    } catch (e) {
-      console.error(e);
-      return { error: 'Failed to generate audio. The system may be unstable.' };
-    }
-  }

@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, useActionState, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { User, Lock, Power } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Desktop from '@/components/desktop';
-import { generateBootSound } from './actions';
 
 type MachineState = 'off' | 'booting' | 'login' | 'desktop';
 
@@ -20,56 +19,34 @@ const bootLines = [
 const BootScreen = ({ onBootComplete }: { onBootComplete: () => void }) => {
     const [lines, setLines] = useState<string[]>([]);
     const [showGlitch, setShowGlitch] = useState(false);
-    const [ttsState, ttsAction] = useActionState(generateBootSound, { audioDataUri: undefined, error: undefined });
-    const audioRef = useRef<HTMLAudioElement>(null);
+    const [finishedTyping, setFinishedTyping] = useState(false);
 
     useEffect(() => {
         const bootTimeout = setTimeout(() => {
             let i = 0;
             const intervalId = setInterval(() => {
-                if(i < bootLines.length) {
+                if (i < bootLines.length) {
                     setLines(prev => [...prev, bootLines[i]]);
-                }
-
-                // After last line, trigger TTS
-                if (i === bootLines.length -1) {
-                    const formData = new FormData();
-                    formData.append('text', 'Bonjour D.C. Omen. Initialisation du profil utilisateur...');
-                    ttsAction(formData);
-                }
-
-                i++;
-
-                if (i > bootLines.length) {
+                } else {
                     clearInterval(intervalId);
+                    setFinishedTyping(true);
+                    
+                    // Trigger glitch after typing is done
+                    setTimeout(() => {
+                        setLines(prev => [...prev, '> ERROR: corrupted memory segment at 0x7A11BF.']);
+                        setShowGlitch(true);
+                        setTimeout(() => {
+                            setShowGlitch(false);
+                            setTimeout(onBootComplete, 1000);
+                        }, 500);
+                    }, 500);
                 }
+                i++;
             }, 800);
         }, 500);
 
         return () => clearTimeout(bootTimeout);
-    }, [onBootComplete, ttsAction]);
-    
-    useEffect(() => {
-        if (ttsState.audioDataUri && audioRef.current) {
-            audioRef.current.src = ttsState.audioDataUri;
-            audioRef.current.play().then(() => {
-                // After audio plays, trigger glitch
-                setTimeout(() => {
-                    setLines(prev => [...prev, '> ERROR: corrupted memory segment at 0x7A11BF.']);
-                    setShowGlitch(true);
-                    setTimeout(() => {
-                        setShowGlitch(false);
-                        setTimeout(onBootComplete, 1000);
-                    }, 500);
-                }, 500);
-            }).catch(e => console.error("Audio playback failed", e));
-        }
-        if (ttsState.error) {
-            console.error("TTS Error:", ttsState.error);
-            // If TTS fails, continue the sequence
-            setTimeout(onBootComplete, 1000);
-        }
-    }, [ttsState, onBootComplete]);
+    }, [onBootComplete]);
 
     return (
       <div className={cn("bg-black text-green-400 font-code p-4 w-full h-full flex flex-col justify-center", showGlitch && "animate-glitch-short animate-chromatic-aberration")}>
@@ -77,9 +54,8 @@ const BootScreen = ({ onBootComplete }: { onBootComplete: () => void }) => {
           {lines.map((line, i) => (
             <p key={i} className="animate-typing">{line}</p>
           ))}
-          {!ttsState.audioDataUri && lines.length === bootLines.length && <span className="animate-blink">_</span>}
+          {finishedTyping && !showGlitch && <span className="animate-blink">_</span>}
         </div>
-        <audio ref={audioRef} />
       </div>
     );
 };
