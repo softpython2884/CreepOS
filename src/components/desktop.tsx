@@ -16,6 +16,7 @@ import type { GeoJSON } from 'geojson';
 import BlueScreen from './events/blue-screen';
 import Screamer from './events/screamer';
 import AudioManager, { SoundEvent } from './audio-manager';
+import ChapterTwoManager, { type TerminalWriter } from './story/chapter-two-manager';
 
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser';
@@ -48,6 +49,10 @@ export default function Desktop() {
   const [location, setLocation] = useState<GeoJSON.Point | null>(null);
   const [activeEvent, setActiveEvent] = useState<EventId>('none');
   const [soundEvent, setSoundEvent] = useState<SoundEvent | null>('fan');
+
+  // Story state
+  const [isChapterTwoTriggered, setIsChapterTwoTriggered] = useState(false);
+  const terminalWriterRef = useRef<TerminalWriter | null>(null);
 
   // Chapter 1 Effects on Login
   useEffect(() => {
@@ -90,6 +95,15 @@ export default function Desktop() {
     };
     setCapturedImages(prev => [...prev, newCapture]);
   };
+  
+  const handleChapterTwoCapture = useCallback((imageUri: string) => {
+      setCapturedImages(prev => [...prev, {
+          id: `story-capture-${Date.now()}`,
+          description: "...",
+          imageUrl: imageUri,
+          imageHint: "self portrait"
+      }]);
+  }, []);
 
   const appConfig: AppConfig = {
     terminal: { 
@@ -97,7 +111,10 @@ export default function Desktop() {
         component: Terminal, 
         width: 600, 
         height: 400,
-        props: { triggerEvent }
+        props: { 
+            triggerEvent,
+            setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer,
+        }
     },
     chat: { 
         title: 'AI Assistant [L\'Ombre]', 
@@ -118,6 +135,9 @@ export default function Desktop() {
   };
 
   const openApp = (appId: AppId) => {
+    if (appId === 'terminal' && !isChapterTwoTriggered) {
+        setIsChapterTwoTriggered(true);
+    }
     const instanceId = nextInstanceId;
     const newApp: OpenApp = {
         instanceId: instanceId,
@@ -195,6 +215,13 @@ export default function Desktop() {
       <CameraCapture onCapture={handleNewCapture} />
       <GpsTracker onLocationUpdate={setLocation} />
       <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
+      {isChapterTwoTriggered && terminalWriterRef.current && (
+          <ChapterTwoManager 
+              terminal={terminalWriterRef.current}
+              triggerEvent={triggerEvent}
+              onCapture={handleChapterTwoCapture}
+          />
+      )}
 
       {activeEvent !== 'bsod' && (
         <>
@@ -212,8 +239,8 @@ export default function Desktop() {
                     const desktopRect = desktopRef.current.getBoundingClientRect();
                     const jitterX = (Math.random() - 0.5) * 40;
                     const jitterY = (Math.random() - 0.5) * 40;
-                    initialX = (desktopRect.width / 2) - (currentAppConfig.width / 2) + jitterX + (openApps.length * 20);
-                    initialY = (desktopRect.height / 2) - (currentAppConfig.height / 2) + jitterY + (openApps.length * 20);
+                    initialX = (desktopRect.width / 2) - (currentAppConfig.width / 2) + jitterX;
+                    initialY = (desktopRect.height / 2) - (currentAppConfig.height / 2) + jitterY;
                 }
                 
                 return (

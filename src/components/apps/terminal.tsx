@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, KeyboardEvent, useImperativeHandle } from 'react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { documents } from './content';
 import type { EventId } from '../desktop';
+import { type TerminalWriter } from '../story/chapter-two-manager';
 
 interface HistoryItem {
   type: 'command' | 'output';
@@ -13,15 +14,28 @@ interface HistoryItem {
 
 interface TerminalProps {
     triggerEvent: (eventId: EventId) => void;
+    setTerminalWriter: (writer: TerminalWriter) => void;
 }
 
-export default function Terminal({ triggerEvent }: TerminalProps) {
+export default function Terminal({ triggerEvent, setTerminalWriter }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "Virtual Nightmare OS v1.3. Type 'help' for a list of commands." }
   ]);
   const [input, setInput] = useState('');
+  const [isLocked, setIsLocked] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const writer: TerminalWriter = {
+      write: (content: string, type: 'output' | 'command' = 'output') => {
+        setHistory(prev => [...prev, { type, content }]);
+      },
+      clear: () => setHistory([]),
+      lock: (locked: boolean) => setIsLocked(locked),
+    };
+    setTerminalWriter(writer);
+  }, [setTerminalWriter]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -34,6 +48,7 @@ export default function Terminal({ triggerEvent }: TerminalProps) {
   }, []);
 
   const handleCommand = () => {
+    if (isLocked) return;
     const newHistory: HistoryItem[] = [...history, { type: 'command', content: input }];
     const [command, ...args] = input.trim().split(' ');
 
@@ -115,17 +130,19 @@ export default function Terminal({ triggerEvent }: TerminalProps) {
           ))}
         </div>
       </ScrollArea>
-      <div className="flex items-center mt-2">
-        <span className="text-accent">$&gt;</span>
-        <Input
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="bg-transparent border-none text-green-400 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 h-6 p-0 ml-2"
-          autoComplete="off"
-        />
-      </div>
+      {!isLocked && (
+        <div className="flex items-center mt-2">
+            <span className="text-accent">$&gt;</span>
+            <Input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="bg-transparent border-none text-green-400 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 h-6 p-0 ml-2"
+            autoComplete="off"
+            />
+        </div>
+      )}
     </div>
   );
 }
