@@ -26,6 +26,7 @@ interface ChapterThreeManagerProps {
     triggerEvent: (eventId: EventId) => void;
     openApp: (appId: AppId) => void;
     capturedImage: ImagePlaceholder;
+    onFinish: () => void;
 }
 
 const sequence = [
@@ -40,7 +41,7 @@ const sequence = [
     { delay: 1500, action: 'event', eventId: 'glitch' },
 ];
 
-export default function ChapterThreeManager({ terminal, triggerEvent, openApp }: ChapterThreeManagerProps) {
+export default function ChapterThreeManager({ terminal, triggerEvent, openApp, onFinish }: ChapterThreeManagerProps) {
     const [step, setStep] = useState(0);
     const isFinished = useRef(false);
     
@@ -48,7 +49,10 @@ export default function ChapterThreeManager({ terminal, triggerEvent, openApp }:
 
     useTimeout(() => {
         if (!currentStep || isFinished.current) {
-            terminal.lock(false); // Unlock terminal at the end
+            if (!isFinished.current) {
+                onFinish();
+                isFinished.current = true;
+            }
             return;
         }
 
@@ -70,7 +74,7 @@ export default function ChapterThreeManager({ terminal, triggerEvent, openApp }:
         }
         
         if (step === sequence.length - 1) {
-            isFinished.current = true;
+            terminal.lock(false);
         }
         
         setStep(s => s + 1);

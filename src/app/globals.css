@@ -64,6 +64,13 @@
     --input: 0 0% 25%;
     --ring: 195 53% 79%;
   }
+
+  .corrupted {
+    --background: 0 100% 4%;
+    --foreground: 0 80% 60%;
+    --primary: 0 80% 50%;
+    --accent: 0 80% 70%;
+  }
 }
 
 @layer base {

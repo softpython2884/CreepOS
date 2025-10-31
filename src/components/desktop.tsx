@@ -39,7 +39,11 @@ type OpenApp = {
   zIndex: number;
 };
 
-export default function Desktop() {
+interface DesktopProps {
+  onReboot: () => void;
+}
+
+export default function Desktop({ onReboot }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [isGlitching, setIsGlitching] = useState(false);
@@ -55,17 +59,27 @@ export default function Desktop() {
   const [isChapterTwoTriggered, setIsChapterTwoTriggered] = useState(false);
   const [chapterTwoInstanceId, setChapterTwoInstanceId] = useState<number | null>(null);
   const [isChapterTwoFinished, setIsChapterTwoFinished] = useState(false);
+  const [isChapterThreeFinished, setIsChapterThreeFinished] = useState(false);
   const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
+
+  const closeAllApps = useCallback(() => {
+    setOpenApps([]);
+    setActiveInstanceId(null);
+  }, []);
   
   const triggerEvent = useCallback((eventId: EventId) => {
+    if (eventId === 'bsod') {
+        closeAllApps();
+        setSoundEvent('bsod');
+        setActiveEvent('bsod');
+        return;
+    }
     setActiveEvent(eventId);
 
     // Trigger sounds for specific events
     if (eventId === 'scream') setSoundEvent('scream');
     if (eventId === 'corrupt' || eventId === 'glitch') setSoundEvent('glitch');
-    if (eventId === 'bsod') setSoundEvent('bsod');
-
 
     if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic'].includes(eventId)) {
       // These events are temporary visual effects
@@ -73,7 +87,7 @@ export default function Desktop() {
       setTimeout(() => setActiveEvent('none'), duration);
     }
     // 'bsod' and 'scream' will be reset by their own components
-  }, []);
+  }, [closeAllApps]);
 
   const closeApp = useCallback((instanceId: number) => {
     setOpenApps(prev => prev.filter(app => app.instanceId !== instanceId));
@@ -96,6 +110,14 @@ export default function Desktop() {
       closeApp(chapterTwoInstanceId);
     }
   };
+
+  const handleChapterThreeFinish = () => {
+      setIsChapterThreeFinished(true);
+      // Initiate final sequence
+      setTimeout(() => {
+        triggerEvent('bsod');
+      }, 2000);
+  }
 
 
   const appConfig: AppConfig = {
@@ -130,6 +152,15 @@ export default function Desktop() {
   const openApp = useCallback((appId: AppId) => {
     const instanceId = nextInstanceIdRef.current;
     
+    // Prevent re-opening chat in chapter 1
+    if (appId === 'chat' && !isChapterTwoTriggered) {
+        const chatApp = openApps.find(app => app.appId === 'chat');
+        if (chatApp) {
+            bringToFront(chatApp.instanceId);
+            return;
+        }
+    }
+    
     if (appId === 'terminal' && !isChapterTwoTriggered) {
         setIsChapterTwoTriggered(true);
         setChapterTwoInstanceId(instanceId);
@@ -150,7 +181,7 @@ export default function Desktop() {
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterTwoTriggered, nextZIndex]);
+  }, [isChapterTwoTriggered, nextZIndex, openApps]);
 
   // Chapter 1 Effects on Login
   useEffect(() => {
@@ -207,7 +238,7 @@ export default function Desktop() {
   const renderEvent = () => {
     switch (activeEvent) {
       case 'bsod':
-        return <BlueScreen />; // This event will lock the screen, no need to reset from here
+        return <BlueScreen onReboot={onReboot} />;
       case 'scream':
         return <Screamer onFinish={() => setActiveEvent('none')} />;
       default:
@@ -247,12 +278,13 @@ export default function Desktop() {
           />
       )}
 
-      {isChapterTwoFinished && terminalWriterRef.current && lastCapturedImage && (
+      {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (
         <ChapterThreeManager
           terminal={terminalWriterRef.current}
           triggerEvent={triggerEvent}
           openApp={openApp}
           capturedImage={lastCapturedImage}
+          onFinish={handleChapterThreeFinish}
         />
       )}
 

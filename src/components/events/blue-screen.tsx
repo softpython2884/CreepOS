@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 
-export default function BlueScreen() {
+interface BlueScreenProps {
+    onReboot: () => void;
+}
+
+export default function BlueScreen({ onReboot }: BlueScreenProps) {
     const [progress, setProgress] = useState(0);
 
     useEffect(() => {
@@ -10,9 +14,7 @@ export default function BlueScreen() {
             setProgress(prev => {
                 if (prev >= 100) {
                     clearInterval(interval);
-                    // In a real scenario, this would trigger a reboot
-                    // For now, it just stays on the BSOD screen.
-                    // To make it reboot: window.location.reload();
+                    onReboot();
                     return 100;
                 }
                 return prev + 1;
@@ -20,7 +22,7 @@ export default function BlueScreen() {
         }, 80);
 
         return () => clearInterval(interval);
-    }, []);
+    }, [onReboot]);
 
     return (
         <div className="fixed inset-0 bg-[#0000AA] text-white font-code flex flex-col items-center justify-center z-[9999] animate-in fade-in">

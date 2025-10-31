@@ -7,7 +7,7 @@ import { User, Lock, Power } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Desktop from '@/components/desktop';
 
-type MachineState = 'off' | 'booting' | 'login' | 'desktop';
+type MachineState = 'off' | 'booting' | 'login' | 'desktop' | 'rebooting_corrupted';
 
 const bootLines = [
     'SUBSYSTEM OS v0.9 -- BETA',
@@ -17,15 +17,25 @@ const bootLines = [
     '> ERROR: corrupted memory segment at 0x7A11BF.'
 ];
 
-const BootScreen = ({ onBootComplete }: { onBootComplete: () => void }) => {
+const corruptedBootLines = [
+    'SYBSYSTEM FAILURE -- FATAL',
+    'Re-initializing...',
+    'Welcome, ????.',
+    'Loading corrupted profile...',
+    '> FATAL: AI_CORE_VIOLATION at 0x00DEAD.',
+    '> Rebooting in unsecured mode...'
+]
+
+const BootScreen = ({ onBootComplete, corrupted = false }: { onBootComplete: () => void, corrupted?: boolean }) => {
     const [lines, setLines] = useState<string[]>([]);
+    const lineSource = corrupted ? corruptedBootLines : bootLines;
 
     useEffect(() => {
         const bootTimeout = setTimeout(() => {
             let i = 0;
             const intervalId = setInterval(() => {
-                if (i < bootLines.length) {
-                    setLines(prev => [...prev, bootLines[i]]);
+                if (i < lineSource.length) {
+                    setLines(prev => [...prev, lineSource[i]]);
                 } else {
                     clearInterval(intervalId);
                     setTimeout(onBootComplete, 1000);
@@ -35,15 +45,18 @@ const BootScreen = ({ onBootComplete }: { onBootComplete: () => void }) => {
         }, 500);
 
         return () => clearTimeout(bootTimeout);
-    }, [onBootComplete]);
+    }, [onBootComplete, lineSource]);
 
     return (
-      <div className="bg-black text-green-400 font-code p-4 w-full h-full flex flex-col justify-center">
+      <div className={cn(
+        "bg-black p-4 w-full h-full flex flex-col justify-center",
+        corrupted ? "text-red-500 font-bold" : "text-green-400 font-code",
+      )}>
         <div className="whitespace-pre-wrap">
           {lines.map((line, i) => (
             <p key={i} className="animate-typing">{line}</p>
           ))}
-          {lines.length === bootLines.length && <span className="animate-blink">_</span>}
+          {lines.length === lineSource.length && <span className="animate-blink">_</span>}
         </div>
       </div>
     );
@@ -99,6 +112,10 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
 export default function Home() {
     const [machineState, setMachineState] = useState<MachineState>('off');
 
+    const handleReboot = () => {
+        setMachineState('rebooting_corrupted');
+    }
+
     const renderState = () => {
         if (machineState === 'off') {
             return (
@@ -118,6 +135,14 @@ export default function Home() {
             );
         }
 
+        if (machineState === 'rebooting_corrupted') {
+             return (
+                <div className="w-full h-full bg-black corrupted">
+                    <BootScreen onBootComplete={() => setMachineState('login')} corrupted />
+                </div>
+            );
+        }
+
         if (machineState === 'login') {
             return (
                 <div className="w-full h-full flex flex-col justify-center items-center">
@@ -127,7 +152,7 @@ export default function Home() {
         }
 
         if (machineState === 'desktop') {
-            return <Desktop />;
+            return <Desktop onReboot={handleReboot} />;
         }
 
         return null;
