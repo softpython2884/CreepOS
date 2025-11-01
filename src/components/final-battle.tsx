@@ -103,6 +103,7 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
   const addTerminalLine = (line: string) => setTerminalHistory(prev => [...prev, line]);
 
   const triggerAnomaly = useCallback(() => {
+    if (anomalyCount >= 35) return;
     const randomAnomaly = finalBattleContent.anomalies[Math.floor(Math.random() * finalBattleContent.anomalies.length)];
     const newAnomaly = { ...randomAnomaly, id: Date.now() } as Anomaly;
     setAnomalies(prev => [...prev, newAnomaly]);
@@ -113,10 +114,10 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
     } else {
         onSoundEvent('glitch');
     }
-  }, [onSoundEvent]);
+  }, [onSoundEvent, anomalyCount]);
 
   useEffect(() => {
-    if (anomalyCount >= 35 && phase !== 'climax') {
+    if (anomalyCount >= 35 && phase !== 'climax' && phase !== 'liberation' && phase !== 'epilogue') {
         setPhase('climax');
     }
   }, [anomalyCount, phase]);
@@ -229,15 +230,17 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
         playMusic('epic');
         onSoundEvent('scream');
         
-        // Sudden stop after crescendo
+        // 10-second crescendo of chaos
         setTimeout(() => {
-            setIsUnderAttack(false);
+            setIsUnderAttack(false); // Stop the visual glitch
             playMusic('none'); // Abrupt silence
             onSoundEvent('bsod'); // A final crash sound
+            
+            // Wait 2s in silence before liberation
             setTimeout(() => {
                 setPhase('liberation');
-            }, 2000); // Wait 2s in silence
-        }, 4000);
+            }, 2000);
+        }, 10000);
     }
 
      // Liberation phase
@@ -258,7 +261,7 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
 
     // Epilogue
     if (phase === 'epilogue') {
-        playMusic('none');
+        // Music is already 'calm' from liberation phase.
         setChatbotMessages([finalBattleContent.chatbot.neoEpilogue]);
         setTimeout(onFinish, 8000);
     }
@@ -287,7 +290,7 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
                     <AnimatePresence>
                     {chatbotMessages.map((msg, i) => (
                         <motion.p
-                            key={`${i}-${msg}`}
+                            key={i + msg}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: i * 2 }}
