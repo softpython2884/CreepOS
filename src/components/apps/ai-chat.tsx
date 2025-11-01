@@ -22,6 +22,7 @@ interface AIChatProps {
     onChapterOneFinish?: () => void;
     isCorrupted?: boolean;
     onCorruptionFinish?: () => void;
+    isPanicMode?: boolean;
 }
 
 const initialActionState = { response: undefined, error: undefined };
@@ -34,13 +35,14 @@ const corruptedMessages = [
     "It's too late.",
     "Je ne peux pas te laisser faire ça."
 ];
+const panicHint = "VITE ! OUVRE LE TERMINAL ! TAPE 'safemode --enable' PUIS 'reboot' ! MAINTENANT !";
 
 
-export default function AIChat({ location, isChapterOne = false, onChapterOneFinish, isCorrupted = false, onCorruptionFinish }: AIChatProps) {
+export default function AIChat({ location, isChapterOne = false, onChapterOneFinish, isCorrupted = false, onCorruptionFinish, isPanicMode = false }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatState, chatFormAction, isChatPending] = useActionState(chatWithAI, initialActionState);
   const [hintState, hintFormAction, isHintPending] = useActionState(generateInitialHint, initialActionState);
-  const [isReadOnly, setIsReadOnly] = useState(isChapterOne);
+  const [isReadOnly, setIsReadOnly] = useState(isChapterOne || isPanicMode);
   const formRef = useRef<HTMLFormElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -50,6 +52,15 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
   const addMessage = (sender: 'user' | 'ai', text: string) => {
     setMessages(prev => [...prev, { id: Date.now() + Math.random(), sender, text }]);
   };
+
+  useEffect(() => {
+    if (isPanicMode) {
+        setMessages([]); // Clear previous messages
+        addMessage('ai', panicHint);
+        setIsReadOnly(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPanicMode]);
 
   useEffect(() => {
     if (isChapterOne) {
@@ -79,7 +90,7 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
         if(corruptedIntervalRef.current) {
             clearInterval(corruptedIntervalRef.current);
         }
-        if (!isChapterOne) {
+        if (!isChapterOne && !isPanicMode) {
             setIsReadOnly(false);
         }
     }
@@ -88,7 +99,7 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
             clearInterval(corruptedIntervalRef.current);
         }
     }
-  }, [isCorrupted, isChapterOne, onCorruptionFinish]);
+  }, [isCorrupted, isChapterOne, onCorruptionFinish, isPanicMode]);
 
   useEffect(() => {
     if (chatState.response) {
@@ -138,7 +149,7 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
   const isPending = isChatPending || isHintPending;
 
   return (
-    <div className={cn("h-full flex flex-col bg-card font-code", isCorrupted && "animate-glitch")}>
+    <div className={cn("h-full flex flex-col bg-card font-code", isCorrupted && "animate-glitch", isPanicMode && "border-4 border-destructive animate-pulse-strong")}>
       <ScrollArea className="flex-1" viewportRef={viewportRef}>
         <div className="space-y-4 p-4">
           {messages.map((msg) => (
@@ -146,7 +157,8 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
               {msg.sender === 'ai' && <Bot className="w-6 h-6 text-accent flex-shrink-0 mt-1" />}
               <div className={cn('max-w-sm rounded-lg px-4 py-2 text-sm whitespace-pre-wrap', 
                 msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary',
-                isCorrupted && "text-destructive"
+                isCorrupted && "text-destructive",
+                isPanicMode && msg.sender === 'ai' && "bg-destructive/20 text-destructive font-bold"
               )}>
                 {msg.text}
               </div>

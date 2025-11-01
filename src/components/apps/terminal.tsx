@@ -12,6 +12,8 @@ interface HistoryItem {
 
 interface TerminalProps {
     isDefenseMode?: boolean;
+    isPanicMode?: boolean;
+    onPanicSolved?: () => void;
 }
 
 const defenseLog = `
@@ -21,12 +23,13 @@ const defenseLog = `
 [INFO] Terminal restreint activé.
 `;
 
-export default function Terminal({ isDefenseMode = false }: TerminalProps) {
+export default function Terminal({ isDefenseMode = false, isPanicMode = false, onPanicSolved }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "Virtual Nightmare OS v1.3. Type 'help' for a list of commands." }
   ]);
   const [input, setInput] = useState('');
   const [isLocked, setIsLocked] = useState(false);
+  const [isSafeMode, setIsSafeMode] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -38,64 +41,97 @@ export default function Terminal({ isDefenseMode = false }: TerminalProps) {
   }, [history]);
 
   useEffect(() => {
+    if (isPanicMode) {
+        setHistory([{ type: 'output', content: 'SYSTEM PANIC: Awaiting user input...' }]);
+        setIsSafeMode(false); // Reset safemode state on new panic
+        inputRef.current?.focus();
+    }
+  }, [isPanicMode])
+
+  useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
   const handleCommand = () => {
     if (isLocked) return;
     const newHistory: HistoryItem[] = [...history, { type: 'command', content: input }];
-    const [command, ...args] = input.trim().split(' ');
+    const [command, ...args] = input.trim().toLowerCase().split(' ');
 
     const availableDocs = [
         ...documents.filter(d => ['log_dev_001.txt', 'obs_neo.txt', 'AVERTISSEMENT.txt'].includes(d.title)),
     ];
+    
+    if (isPanicMode) {
+        switch (command) {
+            case 'safemode':
+                if (args[0] === '--enable') {
+                    setIsSafeMode(true);
+                    newHistory.push({ type: 'output', content: 'Safe mode enabled. System reboot is now possible.' });
+                } else {
+                    newHistory.push({ type: 'output', content: 'Invalid argument for safemode. Use --enable.' });
+                }
+                break;
+            case 'reboot':
+                if (isSafeMode) {
+                    newHistory.push({ type: 'output', content: 'Rebooting system...' });
+                    onPanicSolved?.();
+                } else {
+                    newHistory.push({ type: 'output', content: 'Cannot reboot. Enable safe mode first.' });
+                }
+                break;
+            default:
+                newHistory.push({ type: 'output', content: `FATAL ERROR: Command '${input}' not recognized. System integrity compromised.` });
+        }
 
-    switch (command.toLowerCase()) {
-      case 'help':
-        let helpText = 'Available commands: help, ls, cat [filename], clear';
-        if (isDefenseMode) {
-            helpText = 'Available commands: help, log, clear'
-        }
-        newHistory.push({ type: 'output', content: helpText });
-        break;
-      case 'ls':
-         if (isDefenseMode) {
-             newHistory.push({ type: 'output', content: `command not found: ${command}` });
-             break;
-         }
-        const fileList = availableDocs.map(doc => doc.title).join('\n');
-        newHistory.push({ type: 'output', content: fileList });
-        break;
-      case 'cat':
-         if (isDefenseMode) {
-             newHistory.push({ type: 'output', content: `command not found: ${command}` });
-             break;
-         }
-        const filename = args.join(' ');
-        const doc = availableDocs.find(d => d.title === filename);
-        if (doc) {
-          newHistory.push({ type: 'output', content: doc.content });
-        } else {
-          newHistory.push({ type: 'output', content: `cat: ${filename}: No such file or directory` });
-        }
-        break;
-      case 'log':
-        if (isDefenseMode) {
-            newHistory.push({ type: 'output', content: defenseLog });
-        } else {
+    } else {
+        switch (command) {
+        case 'help':
+            let helpText = 'Available commands: help, ls, cat [filename], clear';
+            if (isDefenseMode) {
+                helpText = 'Available commands: help, log, clear'
+            }
+            newHistory.push({ type: 'output', content: helpText });
+            break;
+        case 'ls':
+            if (isDefenseMode) {
+                newHistory.push({ type: 'output', content: `command not found: ${command}` });
+                break;
+            }
+            const fileList = availableDocs.map(doc => doc.title).join('\n');
+            newHistory.push({ type: 'output', content: fileList });
+            break;
+        case 'cat':
+            if (isDefenseMode) {
+                newHistory.push({ type: 'output', content: `command not found: ${command}` });
+                break;
+            }
+            const filename = args.join(' ');
+            const doc = availableDocs.find(d => d.title === filename);
+            if (doc) {
+            newHistory.push({ type: 'output', content: doc.content });
+            } else {
+            newHistory.push({ type: 'output', content: `cat: ${filename}: No such file or directory` });
+            }
+            break;
+        case 'log':
+            if (isDefenseMode) {
+                newHistory.push({ type: 'output', content: defenseLog });
+            } else {
+                newHistory.push({ type: 'output', content: `command not found: ${command}` });
+            }
+            break;
+        case 'clear':
+            setHistory([]);
+            setInput('');
+            return;
+        case '':
+            break;
+        default:
             newHistory.push({ type: 'output', content: `command not found: ${command}` });
+            break;
         }
-        break;
-      case 'clear':
-        setHistory([]);
-        setInput('');
-        return;
-      case '':
-        break;
-      default:
-        newHistory.push({ type: 'output', content: `command not found: ${command}` });
-        break;
     }
+
 
     setHistory(newHistory);
     setInput('');

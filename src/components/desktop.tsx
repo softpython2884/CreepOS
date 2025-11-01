@@ -16,16 +16,16 @@ import { cn } from '@/lib/utils';
 import CameraCapture from './camera-capture';
 import type { ImagePlaceholder } from '@/lib/placeholder-images';
 import GpsTracker from './gps-tracker';
-import BlueScreen from './events/blue-screen';
 import Screamer from './events/screamer';
 import { SoundEvent, MusicEvent } from './audio-manager';
 import PurgeScreen from './events/purge-screen';
 import { initialFileSystem, chapterTwoFiles, chapterFourFiles, type FileSystemNode } from './apps/content';
 import Draggable from 'react-draggable';
+import SystemPanicTimer from './events/system-panic-timer';
 
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser' | 'chatbot' | 'security' | 'systemStatus';
-export type EventId = 'bsod' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'red_screen' | 'die_screen' | 'freeze' | 'total_corruption' | 'purge_screen' | 'system_collapse' | 'none';
+export type EventId = 'panic' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'red_screen' | 'die_screen' | 'freeze' | 'total_corruption' | 'purge_screen' | 'system_collapse' | 'none';
 
 type AppConfig = {
   [key in AppId]: {
@@ -68,6 +68,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
   const [location, setLocation] = useState<GeoJSON.Point | null>(null);
   const [activeEvent, setActiveEvent] = useState<EventId>('none');
   const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>(initialFileSystem);
+  const [isPanicSolved, setIsPanicSolved] = useState(false);
 
   // Story state
   const [isChapterOneFinished, setIsChapterOneFinished] = useState(false);
@@ -84,12 +85,13 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
   }, []);
   
   const triggerEvent = useCallback((eventId: EventId) => {
-    if (eventId === 'bsod') {
+    if (eventId === 'panic') {
         closeAllApps();
         onMusicEvent('none');
         onSoundEvent('bsod');
-        setActiveEvent('bsod');
-        setTimeout(() => onReboot('corrupted'), 8000);
+        setActiveEvent('panic');
+        setIsPanicSolved(false); // Reset panic state
+        // The reboot will be triggered by the timer or by the user solving it
         return;
     }
     setActiveEvent(eventId);
@@ -139,9 +141,16 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
         setIsChapterTwoFinished(true);
     }
   }
+  
+  const handlePanicSolved = useCallback(() => {
+    setIsPanicSolved(true);
+    setActiveEvent('none');
+    onReboot('corrupted');
+  }, [onReboot]);
+
 
   const handleBackdoorSuccess = useCallback(() => {
-    triggerEvent('bsod');
+    triggerEvent('panic');
   }, [triggerEvent]);
 
   const handleFatalError = () => {
@@ -156,8 +165,8 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
   }, [onReboot]);
   
   const appConfig: AppConfig = {
-    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { isDefenseMode }, isCorruptible: true },
-    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isCorrupted: isCorrupted && !isTotallyCorrupted, onCorruptionFinish: handleCorruptionFinish }, isCorruptible: true },
+    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { isDefenseMode, onPanicSolved: handlePanicSolved, isPanicMode: activeEvent === 'panic' }, isCorruptible: true },
+    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isCorrupted: isCorrupted && !isTotallyCorrupted, onCorruptionFinish: handleCorruptionFinish, isPanicMode: activeEvent === 'panic' }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onFolderUnlocked: (folderId: string) => { if (folderId === 'folder-archives') handleChapterTwoFinish()}, onSoundEvent: onSoundEvent }, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: handleBackdoorSuccess, onSoundEvent: onSoundEvent }, isCorruptible: true },
@@ -266,6 +275,23 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
         triggerEvent('total_corruption');
     }
   }, [isTotallyCorrupted, triggerEvent]);
+  
+  useEffect(() => {
+    if(activeEvent === 'panic' && !isPanicSolved) {
+        const chatAppConfig = appConfig['chat'];
+        const terminalAppConfig = appConfig['terminal'];
+        
+        openApp('chat', {
+            x: (1920 / 2) - (chatAppConfig.width + 20),
+            y: (1080 / 2) - (chatAppConfig.height / 2)
+        });
+        openApp('terminal', {
+            x: (1920 / 2) + 20,
+            y: (1080 / 2) - (terminalAppConfig.height / 2)
+        });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeEvent, isPanicSolved])
 
   const handleNewCapture = useCallback((imageUri: string) => {
     const newCapture: ImagePlaceholder = { id: `capture-${Date.now()}`, description: "It's you.", imageUrl: imageUri, imageHint: "self portrait" };
@@ -274,7 +300,10 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
   
   const renderEvent = () => {
     switch (activeEvent) {
-      case 'bsod': return <BlueScreen onReboot={() => {}} />;
+      case 'panic':
+        return !isPanicSolved ? (
+            <SystemPanicTimer onTimeout={() => onReboot('corrupted')} />
+        ) : null;
       case 'scream': return <Screamer onFinish={() => setActiveEvent('none')} />;
       case 'purge_screen': return <PurgeScreen />;
       default: return null;
@@ -304,7 +333,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
       <CameraCapture onCapture={handleNewCapture} enabled={isChapterTwoFinished && !isChapterThreeFinished} />
       <GpsTracker onLocationUpdate={setLocation} />
       
-      {activeEvent !== 'bsod' && activeEvent !== 'die_screen' && activeEvent !== 'purge_screen' && (
+      {activeEvent !== 'die_screen' && activeEvent !== 'purge_screen' && (
         <>
             <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">CAUCHEMAR VIRTUEL</h1>
             {openApps.map((app) => {
@@ -325,10 +354,13 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
                     config.props = { ...config.props, isDefenseMode, username };
                   }
                    if (app.appId === 'terminal') {
-                    config.props = { ...config.props, isDefenseMode };
+                    config.props = { ...config.props, isDefenseMode, onPanicSolved: handlePanicSolved, isPanicMode: activeEvent === 'panic' };
                   }
                   if (app.appId === 'browser') {
                     config.props = { ...config.props, onSoundEvent };
+                  }
+                  if (app.appId === 'chat') {
+                    config.props = { ...config.props, isPanicMode: activeEvent === 'panic' };
                   }
                   return config;
                 })();
@@ -352,7 +384,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
                     </Draggable>
                 )
             })}
-            <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} isCorrupted={isTotallyCorrupted} isDefenseMode={isDefenseMode} />
+            {activeEvent !== 'panic' && <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} isCorrupted={isTotallyCorrupted} isDefenseMode={isDefenseMode} />}
         </>
       )}
       {renderEvent()}
