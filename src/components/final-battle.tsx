@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { finalBattleContent } from './apps/content';
 import { Terminal, ShieldCheck, MessageSquare, AlertTriangle, X } from 'lucide-react';
-import AudioManager, { SoundEvent } from './audio-manager';
+import AudioManager, { SoundEvent, MusicEvent } from './audio-manager';
 
 interface FinalBattleProps {
   username: string;
@@ -51,6 +51,7 @@ const AnomalyWindow = ({ anomaly, onClose }: { anomaly: Anomaly, onClose: () => 
 export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
   const [phase, setPhase] = useState<BattlePhase>('intro');
   const [soundEvent, setSoundEvent] = useState<SoundEvent | null>('fan');
+  const [musicEvent, setMusicEvent] = useState<MusicEvent>('epic');
   
   // Content States
   const [systemStatusObjective, setSystemStatusObjective] = useState(finalBattleContent.systemStatus.objective[0]);
@@ -315,7 +316,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
 
   return (
     <div className="w-full h-full bg-black">
-      <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
+      <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
       {renderContent()}
     </div>
   );

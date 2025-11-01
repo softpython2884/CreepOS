@@ -19,7 +19,7 @@ import GpsTracker from './gps-tracker';
 import type { GeoJSON } from 'geojson';
 import BlueScreen from './events/blue-screen';
 import Screamer from './events/screamer';
-import AudioManager, { SoundEvent } from './audio-manager';
+import AudioManager, { SoundEvent, MusicEvent } from './audio-manager';
 import PurgeScreen from './events/purge-screen';
 import { initialFileSystem, chapterTwoFiles, chapterFourFiles, type FileSystemNode } from './apps/content';
 import Draggable from 'react-draggable';
@@ -68,6 +68,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const [location, setLocation] = useState<GeoJSON.Point | null>(null);
   const [activeEvent, setActiveEvent] = useState<EventId>('none');
   const [soundEvent, setSoundEvent] = useState<SoundEvent | null>('fan');
+  const [musicEvent, setMusicEvent] = useState<MusicEvent>('calm');
   const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>(initialFileSystem);
 
   // Story state
@@ -199,7 +200,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, appConfig, onShowEpilogue, openApps]);
+  }, [nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, appConfig, onShowEpilogue, openApps]);
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -309,7 +310,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       
       <CameraCapture onCapture={handleNewCapture} enabled={isChapterTwoFinished && !isChapterThreeFinished} />
       <GpsTracker onLocationUpdate={setLocation} />
-      <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
+      <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
       
       {activeEvent !== 'bsod' && activeEvent !== 'die_screen' && activeEvent !== 'purge_screen' && (
         <>

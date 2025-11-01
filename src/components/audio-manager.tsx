@@ -1,129 +1,136 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState }from 'react';
 
 export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | null;
+export type MusicEvent = 'calm' | 'epic' | 'none';
 
 interface AudioManagerProps {
-  event: SoundEvent;
+  soundEvent: SoundEvent;
+  musicEvent: MusicEvent;
   onEnd: () => void;
 }
 
 // Base64 encoded silent WAV file to enable autoplay
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
-// TODO: Replace these placeholders with the final audio file URLs
 const sounds: Record<NonNullable<SoundEvent>, { src: string; volume: number; loop?: boolean }> = {
-    scream: { src: 'https://i.cloudup.com/36zS5f2D-G.mp3', volume: 0.8 }, // Placeholder
-    glitch: { src: 'https://i.cloudup.com/36zS5f2D-G.mp3', volume: 0.3 }, // Placeholder
-    click: { src: 'https://i.cloudup.com/36zS5f2D-G.mp3', volume: 0.5 }, // Placeholder
-    close: { src: 'https://i.cloudup.com/36zS5f2D-G.mp3', volume: 0.4 }, // Placeholder
-    bsod: { src: 'https://i.cloudup.com/36zS5f2D-G.mp3', volume: 0.5 }, // Placeholder
-    fan: { src: 'https://i.cloudup.com/36zS5f2D-G.mp3', volume: 0.1, loop: true }, // Placeholder
+    scream: { src: 'https://cdn.freesound.org/previews/253/253459_4743849-hq.mp3', volume: 0.8 },
+    glitch: { src: 'https://cdn.freesound.org/previews/361/361483_5794279-hq.mp3', volume: 0.3 },
+    click: { src: 'https://cdn.freesound.org/previews/612/612035_1648170-hq.mp3', volume: 0.6 },
+    close: { src: 'https://cdn.freesound.org/previews/448/448130_3177899-hq.mp3', volume: 0.4 },
+    bsod: { src: 'https://cdn.freesound.org/previews/654/654868_13222345-hq.mp3', volume: 0.5 },
+    fan: { src: 'https://cdn.freesound.org/previews/435/435941_8238217-hq.mp3', volume: 0.1, loop: true },
 };
 
-const ambientSound = {
-    src: 'https://i.cloudup.com/36zS5f2D-G.mp3', // Placeholder
-    volume: 0.1
+const musicTracks: Record<Exclude<MusicEvent, 'none'>, { src: string; volume: number; }> = {
+    calm: { src: 'https://cdn.freesound.org/previews/573/573229_10793139-hq.mp3', volume: 0.3 },
+    epic: { src: 'https://cdn.freesound.org/previews/539/539159_3457666-hq.mp3', volume: 0.4 },
 };
 
-export default function AudioManager({ event, onEnd }: AudioManagerProps) {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const fanAudioRef = useRef<HTMLAudioElement>(null);
-  const ambientAudioRef = useRef<HTMLAudioElement>(null);
-  const isPlayingAmbient = useRef(false);
+export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioManagerProps) {
+  const sfxPlayerRef = useRef<HTMLAudioElement>(null);
+  const musicPlayerRef = useRef<HTMLAudioElement>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const currentMusic = useRef<MusicEvent>('none');
 
-  // Play ambient sound on mount
+
   useEffect(() => {
-    const playAmbient = async () => {
-        if (ambientAudioRef.current && !isPlayingAmbient.current) {
-            try {
-                isPlayingAmbient.current = true;
-                ambientAudioRef.current.src = ambientSound.src;
-                ambientAudioRef.current.volume = ambientSound.volume;
-                ambientAudioRef.current.loop = true;
-                await ambientAudioRef.current.play();
-            } catch (error) {
-                isPlayingAmbient.current = false;
-                if ((error as Error).name !== 'AbortError' && (error as Error).name !== 'NotSupportedError') {
-                    console.warn('Could not play ambient sound:', error);
-                }
-            }
+    const enableAudio = async () => {
+        if (isInitialized) return;
+        try {
+            // Play silent audio to unlock autoplay
+            const audio = new Audio(SILENT_WAV);
+            await audio.play();
+            setIsInitialized(true);
+        } catch (e) {
+            // Autoplay might still be blocked
         }
     };
-    
-    const enableAutoplay = () => {
-        const audio = new Audio(SILENT_WAV);
-        audio.play().catch(() => {});
-        playAmbient();
-        window.removeEventListener('click', enableAutoplay);
-        window.removeEventListener('keydown', enableAutoplay);
-    };
-    window.addEventListener('click', enableAutoplay);
-    window.addEventListener('keydown', enableAutoplay);
-    
-    playAmbient();
+    window.addEventListener('click', enableAudio, { once: true });
+    window.addEventListener('keydown', enableAudio, { once: true });
 
     return () => {
-        window.removeEventListener('click', enableAutoplay);
-        window.removeEventListener('keydown', enableAutoplay);
+        window.removeEventListener('click', enableAudio);
+        window.removeEventListener('keydown', enableAudio);
     }
-  }, []);
+  }, [isInitialized]);
+
 
   useEffect(() => {
-    const fanAudio = fanAudioRef.current;
-    if (!fanAudio) return;
-
-    const playFanSound = async () => {
-        try {
-            const sound = sounds['fan'];
-            fanAudio.src = sound.src;
-            fanAudio.volume = sound.volume;
-            fanAudio.loop = sound.loop || false;
-            await fanAudio.play();
-        } catch (error) {
-            if ((error as Error).name !== 'AbortError' && (error as Error).name !== 'NotSupportedError') {
-                console.warn('Could not play fan sound:', error);
-            }
-        }
-    };
+    if (!isInitialized || !sfxPlayerRef.current) return;
     
-    const stopFanSound = () => {
-        if (!fanAudio.paused) {
-            fanAudio.pause();
-            fanAudio.currentTime = 0;
-        }
-    }
+    const sfxPlayer = sfxPlayerRef.current;
 
-    if (event === 'fan') {
-        playFanSound();
-    } else {
-        stopFanSound();
-    }
-
-  }, [event]);
-
-
-  useEffect(() => {
-    if (event && audioRef.current && event !== 'fan') {
-      const sound = sounds[event];
+    if (soundEvent) {
+      const sound = sounds[soundEvent];
       if (sound) {
-        audioRef.current.src = sound.src;
-        audioRef.current.volume = sound.volume;
-        audioRef.current.play().catch(error => {
-            if ((error as Error).name !== 'AbortError' && (error as Error).name !== 'NotSupportedError') {
-                console.warn(`Could not play sound (${event}):`, error);
+        if (sfxPlayer.src !== sound.src) {
+           sfxPlayer.src = sound.src;
+        }
+        sfxPlayer.volume = sound.volume;
+        sfxPlayer.loop = sound.loop || false;
+        sfxPlayer.play().catch(error => {
+            if ((error as Error).name !== 'AbortError') {
+                console.warn(`Could not play sound (${soundEvent}):`, error);
             }
         });
       }
+    } else {
+        if (!sfxPlayer.paused && sfxPlayer.loop === false) {
+             // Let non-looping sounds finish, but we can add logic to stop them if needed
+        }
     }
-  }, [event]);
+  }, [soundEvent, isInitialized]);
+
+
+  useEffect(() => {
+    if (!isInitialized || !musicPlayerRef.current) return;
+
+    const musicPlayer = musicPlayerRef.current;
+    
+    if (musicEvent !== 'none' && musicEvent !== currentMusic.current) {
+        currentMusic.current = musicEvent;
+        const track = musicTracks[musicEvent];
+        
+        // Fade out current track
+        let fadeOutInterval: NodeJS.Timeout;
+        if (!musicPlayer.paused) {
+            let vol = musicPlayer.volume;
+            fadeOutInterval = setInterval(() => {
+                vol -= 0.05;
+                if (vol > 0) {
+                    musicPlayer.volume = Math.max(0, vol);
+                } else {
+                    clearInterval(fadeOutInterval);
+                    musicPlayer.pause();
+                    musicPlayer.currentTime = 0;
+                    // Play new track
+                    musicPlayer.src = track.src;
+                    musicPlayer.volume = track.volume;
+                    musicPlayer.loop = true;
+                    musicPlayer.play().catch(e => console.warn("Music play failed", e));
+                }
+            }, 100);
+        } else {
+            // If paused, just start new track
+            musicPlayer.src = track.src;
+            musicPlayer.volume = track.volume;
+            musicPlayer.loop = true;
+            musicPlayer.play().catch(e => console.warn("Music play failed", e));
+        }
+
+    } else if (musicEvent === 'none' && !musicPlayer.paused) {
+        currentMusic.current = 'none';
+        musicPlayer.pause();
+    }
+
+  }, [musicEvent, isInitialized]);
 
   return (
     <>
-      <audio ref={audioRef} onEnded={onEnd} />
-      <audio ref={fanAudioRef} loop />
-      <audio ref={ambientAudioRef} loop />
+      <audio ref={sfxPlayerRef} onEnded={onEnd} />
+      <audio ref={musicPlayerRef} loop />
     </>
   );
 }
