@@ -95,6 +95,17 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     }, 2000);
   }
 
+  const appConfig: AppConfig = {
+    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { isDefenseMode, onPanicSolved: handlePanicSolved, isPanicMode: isCorrupted }, isCorruptible: true },
+    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { isChapterOne: !isChapterOneFinished, onChapterOneFinish: () => { setIsChapterOneFinished(true); const chatApp = openApps.find(app => app.appId === 'chat'); if (chatApp) setTimeout(() => closeApp(chatApp.instanceId), 1000); }, isCorrupted: false, onCorruptionFinish: handleCorruptionFinish, isPanicMode: isCorrupted }, isCorruptible: true },
+    photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
+    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onFolderUnlocked: (folderId: string) => { if (folderId === 'folder-archives') setIsChapterTwoFinished(true)}, onSoundEvent: onSoundEvent }, isCorruptible: true },
+    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: () => triggerEvent('bsod'), onSoundEvent: onSoundEvent }, isCorruptible: true },
+    chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleFatalError }, isCorruptible: false },
+    security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, props: { onFatalError: handleFatalError }, isCorruptible: false },
+    systemStatus: { title: 'System Status', component: SystemStatus, width: 450, height: 250, props: { isDefenseMode: isDefenseMode, username: username }, isCorruptible: false },
+  };
+
   const openApp = useCallback((appId: AppId, options: { x?: number, y?: number } = {}) => {
     const instanceId = nextInstanceIdRef.current;
     nextInstanceIdRef.current += 1;
@@ -112,7 +123,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     setNextZIndex(prev => prev + 1);
     
     onSoundEvent('click');
-  }, [nextZIndex, onSoundEvent]);
+  }, [nextZIndex, onSoundEvent, appConfig]);
   
   const closeAllApps = useCallback(() => {
     setOpenApps([]);
@@ -176,18 +187,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
         setTimeout(() => setActiveEvent('none'), duration);
       }
     }
-  }, [onSoundEvent, onMusicEvent, setActiveEvent, onReboot, openApp, closeAllApps]);
-
-  const appConfig: AppConfig = {
-    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { isDefenseMode, onPanicSolved: handlePanicSolved, isPanicMode: isCorrupted }, isCorruptible: true },
-    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { isChapterOne: !isChapterOneFinished, onChapterOneFinish: () => { setIsChapterOneFinished(true); const chatApp = openApps.find(app => app.appId === 'chat'); if (chatApp) setTimeout(() => closeApp(chatApp.instanceId), 1000); }, isCorrupted: false, onCorruptionFinish: handleCorruptionFinish, isPanicMode: isCorrupted }, isCorruptible: true },
-    photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
-    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onFolderUnlocked: (folderId: string) => { if (folderId === 'folder-archives') setIsChapterTwoFinished(true)}, onSoundEvent: onSoundEvent }, isCorruptible: true },
-    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: () => triggerEvent('bsod'), onSoundEvent: onSoundEvent }, isCorruptible: true },
-    chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleFatalError }, isCorruptible: false },
-    security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, props: { onFatalError: handleFatalError }, isCorruptible: false },
-    systemStatus: { title: 'System Status', component: SystemStatus, width: 450, height: 250, props: { isDefenseMode: isDefenseMode, username: username }, isCorruptible: false },
-  };
+  }, [onSoundEvent, onMusicEvent, setActiveEvent, onReboot, openApp, closeAllApps, appConfig]);
   
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -228,7 +228,19 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     if (isCorrupted && !isChapterFourTriggered) {
         setIsChapterFourTriggered(true);
         setCurrentFileSystem(prev => [...prev, ...chapterFourFiles]);
-        triggerEvent('panic');
+        onMusicEvent('alarm');
+        closeAllApps();
+        const chatAppConfig = appConfig['chat'];
+        const terminalAppConfig = appConfig['terminal'];
+        
+        openApp('chat', {
+            x: (1920 / 2) - (chatAppConfig.width + 20),
+            y: (1080 / 2) - (chatAppConfig.height / 2)
+        });
+        openApp('terminal', {
+            x: (1920 / 2) + 20,
+            y: (1080 / 2) - (terminalAppConfig.height / 2)
+        });
     } 
     // Defense mode - Chapter 5
     else if (isDefenseMode && !isChapterFiveTriggered) {
@@ -244,7 +256,6 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     }
     
     if (isCorrupted && !isDefenseMode) {
-        onMusicEvent('alarm');
         triggerEvent('chromatic');
         triggerEvent('glitch');
     } else if (isDefenseMode) {
@@ -343,7 +354,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
                       onStart={() => bringToFront(app.instanceId)}
                     >
                       <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentApp.height} isCorrupted={isAppCorrupted}>
+                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} isCorrupted={isAppCorrupted}>
                               <AppComponent {...currentAppConfig.props}/>
                           </Window>
                       </div>
