@@ -165,6 +165,13 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     }, 2000);
   }
 
+  const handleChapterSevenFinish = () => {
+    triggerEvent('purge_screen');
+    setTimeout(() => {
+        onReboot('total_corruption');
+    }, 4000);
+  }
+
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
     chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isCorrupted: isCorrupted && !isTotallyCorrupted }, isCorruptible: true },
@@ -194,7 +201,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     if (isDefenseMode && appId === 'security' && !isChapterSevenTriggered) {
         setIsChapterSevenTriggered(true);
     }
-    if (isChapterSevenTriggered && !isChapterNineTriggered) {
+    if (isTotallyCorrupted && !isChapterNineTriggered) {
         setIsChapterNineTriggered(true);
     }
 
@@ -217,7 +224,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isChapterSevenTriggered, isChapterNineTriggered, appConfig]);
+  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, isChapterSevenTriggered, isChapterNineTriggered, appConfig]);
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -247,7 +254,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     } else if (isDefenseMode) {
         openApp('chatbot');
     } else if (isTotallyCorrupted) {
-        // Handled by Chapter 6 effects
+        openApp('terminal', { x: 50, y: 50 });
     }
     else {
       openApp('systemStatus', { x: 50, y: 50 });
@@ -264,14 +271,13 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     if (isTotallyCorrupted && terminalWriterRef.current) {
         triggerEvent('total_corruption');
         const terminal = terminalWriterRef.current;
-        openApp('terminal', { x: 50, y: 50 });
         setTimeout(() => {
             chapterSixLogs.forEach((log, i) => {
                 setTimeout(() => terminal.write(log), i * 500);
             });
         }, 1000);
     }
-  }, [isTotallyCorrupted, openApp, triggerEvent]);
+  }, [isTotallyCorrupted, triggerEvent]);
 
   const handleNewCapture = useCallback((imageUri: string) => {
     const newCapture: ImagePlaceholder = { id: `capture-${Date.now()}`, description: "It's you.", imageUrl: imageUri, imageHint: "self portrait" };
@@ -329,6 +335,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
             triggerEvent={triggerEvent}
             openApp={openApp}
             setCameraActive={setIsCameraActiveForStory}
+            onFinish={handleChapterSevenFinish}
         />
       )}
       {isChapterNineTriggered && lastCapturedImage && (

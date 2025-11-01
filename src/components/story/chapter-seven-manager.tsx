@@ -9,9 +9,10 @@ interface ChapterSevenManagerProps {
     triggerEvent: (eventId: EventId) => void;
     openApp: (appId: AppId) => void;
     setCameraActive: (active: boolean) => void;
+    onFinish: () => void;
 }
 
-export default function ChapterSevenManager({ terminal, triggerEvent, openApp, setCameraActive }: ChapterSevenManagerProps) {
+export default function ChapterSevenManager({ terminal, triggerEvent, openApp, setCameraActive, onFinish }: ChapterSevenManagerProps) {
     const hasRun = useRef(false);
 
     const runSequence = useCallback(async () => {
@@ -39,11 +40,10 @@ export default function ChapterSevenManager({ terminal, triggerEvent, openApp, s
         }, 15000);
 
         setTimeout(() => {
-            triggerEvent('scream');
-            triggerEvent('purge_screen');
+            onFinish();
         }, 18000);
 
-    }, [terminal, openApp, triggerEvent, setCameraActive]);
+    }, [terminal, openApp, triggerEvent, setCameraActive, onFinish]);
 
     useEffect(() => {
         if (!hasRun.current) {
