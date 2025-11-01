@@ -19,7 +19,7 @@ const sounds: Record<NonNullable<SoundEvent>, { src: string | string[]; volume: 
     click: { src: '/clicksoundeffect.mp3', volume: 0.6 },
     close: { src: '/clicksoundeffect.mp3', volume: 0.4 },
     bsod: { src: '/bluescreen.mp3', volume: 0.5 },
-    fan: { src: '/ventil.mp3', volume: 0.1, loop: true },
+    fan: { src: '/ventil.mp3', volume: 0.4, loop: true },
 };
 
 const musicTracks: Record<Exclude<MusicEvent, 'none'>, { src: string; volume: number; loop?: boolean }> = {
