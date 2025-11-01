@@ -19,7 +19,6 @@ const apps: { id: AppId; name: string; icon: JSX.Element, corruptedIcon: JSX.Ele
   { id: 'documents', name: 'Documents', icon: <Folder />, corruptedIcon: <Folder className="animate-pulse text-destructive" /> },
   { id: 'photos', name: 'Photo Viewer', icon: <ImageIcon />, corruptedIcon: <ImageIcon className="animate-pulse text-destructive" /> },
   { id: 'browser', name: 'Browser', icon: <Globe />, corruptedIcon: <Globe className="animate-pulse text-destructive" /> },
-  { id: 'chatbot', name: '???', icon: <ShieldQuestion />, corruptedIcon: <ShieldQuestion className="text-destructive" /> },
   { id: 'security', name: 'SENTINEL', icon: <ShieldAlert />, corruptedIcon: <ShieldAlert className="text-destructive" />, defenseIcon: <ShieldAlert className="text-blue-400 animate-pulse" /> },
 ];
 
@@ -32,7 +31,8 @@ export default function Dock({ onAppClick, openApps, activeInstanceId, isCorrupt
     if (isCorrupted) {
         return true;
     }
-    return app.id !== 'chatbot' && app.id !== 'security';
+    // In normal mode, don't show the security app
+    return app.id !== 'security';
   });
 
   return (
@@ -78,3 +78,5 @@ export default function Dock({ onAppClick, openApps, activeInstanceId, isCorrupt
     </TooltipProvider>
   );
 }
+
+    

@@ -175,7 +175,10 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         appId = 'chatbot'; // Force open chatbot
     }
     if (isTotallyCorrupted) {
-        onShowEpilogue();
+      if (openApps.length === 0) { // Prevent loop
+          onShowEpilogue();
+      }
+      return;
     }
 
 
@@ -197,7 +200,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, appConfig, onShowEpilogue]);
+  }, [isChapterOneFinished, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, appConfig, onShowEpilogue, openApps]);
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -228,6 +231,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         });
     } else if (isDefenseMode) {
         openApp('systemStatus', { x: 50, y: 50 });
+        openApp('security', { x: 550, y: 50 });
         openApp('chatbot');
     } else if (isTotallyCorrupted) {
         onShowEpilogue();
@@ -355,3 +359,5 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     </main>
   );
 }
+
+    

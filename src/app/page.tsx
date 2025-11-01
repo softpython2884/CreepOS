@@ -232,7 +232,7 @@ export default function Home() {
 
         if (machineState === 'booting' || machineState.startsWith('rebooting')) {
             return (
-                <div className={cn("w-full h-full bg-black cursor-none", (systemState.isTotallyCorrupted) && 'corrupted', systemState.isDefenseMode && 'animate-vibration')}>
+                <div className={cn("w-full h-full bg-black cursor-none", (systemState.isTotallyCorrupted) && 'corrupted', machineState === 'rebooting_defense' && 'animate-vibration')}>
                     <BootScreen onBootComplete={() => setMachineState('login')} state={machineState} />
                 </div>
             );
@@ -240,7 +240,7 @@ export default function Home() {
 
         if (machineState === 'login') {
             return (
-                <div className={cn("w-full h-full flex flex-col justify-center items-center", (systemState.isCorrupted || systemState.isTotallyCorrupted) && "corrupted", systemState.isDefenseMode && "animate-chromatic-aberration")}>
+                <div className={cn("w-full h-full flex flex-col justify-center items-center", (systemState.isCorrupted || systemState.isTotallyCorrupted) && "corrupted", machineState === 'rebooting_defense' && "animate-chromatic-aberration")}>
                     <LoginScreen onLogin={() => setMachineState('desktop')} corrupted={systemState.isCorrupted || systemState.isTotallyCorrupted} defense={systemState.isDefenseMode} username={currentUser} />
                 </div>
             );
@@ -261,3 +261,5 @@ export default function Home() {
         </main>
     );
 }
+
+    
