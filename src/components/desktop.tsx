@@ -305,7 +305,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       <GpsTracker onLocationUpdate={setLocation} />
       <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
       
-      {activeEvent !== 'bsod' && activeEvent !== 'die_screen' && active-event !== 'purge_screen' && (
+      {activeEvent !== 'bsod' && activeEvent !== 'die_screen' && activeEvent !== 'purge_screen' && (
         <>
             <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">CAUCHEMAR VIRTUEL</h1>
             {openApps.map((app) => {
