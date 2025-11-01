@@ -1,6 +1,6 @@
 'use client';
 
-import { Radar, MapPin, Wifi, ShieldAlert } from 'lucide-react';
+import { Radar, Wifi } from 'lucide-react';
 import { useState } from 'react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -45,15 +45,10 @@ export default function SecurityApp({ onFatalError }: SecurityAppProps) {
 
   return (
     <div className="h-full flex flex-col bg-black text-green-400 font-mono p-4 gap-4">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
             <StatCard title="STATUS" value="ACTIVE">
                 <div className="w-12 h-12 bg-green-900/50 flex items-center justify-center rounded-full border-2 border-green-400 animate-pulse">
                     <Radar className="w-6 h-6 text-green-300" />
-                </div>
-            </StatCard>
-            <StatCard title="GPS LOCK" value="SECURED">
-                <div className="w-12 h-12 bg-green-900/50 flex items-center justify-center rounded-full border-2 border-green-400">
-                    <MapPin className="w-6 h-6 text-green-300" />
                 </div>
             </StatCard>
             <StatCard title="NETWORK" value="ISOLATED">

@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
-import type { GeoJSON } from 'geojson';
 
 interface Message {
   id: number;
@@ -17,7 +16,6 @@ interface Message {
 }
 
 interface AIChatProps {
-    location: GeoJSON.Point | null;
     isChapterOne?: boolean;
     onChapterOneFinish?: () => void;
     isCorrupted?: boolean;
@@ -38,7 +36,7 @@ const corruptedMessages = [
 const panicHint = "VITE ! OUVRE LE TERMINAL ! TAPE 'safemode --enable' PUIS 'reboot' ! MAINTENANT !";
 
 
-export default function AIChat({ location, isChapterOne = false, onChapterOneFinish, isCorrupted = false, onCorruptionFinish, isPanicMode = false }: AIChatProps) {
+export default function AIChat({ isChapterOne = false, onChapterOneFinish, isCorrupted = false, onCorruptionFinish, isPanicMode = false }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatState, chatFormAction, isChatPending] = useActionState(chatWithAI, initialActionState);
   const [hintState, hintFormAction, isHintPending] = useActionState(generateInitialHint, initialActionState);
@@ -130,9 +128,6 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
     const prompt = formData.get('prompt') as string;
     if (prompt.trim()) {
       addMessage('user', prompt);
-      if (location) {
-        formData.append('location', JSON.stringify(location));
-      }
       chatFormAction(formData);
       formRef.current?.reset();
     }

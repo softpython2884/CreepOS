@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState }from 'react';
 
 export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | null;
-export type MusicEvent = 'calm' | 'epic' | 'none';
+export type MusicEvent = 'calm' | 'epic' | 'alarm' | 'none';
 
 interface AudioManagerProps {
   soundEvent: SoundEvent;
   musicEvent: MusicEvent;
-  onEnd: (event: SoundEvent) => void;
+  onEnd: (event: SoundEvent | null) => void;
 }
 
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
@@ -22,9 +22,10 @@ const sounds: Record<NonNullable<SoundEvent>, { src: string | string[]; volume: 
     fan: { src: '/ventil.mp3', volume: 0.1, loop: true },
 };
 
-const musicTracks: Record<Exclude<MusicEvent, 'none'>, { src: string; volume: number; }> = {
-    calm: { src: '/trkl.mp3', volume: 0.3 },
-    epic: { src: '/start.mp3', volume: 0.4 },
+const musicTracks: Record<Exclude<MusicEvent, 'none'>, { src: string; volume: number; loop?: boolean }> = {
+    calm: { src: '/trkl.mp3', volume: 0.3, loop: true },
+    epic: { src: '/start.mp3', volume: 0.4, loop: true },
+    alarm: { src: '/alarm.mp3', volume: 0.6, loop: true },
 };
 
 const SFX_PLAYER_COUNT = 5;
@@ -89,6 +90,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         
         player.onended = () => {
             onEnd(soundEvent);
+            if(player.loop) player.play(); // Restart loop
         };
         
         player.play().catch(error => {
@@ -110,14 +112,16 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
 
     const musicPlayer = musicPlayerRef.current;
     
-    if (musicEvent !== 'none' && musicEvent !== currentMusic.current) {
+    if (musicEvent !== currentMusic.current) {
         currentMusic.current = musicEvent;
-        const track = musicTracks[musicEvent];
         
-        let fadeOutInterval: NodeJS.Timeout;
-        if (!musicPlayer.paused) {
+        const fadeOutAndStop = (callback: () => void) => {
+            if (musicPlayer.paused) {
+                callback();
+                return;
+            }
             let vol = musicPlayer.volume;
-            fadeOutInterval = setInterval(() => {
+            const fadeOutInterval = setInterval(() => {
                 vol -= 0.05;
                 if (vol > 0) {
                     musicPlayer.volume = Math.max(0, vol);
@@ -125,23 +129,20 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
                     clearInterval(fadeOutInterval);
                     musicPlayer.pause();
                     musicPlayer.currentTime = 0;
-                    
-                    musicPlayer.src = track.src;
-                    musicPlayer.volume = track.volume;
-                    musicPlayer.loop = true;
-                    musicPlayer.play().catch(e => console.warn("Music play failed", e));
+                    callback();
                 }
-            }, 100);
-        } else {
-            musicPlayer.src = track.src;
-            musicPlayer.volume = track.volume;
-            musicPlayer.loop = true;
-            musicPlayer.play().catch(e => console.warn("Music play failed", e));
+            }, 50);
         }
 
-    } else if (musicEvent === 'none' && !musicPlayer.paused) {
-        currentMusic.current = 'none';
-        musicPlayer.pause();
+        fadeOutAndStop(() => {
+            if (musicEvent !== 'none') {
+                const track = musicTracks[musicEvent];
+                musicPlayer.src = track.src;
+                musicPlayer.volume = track.volume;
+                musicPlayer.loop = track.loop ?? false;
+                musicPlayer.play().catch(e => console.warn("Music play failed", e));
+            }
+        });
     }
 
   }, [musicEvent, isInitialized]);

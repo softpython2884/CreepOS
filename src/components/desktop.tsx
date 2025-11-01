@@ -15,7 +15,6 @@ import SystemStatus from './apps/system-status';
 import { cn } from '@/lib/utils';
 import CameraCapture from './camera-capture';
 import type { ImagePlaceholder } from '@/lib/placeholder-images';
-import GpsTracker from './gps-tracker';
 import Screamer from './events/screamer';
 import { SoundEvent, MusicEvent } from './audio-manager';
 import PurgeScreen from './events/purge-screen';
@@ -68,7 +67,6 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
   const nextInstanceIdRef = useRef(0);
   const desktopRef = useRef<HTMLDivElement>(null);
   const [capturedImages, setCapturedImages] = useState<ImagePlaceholder[]>([]);
-  const [location, setLocation] = useState<GeoJSON.Point | null>(null);
   const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>(initialFileSystem);
   const [isPanicSolved, setIsPanicSolved] = useState(false);
 
@@ -98,7 +96,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     }
     if (eventId === 'panic') {
         closeAllApps();
-        onMusicEvent('none');
+        onMusicEvent('alarm');
         onSoundEvent('glitch');
         setIsPanicSolved(false); // Reset panic state
         return;
@@ -152,8 +150,9 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
   const handlePanicSolved = useCallback(() => {
     setIsPanicSolved(true);
     setActiveEvent('none');
+    onMusicEvent('none'); // Stop alarm
     onReboot('corrupted');
-  }, [onReboot, setActiveEvent]);
+  }, [onReboot, setActiveEvent, onMusicEvent]);
 
 
   const handleBackdoorSuccess = useCallback(() => {
@@ -173,7 +172,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
   
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { isDefenseMode, onPanicSolved: handlePanicSolved, isPanicMode: activeEvent === 'panic' }, isCorruptible: true },
-    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isCorrupted: isCorrupted && !isTotallyCorrupted, onCorruptionFinish: handleCorruptionFinish, isPanicMode: activeEvent === 'panic' }, isCorruptible: true },
+    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { isCorrupted: isCorrupted && !isTotallyCorrupted, onCorruptionFinish: handleCorruptionFinish, isPanicMode: activeEvent === 'panic' }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onFolderUnlocked: (folderId: string) => { if (folderId === 'folder-archives') handleChapterTwoFinish()}, onSoundEvent: onSoundEvent }, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: handleBackdoorSuccess, onSoundEvent: onSoundEvent }, isCorruptible: true },
@@ -344,7 +343,6 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
       
       <CameraCapture onCapture={handleNewCapture} enabled={isChapterTwoFinished && !isChapterThreeFinished} />
-      <GpsTracker onLocationUpdate={setLocation} />
       
       {activeEvent !== 'die_screen' && activeEvent !== 'purge_screen' && activeEvent !== 'bsod' && (
         <>

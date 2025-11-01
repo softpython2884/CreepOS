@@ -4,11 +4,9 @@ import { chatWithAI as chatWithAIFlow, ChatWithAIInput } from '@/ai/flows/chat-w
 import { generateInitialHint as generateInitialHintFlow, GenerateInitialHintInput } from '@/ai/flows/generate-initial-hint';
 import { chatCorrupted as chatCorruptedFlow, ChatCorruptedInput } from '@/ai/flows/chat-corrupted-flow';
 import { z } from 'zod';
-import type { GeoJSON } from 'geojson';
 
 const chatSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
-  location: z.string().optional(),
 });
 
 const hintSchema = z.object({
@@ -35,7 +33,6 @@ interface CorruptedActionState extends ActionState {
 export async function chatWithAI(prevState: ActionState, formData: FormData): Promise<ActionState> {
   const validatedFields = chatSchema.safeParse({
     prompt: formData.get('prompt'),
-    location: formData.get('location'),
   });
 
   if (!validatedFields.success) {
@@ -43,11 +40,8 @@ export async function chatWithAI(prevState: ActionState, formData: FormData): Pr
   }
 
   try {
-    const { prompt, location } = validatedFields.data;
+    const { prompt } = validatedFields.data;
     const flowInput: ChatWithAIInput = { prompt };
-    if (location) {
-        flowInput.location = JSON.parse(location) as GeoJSON.Point;
-    }
     
     const result = await chatWithAIFlow(flowInput);
     return { response: result.response };
@@ -91,15 +85,3 @@ export async function chatCorrupted(prevState: CorruptedActionState, formData: F
       return { error: 'AI failed to respond.' };
     }
   }
-
-async function getCityFromLocation(location: GeoJSON.Point): Promise<string> {
-    const [lon, lat] = location.coordinates;
-    try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-        const data = await response.json();
-        return data.address.city || data.address.town || data.address.village || 'tout près';
-    } catch (error) {
-        console.error("Could not fetch city from location:", error);
-        return 'tout près'; // Fallback city name
-    }
-}
