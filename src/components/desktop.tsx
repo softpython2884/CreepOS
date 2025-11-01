@@ -185,6 +185,11 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     const instanceId = nextInstanceIdRef.current;
     
     // Chapter triggers
+    if (isCorrupted && appId === 'documents') {
+        triggerEvent('panic');
+        return;
+    }
+    
     if (isCorrupted && !isChapterFourTriggered) {
         setIsChapterFourTriggered(true);
         setCurrentFileSystem(prev => [...prev, ...chapterFourFiles]);
@@ -197,11 +202,6 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
           onShowEpilogue();
       }
       return;
-    }
-
-    if (isCorrupted && appId === 'documents') {
-        triggerEvent('panic');
-        return;
     }
 
 
@@ -352,11 +352,15 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
                 
                 const currentAppConfig = (() => {
                   let config = { ...appConfig[app.appId] };
+                  
+                  // Dynamically set props based on game state
+                  const isPanicMode = activeEvent === 'panic';
+
                   if (app.appId === 'photos') {
                     config.props = { ...config.props, highlightedImageId: lastCapturedImage?.id, isSystemCollapsing: activeEvent === 'system_collapse' };
                   }
                   if (app.appId === 'chat') {
-                    config.props = { ...config.props, isChapterOne: !isChapterOneFinished, onChapterOneFinish: handleChapterOneFinish }
+                    config.props = { ...config.props, isChapterOne: !isChapterOneFinished, onChapterOneFinish: handleChapterOneFinish, isPanicMode };
                   }
                   if (app.appId === 'documents') {
                     config.props = { ...appConfig.documents.props, initialFileSystem: currentFileSystem, onSoundEvent: onSoundEvent };
@@ -365,14 +369,12 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
                     config.props = { ...config.props, isDefenseMode, username };
                   }
                    if (app.appId === 'terminal') {
-                    config.props = { ...config.props, isDefenseMode, onPanicSolved: handlePanicSolved, isPanicMode: activeEvent === 'panic' };
+                    config.props = { ...config.props, isDefenseMode, onPanicSolved: handlePanicSolved, isPanicMode };
                   }
                   if (app.appId === 'browser') {
                     config.props = { ...config.props, onSoundEvent };
                   }
-                  if (app.appId === 'chat') {
-                    config.props = { ...config.props, isPanicMode: activeEvent === 'panic' };
-                  }
+
                   return config;
                 })();
 
