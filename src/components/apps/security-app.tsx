@@ -31,17 +31,32 @@ interface SecurityAppProps {
 
 export default function SecurityApp({ onFatalError }: SecurityAppProps) {
     const [overrideCode, setOverrideCode] = useState('');
-    const [status, setStatus] = useState<'idle' | 'denied' | 'fatal'>('idle');
+    const [status, setStatus] = useState<'idle' | 'denied' | 'conflict' | 'fatal'>('idle');
 
     const handleCodeSubmit = () => {
-        if (overrideCode.toUpperCase() === '734MEURT') {
+        const code = overrideCode.toUpperCase();
+        if (code === 'NEO_SIG_FINAL') {
             setStatus('fatal');
             setTimeout(onFatalError, 1500);
-        } else {
+        } else if (code === 'SENTINEL_SIG_734') {
+            setStatus('conflict');
+            setTimeout(() => setStatus('idle'), 2000);
+        }
+        else {
             setStatus('denied');
             setTimeout(() => setStatus('idle'), 2000);
         }
     };
+
+    const renderStatusMessage = () => {
+        if (status === 'denied') {
+            return <p className="text-red-500 text-sm mt-2 animate-in fade-in">ACCÈS REFUSÉ</p>
+        }
+        if (status === 'conflict') {
+            return <p className="text-yellow-400 text-sm mt-2 animate-in fade-in">ERREUR : CONFLIT DE SIGNATURE</p>
+        }
+        return null;
+    }
 
   return (
     <div className="h-full flex flex-col bg-black text-green-400 font-mono p-4 gap-4">
@@ -64,14 +79,14 @@ export default function SecurityApp({ onFatalError }: SecurityAppProps) {
                 <LogLine timestamp="[00:00:03]" message="TARGET IDENTIFIED: USER" type="warn" />
                 <LogLine timestamp="[00:00:05]" message="INITIATING NEURAL FIREWALL..." type="info" />
                 <LogLine timestamp="[00:00:12]" message="ERROR: CONSCIOUSNESS CONFLICT" type="error" />
-                <LogLine timestamp="[00:00:13]" message="MANUAL PURGE OVERRIDE REQUIRED." type="warn" />
+                <LogLine timestamp="[00:00:13]" message="MANUAL PURGE SIGNATURE REQUIRED." type="warn" />
             </div>
             <div className="mt-4 pt-2 border-t border-green-400/20">
                 {status === 'fatal' ? (
                      <p className="text-2xl text-center text-red-500 animate-pulse">FATAL ERROR: IDENTITY CONFLICT</p>
                 ) : (
                     <>
-                        <label htmlFor="override-code" className="text-sm text-green-300 mb-2 block">PURGE OVERRIDE CODE:</label>
+                        <label htmlFor="override-code" className="text-sm text-green-300 mb-2 block">PURGE SIGNATURE:</label>
                         <div className="flex gap-2">
                             <Input
                                 id="override-code"
@@ -79,13 +94,13 @@ export default function SecurityApp({ onFatalError }: SecurityAppProps) {
                                 value={overrideCode}
                                 onChange={(e) => setOverrideCode(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleCodeSubmit()}
-                                className={cn("bg-black/50 text-green-300 border-green-400/50 focus:ring-green-400", status === 'denied' && "border-red-500")}
-                                placeholder="ENTER CODE..."
+                                className={cn("bg-black/50 text-green-300 border-green-400/50 focus:ring-green-400", status === 'denied' && "border-red-500", status === 'conflict' && 'border-yellow-400')}
+                                placeholder="ENTER SIGNATURE..."
                                 autoComplete='off'
                             />
                             <Button onClick={handleCodeSubmit} variant="outline" className="border-green-400/50 text-green-300 hover:bg-green-900 hover:text-white">EXECUTE</Button>
                         </div>
-                        {status === 'denied' && <p className="text-red-500 text-sm mt-2 animate-in fade-in">ACCESS DENIED</p>}
+                        {renderStatusMessage()}
                     </>
                 )}
             </div>
