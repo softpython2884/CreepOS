@@ -11,7 +11,7 @@ import FinalBattle from '@/components/final-battle';
 import AudioManager, { MusicEvent, SoundEvent } from '@/components/audio-manager';
 import BlueScreen from '@/components/events/blue-screen';
 
-type MachineState = 'off' | 'booting' | 'login' | 'desktop' | 'rebooting_corrupted' | 'rebooting_defense' | 'rebooting_total_corruption' | 'epilogue' | 'final_battle' | 'game_over';
+type MachineState = 'off' | 'booting' | 'login' | 'desktop' | 'rebooting_corrupted' | 'rebooting_defense' | 'rebooting_total_corruption' | 'epilogue' | 'final_battle' | 'game_over' | 'end_screen';
 
 const bootLines = [
     'SUBSYSTEM OS v0.9 -- BETA',
@@ -182,6 +182,16 @@ const GameOverScreen = () => {
     )
 }
 
+const EndScreen = () => {
+    return (
+        <div className="w-full h-full flex items-center justify-center bg-black">
+            <h1 className="text-6xl font-headline text-white animate-in fade-in duration-1000">
+                Sub-System
+            </h1>
+        </div>
+    );
+};
+
 export default function Home() {
     const [gameCycle, setGameCycle] = useState(1);
     const [machineState, setMachineState] = useState<MachineState>('off');
@@ -239,6 +249,12 @@ export default function Home() {
         setSystemState({ isCorrupted: false, isDefenseMode: false, isTotallyCorrupted: false });
         setMusicEvent('none');
     }
+
+    const handleEndGame = () => {
+        setMusicEvent('none');
+        setSoundEvent(null);
+        setMachineState('end_screen');
+    };
     
     const startFinalBattle = () => {
         setMusicEvent('epic');
@@ -276,9 +292,13 @@ export default function Home() {
         if (machineState === 'game_over') {
             return <GameOverScreen />;
         }
+        
+        if (machineState === 'end_screen') {
+            return <EndScreen />;
+        }
 
         if (machineState === 'final_battle') {
-            return <FinalBattle username={currentUser} onFinish={restartGame} onMusicEvent={setMusicEvent} onSoundEvent={setSoundEvent} />;
+            return <FinalBattle username={currentUser} onFinish={handleEndGame} onMusicEvent={setMusicEvent} onSoundEvent={setSoundEvent} />;
         }
 
         if (machineState === 'epilogue') {
