@@ -55,9 +55,10 @@ interface DesktopProps {
   isCorrupted: boolean;
   isDefenseMode: boolean;
   isTotallyCorrupted: boolean;
+  username: string;
 }
 
-export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefenseMode, isTotallyCorrupted }: DesktopProps) {
+export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefenseMode, isTotallyCorrupted, username }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [isGlitching, setIsGlitching] = useState(false);
@@ -72,12 +73,10 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   // Story state
   const [isChapterOneFinished, setIsChapterOneFinished] = useState(false);
-  const [isChapterTwoTriggered, setIsChapterTwoTriggered] = useState(false);
   const [isChapterTwoFinished, setIsChapterTwoFinished] = useState(false);
   const [isChapterThreeFinished, setIsChapterThreeFinished] = useState(false);
   const [isChapterFourTriggered, setIsChapterFourTriggered] = useState(false);
   const [isChapterFiveTriggered, setIsChapterFiveTriggered] = useState(false);
-  const [isChapterSevenTriggered, setIsChapterSevenTriggered] = useState(false);
   const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
   const [isCameraActiveForStory, setIsCameraActiveForStory] = useState(false);
@@ -145,10 +144,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     }, 2000);
   }
 
-  const handleChapterSevenFinish = useCallback(() => {
-    onShowEpilogue();
-  }, [onShowEpilogue]);
-
   const handleCorruptionFinish = () => {
     onReboot('defense');
   };
@@ -161,15 +156,15 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: handleBackdoorSuccess }, isCorruptible: true },
     chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleChapterFiveFinish }, isCorruptible: false },
     security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, isCorruptible: false },
-    systemStatus: { title: 'System Status', component: SystemStatus, width: 450, height: 250, props: { isDefenseMode: isDefenseMode }, isCorruptible: false },
+    systemStatus: { title: 'System Status', component: SystemStatus, width: 450, height: 250, props: { isDefenseMode: isDefenseMode, username: username }, isCorruptible: false },
   };
 
   const openApp = useCallback((appId: AppId, options: { x?: number, y?: number } = {}) => {
     const instanceId = nextInstanceIdRef.current;
     
     // Chapter triggers
-    if (appId === 'documents' && isChapterOneFinished && !isChapterTwoTriggered) {
-        setIsChapterTwoTriggered(true);
+    if (appId === 'documents' && isChapterOneFinished) {
+        // This is handled by folder unlock now
     }
     if (appId === 'browser' && isCorrupted && !isChapterFourTriggered) {
         setIsChapterFourTriggered(true);
@@ -179,11 +174,8 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         setIsChapterFiveTriggered(true);
         appId = 'chatbot'; // Force open chatbot
     }
-    if (isDefenseMode && appId === 'security' && !isChapterSevenTriggered) {
-        setIsChapterSevenTriggered(true);
-    }
     if (isTotallyCorrupted) {
-      handleChapterSevenFinish();
+        onShowEpilogue();
     }
 
 
@@ -205,7 +197,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, isChapterSevenTriggered, appConfig, handleChapterSevenFinish]);
+  }, [isChapterOneFinished, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, appConfig, onShowEpilogue]);
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -238,7 +230,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         openApp('systemStatus', { x: 50, y: 50 });
         openApp('chatbot');
     } else if (isTotallyCorrupted) {
-      handleChapterSevenFinish();
+        onShowEpilogue();
     }
     else {
       // Normal start - Chapter 1
@@ -332,7 +324,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                     config.props = { ...appConfig.documents.props, initialFileSystem: currentFileSystem };
                   }
                   if (app.appId === 'systemStatus') {
-                    config.props = { ...config.props, isDefenseMode };
+                    config.props = { ...config.props, isDefenseMode, username };
                   }
                   return config;
                 })();

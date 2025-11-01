@@ -13,9 +13,10 @@ const InfoLine = ({ icon, label, value }: { icon: React.ReactNode, label: string
 
 interface SystemStatusProps {
     isDefenseMode?: boolean;
+    username: string;
 }
 
-export default function SystemStatus({ isDefenseMode = false }: SystemStatusProps) {
+export default function SystemStatus({ isDefenseMode = false, username }: SystemStatusProps) {
 
     const objective = isDefenseMode ? "Isolate Threat" : "Consciousness Assessment";
     const notes = isDefenseMode 
@@ -32,7 +33,7 @@ export default function SystemStatus({ isDefenseMode = false }: SystemStatusProp
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-4 flex-grow space-y-3">
-                <InfoLine icon={<User size={16} />} label="USER" value="Dr. D.C. Omen" />
+                <InfoLine icon={<User size={16} />} label="USER" value={username} />
                 <InfoLine icon={<Activity size={16} />} label="SESSION ID" value="734-VN" />
                 <InfoLine icon={<Clock size={16} />} label="OBJECTIVE" value={objective} />
                 <div className="pt-2">

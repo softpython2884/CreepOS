@@ -90,8 +90,8 @@ const BootScreen = ({ onBootComplete, state }: { onBootComplete: () => void, sta
     );
 };
 
-const LoginScreen = ({ onLogin, corrupted = false, defense = false }: { onLogin: () => void, corrupted?: boolean, defense?: boolean }) => {
-    const [username, setUsername] = useState('D.C. Omen');
+const LoginScreen = ({ onLogin, corrupted = false, defense = false, username: initialUsername = 'D.C. Omen' }: { onLogin: () => void, corrupted?: boolean, defense?: boolean, username?: string }) => {
+    const [username, setUsername] = useState(initialUsername);
     const [password, setPassword] = useState('');
     const [error, setError] = useState(false);
 
@@ -168,6 +168,7 @@ export default function Home() {
     const [machineState, setMachineState] = useState<MachineState>('off');
     const [systemState, setSystemState] = useState({ isCorrupted: false, isDefenseMode: false, isTotallyCorrupted: false });
     const [gameKey, setGameKey] = useState(0); // Used to force a full re-render of the game
+    const [currentUser, setCurrentUser] = useState('D.C. Omen');
 
     useEffect(() => {
         const updateScale = () => {
@@ -209,6 +210,7 @@ export default function Home() {
 
     const restartGame = () => {
         setGameKey(prev => prev + 1);
+        setCurrentUser(`Sujet #${56 + gameKey}`); // New user for the new cycle
         setMachineState('off');
         setSystemState({ isCorrupted: false, isDefenseMode: false, isTotallyCorrupted: false });
     }
@@ -239,13 +241,13 @@ export default function Home() {
         if (machineState === 'login') {
             return (
                 <div className={cn("w-full h-full flex flex-col justify-center items-center", (systemState.isCorrupted || systemState.isTotallyCorrupted) && "corrupted", systemState.isDefenseMode && "animate-chromatic-aberration")}>
-                    <LoginScreen onLogin={() => setMachineState('desktop')} corrupted={systemState.isCorrupted || systemState.isTotallyCorrupted} defense={systemState.isDefenseMode} />
+                    <LoginScreen onLogin={() => setMachineState('desktop')} corrupted={systemState.isCorrupted || systemState.isTotallyCorrupted} defense={systemState.isDefenseMode} username={currentUser} />
                 </div>
             );
         }
 
         if (machineState === 'desktop') {
-            return <Desktop key={gameKey} onReboot={handleReboot} onShowEpilogue={startEpilogue} {...systemState} />;
+            return <Desktop key={gameKey} onReboot={handleReboot} onShowEpilogue={startEpilogue} username={currentUser} {...systemState} />;
         }
 
         return null;
