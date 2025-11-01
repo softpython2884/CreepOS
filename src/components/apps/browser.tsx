@@ -119,9 +119,6 @@ const LoginPage = ({ onSuccess }: { onSuccess?: () => void }) => {
 
 export default function Browser({ onBackdoorSuccess }: BrowserProps) {
     const [activeTab, setActiveTab] = useState('home');
-    const onBackdoorSuccessRef = useRef(onBackdoorSuccess);
-    onBackdoorSuccessRef.current = onBackdoorSuccess;
-
 
     const handleTextTyped = () => {
         // This is where you could trigger chapter 4 if needed, but the logic is now moved.
@@ -129,7 +126,7 @@ export default function Browser({ onBackdoorSuccess }: BrowserProps) {
 
     const sites = [
         { id: 'home', name: 'Accueil', component: <WelcomePage onTextTyped={handleTextTyped} /> },
-        { id: 'backdoor', name: 'Porte Dérobée', component: <LoginPage onSuccess={onBackdoorSuccessRef.current} /> },
+        { id: 'backdoor', name: 'Porte Dérobée', component: <LoginPage onSuccess={onBackdoorSuccess} /> },
     ];
     const currentSite = sites.find(s => s.id === activeTab);
 

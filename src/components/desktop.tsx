@@ -8,8 +8,9 @@ import AIChat from '@/components/apps/ai-chat';
 import PhotoViewer from '@/components/apps/photo-viewer';
 import DocumentFolder from '@/components/apps/document-folder';
 import Browser from '@/components/apps/browser';
-import Chatbot from '@/components/apps/chatbot'; // New app for chapter 5
+import Chatbot from '@/components/apps/chatbot';
 import SecurityApp from './apps/security-app';
+import SystemStatus from './apps/system-status'; // New App
 import { cn } from '@/lib/utils';
 import CameraCapture from './camera-capture';
 import type { ImagePlaceholder } from '@/lib/placeholder-images';
@@ -30,7 +31,7 @@ import { chapterSixLogs } from './apps/content';
 import Draggable from 'react-draggable';
 
 
-export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser' | 'chatbot' | 'security';
+export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser' | 'chatbot' | 'security' | 'systemStatus';
 export type EventId = 'bsod' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'red_screen' | 'die_screen' | 'freeze' | 'total_corruption' | 'purge_screen' | 'system_collapse' | 'none';
 
 type AppConfig = {
@@ -99,7 +100,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         closeAllApps();
         setSoundEvent('bsod');
         setActiveEvent('bsod');
-        setTimeout(() => onReboot(isChapterThreeFinished && !isCorrupted ? 'defense' : 'corrupted'), 8000);
+        setTimeout(() => onReboot('corrupted'), 8000);
         return;
     }
     setActiveEvent(eventId);
@@ -113,7 +114,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         setTimeout(() => setActiveEvent('none'), duration);
       }
     }
-  }, [closeAllApps, onReboot, isChapterThreeFinished, isCorrupted]);
+  }, [closeAllApps, onReboot]);
 
   const closeApp = useCallback((instanceId: number) => {
     setSoundEvent('close');
@@ -147,6 +148,11 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     }
   };
 
+  const handleBackdoorSuccess = useCallback(() => {
+    onReboot('defense');
+  }, [onReboot]);
+
+
   const handleChapterThreeFinish = () => {
       setIsChapterThreeFinished(true);
       triggerEvent('bsod');
@@ -164,9 +170,10 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isCorrupted: isCorrupted && !isTotallyCorrupted }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, isCorruptible: true },
-    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: () => backdoorSuccessCallbackRef.current() }, isCorruptible: true },
+    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: handleBackdoorSuccess }, isCorruptible: true },
     chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleChapterFiveFinish }, isCorruptible: false },
     security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, isCorruptible: false },
+    systemStatus: { title: 'System Status', component: SystemStatus, width: 450, height: 250, props: {}, isCorruptible: false },
   };
 
   const openApp = useCallback((appId: AppId, options: { x?: number, y?: number } = {}) => {
@@ -243,7 +250,8 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         // Handled by Chapter 6 effects
     }
     else {
-      openApp('chat');
+      openApp('systemStatus', { x: 50, y: 50 });
+      openApp('chat', { x: 550, y: 100 });
     }
     setActiveEvent('chromatic');
     const timer1 = setTimeout(() => setIsGlitching(true), 200);
@@ -361,8 +369,8 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                       onStart={() => bringToFront(app.instanceId)}
                     >
                       <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} isCorrupted={isAppCorrupted}>
-                              <AppComponent {...currentAppConfig.props}/>
+                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentApp_Config.width} height={current_AppConfig.height} isCorrupted={is_AppCorrupted}>
+                              <AppComponent {...current_AppConfig.props}/>
                           </Window>
                       </div>
                     </Draggable>
