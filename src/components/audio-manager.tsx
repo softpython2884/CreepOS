@@ -15,17 +15,17 @@ interface AudioManagerProps {
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
 const sounds: Record<NonNullable<SoundEvent>, { src: string; volume: number; loop?: boolean }> = {
-    scream: { src: 'https://cdn.freesound.org/previews/253/253459_4743849-hq.mp3', volume: 0.8 },
-    glitch: { src: 'https://cdn.freesound.org/previews/361/361483_5794279-hq.mp3', volume: 0.3 },
-    click: { src: 'https://cdn.freesound.org/previews/612/612035_1648170-hq.mp3', volume: 0.6 },
-    close: { src: 'https://cdn.freesound.org/previews/448/448130_3177899-hq.mp3', volume: 0.4 },
-    bsod: { src: 'https://cdn.freesound.org/previews/654/654868_13222345-hq.mp3', volume: 0.5 },
-    fan: { src: 'https://cdn.freesound.org/previews/435/435941_8238217-hq.mp3', volume: 0.1, loop: true },
+    scream: { src: '/action.mp3', volume: 0.8 },
+    glitch: { src: '/glitch-sound-scary-mp3.mp3', volume: 0.3 },
+    click: { src: '/clicksoundeffect.mp3', volume: 0.6 },
+    close: { src: '/clicksoundeffect.mp3', volume: 0.4 },
+    bsod: { src: '/bluescreen.mp3', volume: 0.5 },
+    fan: { src: '/ventil.mp3', volume: 0.1, loop: true },
 };
 
 const musicTracks: Record<Exclude<MusicEvent, 'none'>, { src: string; volume: number; }> = {
-    calm: { src: 'https://cdn.freesound.org/previews/573/573229_10793139-hq.mp3', volume: 0.3 },
-    epic: { src: 'https://cdn.freesound.org/previews/539/539159_3457666-hq.mp3', volume: 0.4 },
+    calm: { src: '/trkl.mp3', volume: 0.3 },
+    epic: { src: '/start.mp3', volume: 0.4 },
 };
 
 export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioManagerProps) {
