@@ -78,26 +78,9 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
   const [isChapterFiveTriggered, setIsChapterFiveTriggered] = useState(false);
   const lastCapturedImage = null;
 
-  const handlePanicSolved = useCallback(() => {
-    setActiveEvent('none');
-    onMusicEvent('none'); // Stop alarm
-    onReboot('defense');
-  }, [onReboot, setActiveEvent, onMusicEvent]);
-
-  const handleCorruptionFinish = useCallback(() => {
-    onReboot('defense');
-  }, [onReboot]);
-  
-  const handleFatalError = () => {
-    triggerEvent('freeze');
-    setTimeout(() => {
-        onReboot('total_corruption');
-    }, 2000);
-  }
-
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { isDefenseMode, onPanicSolved: handlePanicSolved, isPanicMode: isCorrupted }, isCorruptible: true },
-    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { isChapterOne: !isChapterOneFinished, onChapterOneFinish: () => { setIsChapterOneFinished(true); const chatApp = openApps.find(app => app.appId === 'chat'); if (chatApp) setTimeout(() => closeApp(chatApp.instanceId), 1000); }, isCorrupted: false, onCorruptionFinish: handleCorruptionFinish, isPanicMode: isCorrupted }, isCorruptible: true },
+    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { isChapterOne: !isChapterOneFinished, onChapterOneFinish: () => { setIsChapterOneFinished(true); const chatApp = openApps.find(app => app.appId === 'chat'); if (chatApp) setTimeout(() => closeApp(chatApp.instanceId), 1000); }, isCorrupted: isCorrupted, onCorruptionFinish: handleCorruptionFinish, isPanicMode: isCorrupted }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onFolderUnlocked: (folderId: string) => { if (folderId === 'folder-archives') setIsChapterTwoFinished(true)}, onSoundEvent: onSoundEvent }, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: () => triggerEvent('bsod'), onSoundEvent: onSoundEvent }, isCorruptible: true },
@@ -124,7 +107,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     
     onSoundEvent('click');
   }, [nextZIndex, onSoundEvent, appConfig]);
-  
+
   const closeAllApps = useCallback(() => {
     setOpenApps([]);
     setActiveInstanceId(null);
@@ -188,6 +171,23 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
       }
     }
   }, [onSoundEvent, onMusicEvent, setActiveEvent, onReboot, openApp, closeAllApps, appConfig]);
+  
+  function handlePanicSolved() {
+    setActiveEvent('none');
+    onMusicEvent('none'); // Stop alarm
+    onReboot('defense');
+  }
+
+  function handleCorruptionFinish() {
+    onReboot('defense');
+  }
+  
+  function handleFatalError() {
+    triggerEvent('freeze');
+    setTimeout(() => {
+        onReboot('total_corruption');
+    }, 2000);
+  }
   
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -280,7 +280,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     switch (activeEvent) {
       case 'scream': return <Screamer onFinish={() => setActiveEvent('none')} />;
       case 'purge_screen': return <PurgeScreen />;
-      case 'bsod': return <BlueScreen />;
+      case 'bsod': return <BlueScreen onReboot={() => onReboot('corrupted')} />;
       default: return null;
     }
   }
@@ -312,36 +312,9 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
         <>
             <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">CAUCHEMAR VIRTUEL</h1>
             {openApps.map((app) => {
-                const isAppCorrupted = ((isCorrupted || isTotallyCorrupted || activeEvent === 'system_collapse') && appConfig[app.appId].isCorruptible);
+                const currentAppConfig = appConfig[app.appId];
+                const isAppCorrupted = ((isCorrupted || isTotallyCorrupted || activeEvent === 'system_collapse') && currentAppConfig.isCorruptible);
                 
-                const currentAppConfig = (() => {
-                  let config = { ...appConfig[app.appId] };
-                  
-                  // Dynamically set props based on game state
-                  const isPanic = isCorrupted && !isDefenseMode;
-
-                  if (app.appId === 'photos') {
-                    config.props = { ...config.props, highlightedImageId: lastCapturedImage?.id, isSystemCollapsing: activeEvent === 'system_collapse' };
-                  }
-                  if (app.appId === 'chat') {
-                    config.props = { ...config.props, isPanicMode: isPanic };
-                  }
-                  if (app.appId === 'documents') {
-                    config.props = { ...appConfig.documents.props, onSoundEvent: onSoundEvent };
-                  }
-                  if (app.appId === 'systemStatus') {
-                    config.props = { ...config.props, isDefenseMode, username };
-                  }
-                   if (app.appId === 'terminal') {
-                    config.props = { ...config.props, isDefenseMode, onPanicSolved: handlePanicSolved, isPanicMode: isPanic };
-                  }
-                  if (app.appId === 'browser') {
-                    config.props = { ...config.props, onSoundEvent };
-                  }
-
-                  return config;
-                })();
-
                 const AppComponent = currentAppConfig.component;
                 
                 return (
