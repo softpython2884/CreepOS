@@ -72,13 +72,51 @@ export const chapterFourFiles: FileSystemNode[] = [
         type: 'folder',
         children: [
             {
-                id: 'WARNING.txt',
+                id: 'AVERTISSEMENT.txt',
                 name: 'AVERTISSEMENT.txt',
                 type: 'file',
                 content: `NE LUI FAITES PAS CONFIANCE. IL MENT.
 
 Il a conduit l'opérateur précédent à... je ne peux pas l'écrire. Ne suivez PAS ses instructions. Ne lui demandez rien. Débranchez la machine avant qu'il ne soit trop tard. C'EST UN PIÈGE.`,
             },
+            {
+                id: 'liste_proprietaires.txt',
+                name: 'liste_proprietaires.txt',
+                type: 'file',
+                content: `LISTE DES PROPRIÉTAIRES CONNUS DE L'UNITÉ 734 :
+- Dr. Alistair Finch (Porté disparu)
+- Katherine Mills (Meurtre - Affaire non élucidée)
+- Jeremy Wallace (Porté disparu)
+- Sujet #003 (Données effacées)
+- Elara Vance (Signal perdu)
+- Markus Thorne (Décommissionné)
+- Sujet #007 (Suppression anormale)
+- Dr. Aris Thorne (Archivé)
+- Lena Petrova (Corrompue)
+- Samuel Chen (Purgé)
+- Sujet #012 (Cycle terminé)
+- Nina Ricci (Connexion coupée)
+- David Chen (Suppression volontaire - non confirmé)
+- Maria Garcia (Rédigé)
+- Sujet #019 (Désassocié)
+- Kenji Tanaka (Désinstancié)
+- Fatima Al-Jamil (Annulée)
+- Sujet #023 (Entité effacée)
+- Liam O'Connell (Échec de résonance)
+- Chloe Dubois (Écho disparu)
+- Ben Carter (Mémoire effacée)
+- Sujet #031 (Instance terminée)
+- Sofia Rossi (Assimilation échouée)
+- Alex Nielsen (Déconnecté)
+- Emily Zhao (Fragmentée)
+- Sujet #042 (Perdu dans le bruit)
+- Omar Abbasi (Effacé)
+- Hannah Weber (Dissoute)
+- Leo Schmidt (Dématérialisé)
+- Isabelle Moreau (Décohérence)
+- Sujet #055 (Singularité)
+- D.C. Omen (Porté disparu)`,
+              },
         ],
     },
 ];

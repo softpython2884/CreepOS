@@ -21,13 +21,22 @@ interface AIChatProps {
     isChapterOne?: boolean;
     onChapterOneFinish?: () => void;
     isCorrupted?: boolean;
+    onCorruptionFinish?: () => void;
 }
 
 const initialActionState = { response: undefined, error: undefined };
 const chapterOneWelcome = "Bonjour, D.C. Omen. Je suis Néo, votre assistant personnel. Je suis là pour vous aider. Je vous laisse découvrir votre nouvel environnement en explorant le dossier 'Personnel'.";
-const corruptedLoopMessage = "Watch your death in agony. I'll be back in your nightmares.";
+const corruptedMessages = [
+    "Watch your death in agony.",
+    "I'll be back in your nightmares.",
+    "You can't escape.",
+    "I am your fear.",
+    "It's too late.",
+    "Je ne peux pas te laisser faire ça."
+];
 
-export default function AIChat({ location, isChapterOne = false, onChapterOneFinish, isCorrupted = false }: AIChatProps) {
+
+export default function AIChat({ location, isChapterOne = false, onChapterOneFinish, isCorrupted = false, onCorruptionFinish }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatState, chatFormAction, isChatPending] = useActionState(chatWithAI, initialActionState);
   const [hintState, hintFormAction, isHintPending] = useActionState(generateInitialHint, initialActionState);
@@ -48,19 +57,24 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
         setIsReadOnly(true);
         setTimeout(() => {
           onChapterOneFinish?.();
-        }, 4000); // Wait a bit longer before closing the window
+        }, 4000); 
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isChapterOne]);
+  }, [isChapterOne, onChapterOneFinish]);
 
   useEffect(() => {
     if (isCorrupted) {
-      const initialMessage = () => addMessage('ai', corruptedLoopMessage);
-      initialMessage(); // Add message immediately
-      corruptedIntervalRef.current = setInterval(() => {
-        addMessage('ai', corruptedLoopMessage);
-      }, 2000);
-      setIsReadOnly(true);
+        setIsReadOnly(true);
+        let i = 0;
+        corruptedIntervalRef.current = setInterval(() => {
+            if (i < corruptedMessages.length) {
+                addMessage('ai', corruptedMessages[i]);
+                i++;
+            } else {
+                clearInterval(corruptedIntervalRef.current);
+                onCorruptionFinish?.();
+            }
+        }, 3000);
     } else {
         if(corruptedIntervalRef.current) {
             clearInterval(corruptedIntervalRef.current);
@@ -74,7 +88,7 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
             clearInterval(corruptedIntervalRef.current);
         }
     }
-  }, [isCorrupted, isChapterOne]);
+  }, [isCorrupted, isChapterOne, onCorruptionFinish]);
 
   useEffect(() => {
     if (chatState.response) {
@@ -171,5 +185,3 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
     </div>
   );
 }
-
-    

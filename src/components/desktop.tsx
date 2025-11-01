@@ -150,10 +150,14 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const handleChapterSevenFinish = useCallback(() => {
     onShowEpilogue();
   }, [onShowEpilogue]);
+
+  const handleCorruptionFinish = () => {
+    onReboot('defense');
+  };
   
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
-    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isCorrupted: isCorrupted && !isTotallyCorrupted }, isCorruptible: true },
+    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isCorrupted: isCorrupted && !isTotallyCorrupted, onCorruptionFinish: handleCorruptionFinish }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onFolderUnlocked: (folderId: string) => { if (folderId === 'folder-archives') setIsChapterTwoFinished(true)} }, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: handleBackdoorSuccess }, isCorruptible: true },
@@ -225,11 +229,13 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
 
   useEffect(() => {
-    if (isCorrupted) {
-       openApp('chat', { 
-        x: (1920 / 2) - (appConfig.chat.width / 2),
-        y: (1080 / 2) - (appConfig.chat.height / 2)
-      });
+    if (isCorrupted && !isChapterFourTriggered) {
+        setIsChapterFourTriggered(true);
+        setCurrentFileSystem(prev => [...prev, ...chapterFourFiles]);
+        openApp('chat', { 
+            x: (1920 / 2) - (appConfig.chat.width / 2),
+            y: (1080 / 2) - (appConfig.chat.height / 2)
+        });
     } else if (isDefenseMode) {
         openApp('systemStatus', { x: 50, y: 50 });
         openApp('chatbot');
