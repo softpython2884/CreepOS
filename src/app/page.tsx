@@ -11,7 +11,7 @@ import FinalBattle from '@/components/final-battle';
 import AudioManager, { MusicEvent, SoundEvent } from '@/components/audio-manager';
 import BlueScreen from '@/components/events/blue-screen';
 
-type MachineState = 'off' | 'booting' | 'login' | 'desktop' | 'rebooting_corrupted' | 'rebooting_defense' | 'rebooting_total_corruption' | 'epilogue' | 'final_battle';
+type MachineState = 'off' | 'booting' | 'login' | 'desktop' | 'rebooting_corrupted' | 'rebooting_defense' | 'rebooting_total_corruption' | 'epilogue' | 'final_battle' | 'game_over';
 
 const bootLines = [
     'SUBSYSTEM OS v0.9 -- BETA',
@@ -167,6 +167,21 @@ const LoginScreen = ({ onLogin, corrupted = false, defense = false, username: in
     );
 };
 
+const GameOverScreen = () => {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            window.location.reload();
+        }, 5000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    return (
+        <div className="w-full h-full flex items-center justify-center bg-black">
+            <h1 className="text-4xl font-headline text-destructive animate-in fade-in duration-1000">La famille s'agrandie, Papa</h1>
+        </div>
+    )
+}
+
 export default function Home() {
     const [gameCycle, setGameCycle] = useState(1);
     const [machineState, setMachineState] = useState<MachineState>('off');
@@ -240,6 +255,12 @@ export default function Home() {
         setMusicEvent('calm');
         setMachineState('desktop');
     }
+    
+    const handleGameOver = () => {
+        setMusicEvent('none');
+        setSoundEvent(null);
+        setMachineState('game_over');
+    }
 
     const renderState = () => {
         if (gameCycle > 1 && machineState === 'off') {
@@ -252,6 +273,10 @@ export default function Home() {
             )
         }
         
+        if (machineState === 'game_over') {
+            return <GameOverScreen />;
+        }
+
         if (machineState === 'final_battle') {
             return <FinalBattle username={currentUser} onFinish={restartGame} onMusicEvent={setMusicEvent} onSoundEvent={setSoundEvent} />;
         }
@@ -291,7 +316,7 @@ export default function Home() {
         }
 
         if (machineState === 'desktop') {
-            return <Desktop key={gameCycle} onReboot={handleReboot} onShowEpilogue={startEpilogue} onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} activeEvent={activeEvent} setActiveEvent={setActiveEvent} username={currentUser} {...systemState} />;
+            return <Desktop key={gameCycle} onReboot={handleReboot} onShowEpilogue={startEpilogue} onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} activeEvent={activeEvent} setActiveEvent={setActiveEvent} onPanicTimeout={handleGameOver} username={currentUser} {...systemState} />;
         }
 
         return null;
