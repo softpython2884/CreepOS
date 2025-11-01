@@ -12,18 +12,18 @@ interface AudioManagerProps {
 // Base64 encoded silent WAV file to enable autoplay
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
-// Using free sound effects from various sources
+// TODO: Replace these placeholders with the final audio file URLs
 const sounds: Record<NonNullable<SoundEvent>, { src: string; volume: number; loop?: boolean }> = {
-    scream: { src: 'https://www.myinstants.com/media/sounds/funtime-josh-screamer.mp3', volume: 0.8 },
-    glitch: { src: 'https://cdn.freesound.org/previews/25/25921_37876-lq.mp3', volume: 0.3 },
-    click: { src: 'https://cdn.freesound.org/previews/434/434818_6472661-lq.mp3', volume: 0.5 },
-    close: { src: 'https://cdn.freesound.org/previews/434/434819_6472661-lq.mp3', volume: 0.4 },
-    bsod: { src: 'https://cdn.freesound.org/previews/36/36991_130343-lq.mp3', volume: 0.5 },
-    fan: { src: 'https://cdn.freesound.org/previews/34/344379_5121236-lq.mp3', volume: 0.1, loop: true },
+    scream: { src: 'https://i.cloudup.com/36zS5f2D-G.mp3', volume: 0.8 }, // Placeholder
+    glitch: { src: 'https://i.cloudup.com/36zS5f2D-G.mp3', volume: 0.3 }, // Placeholder
+    click: { src: 'https://i.cloudup.com/36zS5f2D-G.mp3', volume: 0.5 }, // Placeholder
+    close: { src: 'https://i.cloudup.com/36zS5f2D-G.mp3', volume: 0.4 }, // Placeholder
+    bsod: { src: 'https://i.cloudup.com/36zS5f2D-G.mp3', volume: 0.5 }, // Placeholder
+    fan: { src: 'https://i.cloudup.com/36zS5f2D-G.mp3', volume: 0.1, loop: true }, // Placeholder
 };
 
 const ambientSound = {
-    src: 'https://cdn.freesound.org/previews/702/702752_13282424-lq.mp3',
+    src: 'https://i.cloudup.com/36zS5f2D-G.mp3', // Placeholder
     volume: 0.1
 };
 
@@ -45,29 +45,25 @@ export default function AudioManager({ event, onEnd }: AudioManagerProps) {
                 await ambientAudioRef.current.play();
             } catch (error) {
                 isPlayingAmbient.current = false;
-                if ((error as Error).name !== 'AbortError') {
+                if ((error as Error).name !== 'AbortError' && (error as Error).name !== 'NotSupportedError') {
                     console.warn('Could not play ambient sound:', error);
                 }
             }
         }
     };
     
-    // We need a user interaction to start audio, but we can try to play it here.
-    // In many browsers it will fail until the user clicks something.
-    // The "Start System" button click should enable it.
-    playAmbient();
-
-    // A hack to enable autoplay on Chrome by playing a silent sound on first interaction
     const enableAutoplay = () => {
         const audio = new Audio(SILENT_WAV);
         audio.play().catch(() => {});
-        playAmbient(); // Try to play ambient again after interaction
+        playAmbient();
         window.removeEventListener('click', enableAutoplay);
         window.removeEventListener('keydown', enableAutoplay);
     };
     window.addEventListener('click', enableAutoplay);
     window.addEventListener('keydown', enableAutoplay);
     
+    playAmbient();
+
     return () => {
         window.removeEventListener('click', enableAutoplay);
         window.removeEventListener('keydown', enableAutoplay);
@@ -86,7 +82,7 @@ export default function AudioManager({ event, onEnd }: AudioManagerProps) {
             fanAudio.loop = sound.loop || false;
             await fanAudio.play();
         } catch (error) {
-            if ((error as Error).name !== 'AbortError') {
+            if ((error as Error).name !== 'AbortError' && (error as Error).name !== 'NotSupportedError') {
                 console.warn('Could not play fan sound:', error);
             }
         }
@@ -115,7 +111,7 @@ export default function AudioManager({ event, onEnd }: AudioManagerProps) {
         audioRef.current.src = sound.src;
         audioRef.current.volume = sound.volume;
         audioRef.current.play().catch(error => {
-            if ((error as Error).name !== 'AbortError') {
+            if ((error as Error).name !== 'AbortError' && (error as Error).name !== 'NotSupportedError') {
                 console.warn(`Could not play sound (${event}):`, error);
             }
         });
