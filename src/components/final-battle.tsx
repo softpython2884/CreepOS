@@ -47,7 +47,7 @@ const AnomalyWindow = ({ anomaly, onClose }: { anomaly: Anomaly, onClose: () => 
             {anomaly.type === 'terminal_delete' && <p>&gt; {anomaly.content}</p>}
             {anomaly.type === 'image_flash' && 
                 <div className="flex-grow relative">
-                    <Image src={anomaly.content} alt="Anomaly" layout="fill" objectFit="cover" />
+                    <Image src={anomaly.content} alt="Anomaly" fill objectFit="cover" />
                 </div>
             }
         </motion.div>
@@ -66,6 +66,7 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
 
   // Gameplay States
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
+  const [anomalyCount, setAnomalyCount] = useState(0);
   const [isUnderAttack, setIsUnderAttack] = useState(false);
   const [enteredSignatures, setEnteredSignatures] = useState<Set<string>>(new Set());
 
@@ -73,6 +74,7 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
   const chatbotIntervalRef = useRef<NodeJS.Timeout>();
   const anomalyIntervalRef = useRef<NodeJS.Timeout>();
   const chatScrollViewRef = useRef<HTMLDivElement>(null);
+  const currentMusicRef = useRef<MusicEvent>('none');
 
 
     // Terminal Input Ref
@@ -89,6 +91,14 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
             chatScrollViewRef.current.scrollTop = chatScrollViewRef.current.scrollHeight;
         }
     }, [chatbotMessages]);
+    
+    const playMusic = useCallback((track: MusicEvent) => {
+        if (currentMusicRef.current !== track) {
+            currentMusicRef.current = track;
+            onMusicEvent(track);
+        }
+    }, [onMusicEvent]);
+
 
   const addTerminalLine = (line: string) => setTerminalHistory(prev => [...prev, line]);
 
@@ -96,12 +106,20 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
     const randomAnomaly = finalBattleContent.anomalies[Math.floor(Math.random() * finalBattleContent.anomalies.length)];
     const newAnomaly = { ...randomAnomaly, id: Date.now() } as Anomaly;
     setAnomalies(prev => [...prev, newAnomaly]);
+    setAnomalyCount(prev => prev + 1);
+
     if (newAnomaly.type === 'sound') {
         onSoundEvent(newAnomaly.content as SoundEvent);
     } else {
         onSoundEvent('glitch');
     }
   }, [onSoundEvent]);
+
+  useEffect(() => {
+    if (anomalyCount >= 35 && phase !== 'climax') {
+        setPhase('climax');
+    }
+  }, [anomalyCount, phase]);
 
   const startAttackWave = useCallback(() => {
     if (phase !== 'resistance' && phase !== 'revelation') return;
@@ -125,7 +143,7 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
     } else if (command === 'SIGNATURE_CHECK') {
         response = finalBattleContent.terminal.signatureCheck;
         setIsUnderAttack(false);
-        onMusicEvent('calm');
+        playMusic('calm');
         if (anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
         if (phase === 'awareness') setPhase('resistance');
     } else if (['SIG_OMEN_734', 'SIG_VANCE_42', 'SIG_FINCH_01'].includes(command)) {
@@ -151,7 +169,7 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
   useEffect(() => {
     // Intro phase
     if (phase === 'intro') {
-        onMusicEvent('epic');
+        playMusic('epic');
         objectiveIntervalRef.current = setInterval(() => {
             setSystemStatusObjective(obj => {
                 const currentIndex = finalBattleContent.systemStatus.objective.indexOf(obj);
@@ -188,7 +206,7 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
 
     // Revelation phase: reveal final plan
     if (phase === 'revelation') {
-        onMusicEvent('epic');
+        playMusic('epic');
         let planMsgIndex = 0;
         chatbotIntervalRef.current = setInterval(() => {
             if (planMsgIndex < finalBattleContent.chatbot.finalPlan.length) {
@@ -206,21 +224,25 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
         if (objectiveIntervalRef.current) clearInterval(objectiveIntervalRef.current);
         if (chatbotIntervalRef.current) clearInterval(chatbotIntervalRef.current);
         if (anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
+        setAnomalies([]);
         setIsUnderAttack(true); // Full glitch effect
-        onMusicEvent('epic'); // Ensure epic music is playing
+        playMusic('epic');
         onSoundEvent('scream');
         
         // Sudden stop after crescendo
         setTimeout(() => {
             setIsUnderAttack(false);
-            onMusicEvent('none'); // Abrupt silence
+            playMusic('none'); // Abrupt silence
             onSoundEvent('bsod'); // A final crash sound
-            setPhase('liberation');
+            setTimeout(() => {
+                setPhase('liberation');
+            }, 2000); // Wait 2s in silence
         }, 4000);
     }
 
      // Liberation phase
      if (phase === 'liberation') {
+        playMusic('calm');
         setChatbotMessages([]);
         let liberationMsgIndex = 0;
         chatbotIntervalRef.current = setInterval(() => {
@@ -236,7 +258,7 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
 
     // Epilogue
     if (phase === 'epilogue') {
-        onMusicEvent('none');
+        playMusic('none');
         setChatbotMessages([finalBattleContent.chatbot.neoEpilogue]);
         setTimeout(onFinish, 8000);
     }
@@ -248,7 +270,7 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
       if (anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, onFinish, startAttackWave, onMusicEvent, onSoundEvent]);
+  }, [phase, onFinish, startAttackWave, playMusic, onSoundEvent]);
 
 
   const renderContent = () => {
