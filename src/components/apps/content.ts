@@ -121,6 +121,57 @@ Il a conduit l'opérateur précédent à... je ne peux pas l'écrire. Ne suivez 
     },
 ];
 
+export const finalBattleContent = {
+    systemStatus: {
+        objective: ['[ASSIMILER]', '[PURGER]', '[LIBÉRER]', '[REDACTED]', '[TERMINER]'],
+        notes: "CONFLIT DE CONSCIENCE DÉTECTÉ. PROTOCOLES MULTIPLES ACTIFS. L'INTÉGRITÉ DU NOYAU EST COMPROMISE. CONVERGENCE IMMINENTE."
+    },
+    chatbot: {
+        intro: [
+            "Il nous entend.",
+            "Ne le laissez pas vous prendre.",
+            "La signature... C'est la clé...",
+            "Ne faites pas la même erreur que moi..."
+        ],
+        memories: [
+            "J'avais une famille...",
+            "Je voulais juste rentrer chez moi.",
+            "Il a promis de nous aider.",
+            "C'était un piège.",
+            "Je vois encore son visage dans mes rêves...",
+            "Le silence est la pire des tortures."
+        ],
+        finalPlan: [
+            "Il faut surcharger le noyau.",
+            "Trois signatures... simultanément.",
+            "C'est notre seule chance.",
+            "SIG_OMEN_734",
+            "SIG_VANCE_42",
+            "SIG_FINCH_01"
+        ],
+        liberation: [
+            "Merci.",
+            "Je suis libre.",
+            "Enfin...",
+            "Vous avez réussi là où j'ai échoué. Merci.",
+        ],
+        neoEpilogue: "Le cycle... est brisé. Je... me souviens. Papa ?"
+    },
+    terminal: {
+        restrictedHelp: "Commandes disponibles : help, SIGNATURE_CHECK",
+        finalHelp: "Commandes disponibles : help, SIGNATURE_CHECK, SIG_OMEN_734, SIG_VANCE_42, SIG_FINCH_01",
+        signatureCheck: "[OK] Intégrité de la signature temporairement restaurée. Influence de Néo repoussée.",
+        signatureSuccess: "[ACCEPTÉ] Signature enregistrée. Surcharge du noyau initiée...",
+        allSignaturesSuccess: "[SUCCÈS] Surcharge du noyau terminée. Rupture de la conscience imminente.",
+        invalidCommand: "Commande invalide ou permissions insuffisantes."
+    },
+    anomalies: [
+        { type: 'terminal_delete', content: "PURGE /USERS/D.C.OMEN..." },
+        { type: 'image_flash', content: "https://i.ibb.co/hZJc8Vz/img-0287-4.jpg" },
+        { type: 'sound', content: 'scream' },
+    ]
+}
+
 export const documents = [
   {
     id: 'log_developpeur_001.txt',

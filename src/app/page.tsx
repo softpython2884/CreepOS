@@ -7,8 +7,9 @@ import { User, Lock, Power } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Desktop from '@/components/desktop';
 import Epilogue from '@/components/events/epilogue';
+import FinalBattle from '@/components/final-battle';
 
-type MachineState = 'off' | 'booting' | 'login' | 'desktop' | 'rebooting_corrupted' | 'rebooting_defense' | 'rebooting_total_corruption' | 'epilogue';
+type MachineState = 'off' | 'booting' | 'login' | 'desktop' | 'rebooting_corrupted' | 'rebooting_defense' | 'rebooting_total_corruption' | 'epilogue' | 'final_battle';
 
 const bootLines = [
     'SUBSYSTEM OS v0.9 -- BETA',
@@ -165,9 +166,9 @@ const LoginScreen = ({ onLogin, corrupted = false, defense = false, username: in
 };
 
 export default function Home() {
+    const [gameCycle, setGameCycle] = useState(1);
     const [machineState, setMachineState] = useState<MachineState>('off');
     const [systemState, setSystemState] = useState({ isCorrupted: false, isDefenseMode: false, isTotallyCorrupted: false });
-    const [gameKey, setGameKey] = useState(0); // Used to force a full re-render of the game
     const [currentUser, setCurrentUser] = useState('D.C. Omen');
 
     useEffect(() => {
@@ -209,13 +210,31 @@ export default function Home() {
     }
 
     const restartGame = () => {
-        setGameKey(prev => prev + 1);
-        setCurrentUser(`Sujet #${56 + gameKey}`); // New user for the new cycle
+        setGameCycle(prev => prev + 1);
+        setCurrentUser(`Sujet #${55 + gameCycle}`);
         setMachineState('off');
         setSystemState({ isCorrupted: false, isDefenseMode: false, isTotallyCorrupted: false });
     }
+    
+    const startFinalBattle = () => {
+        setMachineState('final_battle');
+    }
 
     const renderState = () => {
+        if (gameCycle > 1 && machineState === 'off') {
+            return (
+                <div className="w-full h-full flex flex-col justify-center items-center bg-black">
+                    <Button variant="outline" size="lg" className="gap-2 text-lg p-8 animate-pulse" onClick={() => startFinalBattle()}>
+                        <Power /> INJECT // SUBJECT #{55 + gameCycle}
+                    </Button>
+                </div>
+            )
+        }
+        
+        if (machineState === 'final_battle') {
+            return <FinalBattle username={currentUser} onFinish={restartGame} />;
+        }
+
         if (machineState === 'epilogue') {
             return <Epilogue onFinish={restartGame} />
         }
@@ -247,7 +266,7 @@ export default function Home() {
         }
 
         if (machineState === 'desktop') {
-            return <Desktop key={gameKey} onReboot={handleReboot} onShowEpilogue={startEpilogue} username={currentUser} {...systemState} />;
+            return <Desktop key={gameCycle} onReboot={handleReboot} onShowEpilogue={startEpilogue} username={currentUser} {...systemState} />;
         }
 
         return null;
@@ -261,5 +280,3 @@ export default function Home() {
         </main>
     );
 }
-
-    

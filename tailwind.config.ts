@@ -9,6 +9,9 @@ export default {
   ],
   theme: {
     extend: {
+      backgroundImage: {
+        'grid-pattern': "linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, transparent 1px)"
+      },
       fontFamily: {
         body: ['Inter', 'sans-serif'],
         headline: ['Inter', 'sans-serif'],
@@ -113,6 +116,21 @@ export default {
             '20%': { filter: 'contrast(1) blur(0.5px)' },
             '100%': { filter: 'contrast(1) blur(0.5px)' },
         },
+        'glitch-short': {
+          '0%': { transform: 'translate(0, 0)', opacity: '1' },
+          '25%': { transform: 'translate(2px, -2px)', opacity: '.75' },
+          '50%': { transform: 'translate(-2px, 2px)', opacity: '.5' },
+          '75%': { transform: 'translate(2px, 2px)', opacity: '.75' },
+          '100%': { transform: 'translate(-2px, -2px)', opacity: '1' },
+        },
+        'pulse-slow': {
+          '0%, 100%': { opacity: '0.8' },
+          '50%': { opacity: '1' },
+        },
+        shatter: {
+            '0%': { transform: 'scale(1)', opacity: 1 },
+            '100%': { transform: 'scale(2.5)', opacity: 0 }
+        },
         'glitch-long': {
             '0%': { transform: 'translate(0,0) skew(0deg)' },
             '10%': { transform: 'translate(-5px,-5px) skew(1deg)' },
@@ -129,13 +147,6 @@ export default {
         'chromatic-aberration': {
             '0%, 100%': { filter: 'url(#chromatic-aberration-filter-0)' },
             '50%': { filter: 'url(#chromatic-aberration-filter-1)' },
-        },
-        'glitch-short': {
-          '0%': { transform: 'translate(0, 0)', opacity: '1' },
-          '25%': { transform: 'translate(2px, -2px)', opacity: '.75' },
-          '50%': { transform: 'translate(-2px, 2px)', opacity: '.5' },
-          '75%': { transform: 'translate(2px, 2px)', opacity: '.75' },
-          '100%': { transform: 'translate(-2px, -2px)', opacity: '1' },
         },
         typing: {
             from: { width: '0' },
@@ -211,14 +222,14 @@ export default {
         'pulse-strong': 'pulse-strong 2s infinite',
         'red-screen': 'red-screen 1.5s ease-in-out forwards',
         'die-spam': 'die-spam 0.5s linear infinite',
-        'ping-freeze': 'ping-freeze 10s ease-in-out forwards',
+        'ping-freeze': 'ping-freeze 2s ease-in-out forwards',
         'super-glitch': 'super-glitch 1.5s linear infinite',
         'vibration': 'vibration 0.1s linear infinite',
-        'system-collapse': 'system-collapse 1s linear infinite, super-glitch 2s linear infinite'
+        'system-collapse': 'system-collapse 1s linear infinite, super-glitch 2s linear infinite',
+        'pulse-slow': 'pulse-slow 3s ease-in-out infinite',
+        'shatter': 'shatter 1.5s ease-out forwards',
       },
     },
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
-
-    

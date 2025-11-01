@@ -21,10 +21,8 @@ import BlueScreen from './events/blue-screen';
 import Screamer from './events/screamer';
 import AudioManager, { SoundEvent } from './audio-manager';
 import PurgeScreen from './events/purge-screen';
-import Epilogue from './events/epilogue';
-import { chapterSixLogs, initialFileSystem, chapterTwoFiles, chapterFourFiles, type FileSystemNode } from './apps/content';
+import { initialFileSystem, chapterTwoFiles, chapterFourFiles, type FileSystemNode } from './apps/content';
 import Draggable from 'react-draggable';
-import { type TerminalWriter } from './story/chapter-two-manager';
 
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser' | 'chatbot' | 'security' | 'systemStatus';
@@ -70,7 +68,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const [location, setLocation] = useState<GeoJSON.Point | null>(null);
   const [activeEvent, setActiveEvent] = useState<EventId>('none');
   const [soundEvent, setSoundEvent] = useState<SoundEvent | null>('fan');
-  const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>([...initialFileSystem, ...chapterTwoFiles]);
+  const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>(initialFileSystem);
 
   // Story state
   const [isChapterOneFinished, setIsChapterOneFinished] = useState(false);
@@ -79,7 +77,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const [isChapterFourTriggered, setIsChapterFourTriggered] = useState(false);
   const [isChapterFiveTriggered, setIsChapterFiveTriggered] = useState(false);
   const lastCapturedImage = null;
-  const terminalWriterRef = useRef<TerminalWriter | null>(null);
   const isCameraActiveForStory = false;
 
 
@@ -102,7 +99,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     if (eventId === 'corrupt' || eventId === 'glitch') setSoundEvent('glitch');
 
     if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic', 'red_screen', 'freeze', 'system_collapse'].includes(eventId)) {
-      const duration = eventId === 'lag' ? 5000 : (eventId === 'red_screen' ? 1500 : (eventId === 'chromatic' ? 500 : (eventId === 'freeze' ? 1000000 : 3000)));
+      const duration = eventId === 'lag' ? 5000 : (eventId === 'red_screen' ? 1500 : (eventId === 'chromatic' ? 500 : (eventId === 'freeze' ? 2000 : 3000)));
       if(eventId !== 'system_collapse' && eventId !== 'freeze' && eventId !== 'die_screen') {
         setTimeout(() => setActiveEvent('none'), duration);
       }
@@ -132,6 +129,12 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         setTimeout(() => closeApp(chatApp.instanceId), 1000);
     }
   };
+  
+  const handleChapterTwoFinish = () => {
+    if(!isChapterTwoFinished) {
+        setIsChapterTwoFinished(true);
+    }
+  }
 
   const handleBackdoorSuccess = useCallback(() => {
     triggerEvent('bsod');
@@ -149,10 +152,10 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   }, [onReboot]);
   
   const appConfig: AppConfig = {
-    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, isDefenseMode }, isCorruptible: true },
+    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { isDefenseMode }, isCorruptible: true },
     chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isCorrupted: isCorrupted && !isTotallyCorrupted, onCorruptionFinish: handleCorruptionFinish }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
-    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onFolderUnlocked: (folderId: string) => { if (folderId === 'folder-archives') setIsChapterTwoFinished(true)} }, isCorruptible: true },
+    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onFolderUnlocked: (folderId: string) => { if (folderId === 'folder-archives') handleChapterTwoFinish()} }, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: handleBackdoorSuccess }, isCorruptible: true },
     chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleFatalError }, isCorruptible: false },
     security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, props: { onFatalError: handleFatalError }, isCorruptible: false },
@@ -163,10 +166,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     const instanceId = nextInstanceIdRef.current;
     
     // Chapter triggers
-    if (appId === 'documents' && isChapterOneFinished) {
-        // This is handled by folder unlock now
-    }
-    if (appId === 'browser' && isCorrupted && !isChapterFourTriggered) {
+    if (isCorrupted && !isChapterFourTriggered) {
         setIsChapterFourTriggered(true);
         setCurrentFileSystem(prev => [...prev, ...chapterFourFiles]);
     }
@@ -221,6 +221,20 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
 
   useEffect(() => {
+    if(!isChapterOneFinished) {
+        // Normal start - Chapter 1
+        if (openApps.length === 0) {
+            openApp('systemStatus', { x: 50, y: 50 });
+            openApp('chat', { x: 550, y: 100 });
+        }
+    } else if (isChapterOneFinished && !isChapterTwoFinished) {
+        setCurrentFileSystem(prev => {
+            // Avoid adding duplicates
+            if (prev.some(item => item.id === 'folder-archives')) return prev;
+            return [...prev, ...chapterTwoFiles]
+        });
+    }
+
     if (isCorrupted && !isChapterFourTriggered) {
         setIsChapterFourTriggered(true);
         setCurrentFileSystem(prev => [...prev, ...chapterFourFiles]);
@@ -228,19 +242,14 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
             x: (1920 / 2) - (appConfig.chat.width / 2),
             y: (1080 / 2) - (appConfig.chat.height / 2)
         });
-    } else if (isDefenseMode) {
+    } else if (isDefenseMode && !isChapterFiveTriggered) {
+        closeAllApps();
+        setIsChapterFiveTriggered(true);
         openApp('systemStatus', { x: 50, y: 50 });
         openApp('security', { x: 550, y: 50 });
         openApp('chatbot');
     } else if (isTotallyCorrupted) {
         onShowEpilogue();
-    }
-    else {
-      // Normal start - Chapter 1
-      if (openApps.length === 0 && !isChapterOneFinished) {
-        openApp('systemStatus', { x: 50, y: 50 });
-        openApp('chat', { x: 550, y: 100 });
-      }
     }
     
     if (isCorrupted || isDefenseMode || isTotallyCorrupted) {
@@ -250,17 +259,11 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         return () => { clearTimeout(timer1); clearTimeout(timer2); };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCorrupted, isDefenseMode, isTotallyCorrupted]);
+  }, [isChapterOneFinished, isCorrupted, isDefenseMode, isTotallyCorrupted]);
 
   useEffect(() => {
-    if (isTotallyCorrupted && terminalWriterRef.current) {
+    if (isTotallyCorrupted) {
         triggerEvent('total_corruption');
-        const terminal = terminalWriterRef.current;
-        setTimeout(() => {
-            chapterSixLogs.forEach((log, i) => {
-                setTimeout(() => terminal.write(log), i * 500);
-            });
-        }, 1000);
     }
   }, [isTotallyCorrupted, triggerEvent]);
 
