@@ -94,8 +94,11 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
     
     const playMusic = useCallback((track: MusicEvent) => {
         if (currentMusicRef.current !== track) {
-            currentMusicRef.current = track;
-            onMusicEvent(track);
+            onMusicEvent('none');
+            setTimeout(() => {
+                currentMusicRef.current = track;
+                onMusicEvent(track);
+            }, 500);
         }
     }, [onMusicEvent]);
 
@@ -103,7 +106,11 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
   const addTerminalLine = (line: string) => setTerminalHistory(prev => [...prev, line]);
 
   const triggerAnomaly = useCallback(() => {
-    if (anomalyCount >= 35) return;
+    if (anomalyCount >= 35) {
+        if(anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
+        setPhase('climax');
+        return;
+    };
     const randomAnomaly = finalBattleContent.anomalies[Math.floor(Math.random() * finalBattleContent.anomalies.length)];
     const newAnomaly = { ...randomAnomaly, id: Date.now() } as Anomaly;
     setAnomalies(prev => [...prev, newAnomaly]);
