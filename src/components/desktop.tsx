@@ -60,14 +60,13 @@ interface DesktopProps {
 export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefenseMode, isTotallyCorrupted, username }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
-  const [isGlitching, setIsGlitching] = useState(false);
   const [nextZIndex, setNextZIndex] = useState(10);
   const nextInstanceIdRef = useRef(0);
   const desktopRef = useRef<HTMLDivElement>(null);
   const [capturedImages, setCapturedImages] = useState<ImagePlaceholder[]>([]);
   const [location, setLocation] = useState<GeoJSON.Point | null>(null);
   const [activeEvent, setActiveEvent] = useState<EventId>('none');
-  const [soundEvent, setSoundEvent] = useState<SoundEvent | null>('fan');
+  const [soundEvent, setSoundEvent] = useState<SoundEvent>('fan');
   const [musicEvent, setMusicEvent] = useState<MusicEvent>('calm');
   const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>(initialFileSystem);
 
@@ -78,7 +77,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const [isChapterFourTriggered, setIsChapterFourTriggered] = useState(false);
   const [isChapterFiveTriggered, setIsChapterFiveTriggered] = useState(false);
   const lastCapturedImage = null;
-  const isCameraActiveForStory = false;
 
 
   const closeAllApps = useCallback(() => {
@@ -97,7 +95,12 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setActiveEvent(eventId);
 
     if (eventId === 'scream') setSoundEvent('scream');
-    if (eventId === 'corrupt' || eventId === 'glitch') setSoundEvent('glitch');
+    if (eventId === 'corrupt' || eventId === 'glitch') {
+        // Trigger multiple glitches
+        setSoundEvent('glitch');
+        setTimeout(() => setSoundEvent('glitch'), 150);
+        setTimeout(() => setSoundEvent('glitch'), 300);
+    };
 
     if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic', 'red_screen', 'freeze', 'system_collapse'].includes(eventId)) {
       const duration = eventId === 'lag' ? 5000 : (eventId === 'red_screen' ? 1500 : (eventId === 'chromatic' ? 500 : (eventId === 'freeze' ? 2000 : 3000)));
@@ -198,8 +201,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setNextZIndex(prev => prev + 1);
     
     setSoundEvent('click');
-    setIsGlitching(true);
-    setTimeout(() => setIsGlitching(false), 200);
   }, [nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, appConfig, onShowEpilogue, openApps]);
 
   const bringToFront = (instanceId: number) => {
@@ -254,10 +255,8 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     }
     
     if (isCorrupted || isDefenseMode || isTotallyCorrupted) {
-        setActiveEvent('chromatic');
-        const timer1 = setTimeout(() => setIsGlitching(true), 200);
-        const timer2 = setTimeout(() => { setActiveEvent('none'); setIsGlitching(false); }, 500);
-        return () => { clearTimeout(timer1); clearTimeout(timer2); };
+        triggerEvent('chromatic');
+        triggerEvent('glitch');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isChapterOneFinished, isCorrupted, isDefenseMode, isTotallyCorrupted]);
@@ -273,11 +272,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setCapturedImages(prev => [...prev, newCapture]);
   }, []);
   
-  const handleChapterCapture = useCallback((imageUri: string) => {
-      const newCapture: ImagePlaceholder = { id: `story-capture-${Date.now()}`, description: "...", imageUrl: imageUri, imageHint: "self portrait" };
-      setCapturedImages(prev => [...prev, newCapture]);
-  }, []);
-
   const renderEvent = () => {
     switch (activeEvent) {
       case 'bsod': return <BlueScreen onReboot={() => {}} />;
@@ -292,7 +286,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       ref={desktopRef}
       className={cn(
         "h-full w-full font-code relative overflow-hidden flex flex-col justify-center items-center p-4",
-        isGlitching && 'animate-glitch-short',
         (isCorrupted || isTotallyCorrupted) && 'corrupted',
         activeEvent === 'corrupt' && 'animate-glitch',
         activeEvent === 'glitch' && 'animate-glitch-long',
@@ -312,7 +305,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       <GpsTracker onLocationUpdate={setLocation} />
       <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
       
-      {activeEvent !== 'bsod' && activeEvent !== 'die_screen' && activeEvent !== 'purge_screen' && (
+      {activeEvent !== 'bsod' && activeEvent !== 'die_screen' && active-event !== 'purge_screen' && (
         <>
             <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">CAUCHEMAR VIRTUEL</h1>
             {openApps.map((app) => {

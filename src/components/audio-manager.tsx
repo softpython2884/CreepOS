@@ -8,15 +8,14 @@ export type MusicEvent = 'calm' | 'epic' | 'none';
 interface AudioManagerProps {
   soundEvent: SoundEvent;
   musicEvent: MusicEvent;
-  onEnd: () => void;
+  onEnd: (event: SoundEvent) => void;
 }
 
-// Base64 encoded silent WAV file to enable autoplay
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
-const sounds: Record<NonNullable<SoundEvent>, { src: string; volume: number; loop?: boolean }> = {
+const sounds: Record<NonNullable<SoundEvent>, { src: string | string[]; volume: number; loop?: boolean }> = {
     scream: { src: '/action.mp3', volume: 0.8 },
-    glitch: { src: '/glitch-sound-scary-mp3.mp3', volume: 0.3 },
+    glitch: { src: ['/glitch-sound-scary-mp3.mp3', '/error-glitch.mp3', '/glitch-sound-effect_FugN82U.mp3'], volume: 0.4 },
     click: { src: '/clicksoundeffect.mp3', volume: 0.6 },
     close: { src: '/clicksoundeffect.mp3', volume: 0.4 },
     bsod: { src: '/bluescreen.mp3', volume: 0.5 },
@@ -28,18 +27,28 @@ const musicTracks: Record<Exclude<MusicEvent, 'none'>, { src: string; volume: nu
     epic: { src: '/start.mp3', volume: 0.4 },
 };
 
+const SFX_PLAYER_COUNT = 5;
+
 export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioManagerProps) {
-  const sfxPlayerRef = useRef<HTMLAudioElement>(null);
-  const musicPlayerRef = useRef<HTMLAudioElement>(null);
+  const sfxPlayersRef = useRef<HTMLAudioElement[]>([]);
+  const musicPlayerRef = useRef<HTMLAudioElement | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const currentMusic = useRef<MusicEvent>('none');
 
-
   useEffect(() => {
+    // Initialize audio players
+    if (sfxPlayersRef.current.length === 0) {
+        for (let i = 0; i < SFX_PLAYER_COUNT; i++) {
+            sfxPlayersRef.current.push(new Audio());
+        }
+    }
+    if (!musicPlayerRef.current) {
+        musicPlayerRef.current = new Audio();
+    }
+
     const enableAudio = async () => {
         if (isInitialized) return;
         try {
-            // Play silent audio to unlock autoplay
             const audio = new Audio(SILENT_WAV);
             await audio.play();
             setIsInitialized(true);
@@ -56,31 +65,43 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
     }
   }, [isInitialized]);
 
-
   useEffect(() => {
-    if (!isInitialized || !sfxPlayerRef.current) return;
-    
-    const sfxPlayer = sfxPlayerRef.current;
+    if (!isInitialized || !soundEvent) return;
 
-    if (soundEvent) {
-      const sound = sounds[soundEvent];
-      if (sound) {
-        if (sfxPlayer.src !== sound.src) {
-           sfxPlayer.src = sound.src;
+    const sound = sounds[soundEvent];
+    if (!sound) return;
+
+    const player = sfxPlayersRef.current.find(p => p.paused);
+
+    if (player) {
+        let src = '';
+        if (Array.isArray(sound.src)) {
+            src = sound.src[Math.floor(Math.random() * sound.src.length)];
+        } else {
+            src = sound.src;
         }
-        sfxPlayer.volume = sound.volume;
-        sfxPlayer.loop = sound.loop || false;
-        sfxPlayer.play().catch(error => {
+
+        if (player.src !== window.location.origin + src) {
+            player.src = src;
+        }
+        player.volume = sound.volume;
+        player.loop = sound.loop || false;
+        
+        player.onended = () => {
+            onEnd(soundEvent);
+        };
+        
+        player.play().catch(error => {
             if ((error as Error).name !== 'AbortError') {
                 console.warn(`Could not play sound (${soundEvent}):`, error);
             }
         });
-      }
-    } else {
-        if (!sfxPlayer.paused && sfxPlayer.loop === false) {
-             // Let non-looping sounds finish, but we can add logic to stop them if needed
-        }
+        
+        // Reset the event so it can be triggered again
+        onEnd(null);
     }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [soundEvent, isInitialized]);
 
 
@@ -93,7 +114,6 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         currentMusic.current = musicEvent;
         const track = musicTracks[musicEvent];
         
-        // Fade out current track
         let fadeOutInterval: NodeJS.Timeout;
         if (!musicPlayer.paused) {
             let vol = musicPlayer.volume;
@@ -105,7 +125,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
                     clearInterval(fadeOutInterval);
                     musicPlayer.pause();
                     musicPlayer.currentTime = 0;
-                    // Play new track
+                    
                     musicPlayer.src = track.src;
                     musicPlayer.volume = track.volume;
                     musicPlayer.loop = true;
@@ -113,7 +133,6 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
                 }
             }, 100);
         } else {
-            // If paused, just start new track
             musicPlayer.src = track.src;
             musicPlayer.volume = track.volume;
             musicPlayer.loop = true;
@@ -127,10 +146,5 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
 
   }, [musicEvent, isInitialized]);
 
-  return (
-    <>
-      <audio ref={sfxPlayerRef} onEnded={onEnd} />
-      <audio ref={musicPlayerRef} loop />
-    </>
-  );
+  return null;
 }
