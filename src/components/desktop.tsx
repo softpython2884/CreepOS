@@ -71,12 +71,11 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const [location, setLocation] = useState<GeoJSON.Point | null>(null);
   const [activeEvent, setActiveEvent] = useState<EventId>('none');
   const [soundEvent, setSoundEvent] = useState<SoundEvent | null>('fan');
-  const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>(initialFileSystem);
+  const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>([...initialFileSystem, ...chapterTwoFiles]);
 
   // Story state
   const [isChapterOneFinished, setIsChapterOneFinished] = useState(false);
   const [isChapterTwoTriggered, setIsChapterTwoTriggered] = useState(false);
-  const [isChapterTwoFinished, setIsChapterTwoFinished] = useState(false);
   const [isChapterThreeFinished, setIsChapterThreeFinished] = useState(false);
   const [isChapterFourTriggered, setIsChapterFourTriggered] = useState(false);
   const [isChapterFiveTriggered, setIsChapterFiveTriggered] = useState(false);
@@ -175,7 +174,8 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     // Chapter triggers
     if (appId === 'documents' && isChapterOneFinished && !isChapterTwoTriggered) {
         setIsChapterTwoTriggered(true);
-        setCurrentFileSystem(prev => [...prev, ...chapterTwoFiles]);
+        // This is now handled by initial state
+        // setCurrentFileSystem(prev => [...prev, ...chapterTwoFiles]);
     }
     if (appId === 'browser' && isCorrupted && !isChapterFourTriggered) {
         setIsChapterFourTriggered(true);
