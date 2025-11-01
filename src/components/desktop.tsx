@@ -24,7 +24,6 @@ import ChapterThreeManager from './story/chapter-three-manager';
 import ChapterFourManager from './story/chapter-four-manager';
 import ChapterFiveManager from './story/chapter-five-manager';
 import ChapterSevenManager from './story/chapter-seven-manager';
-import ChapterNineManager from './story/chapter-nine-manager';
 import DieScreen from './events/die-screen';
 import PurgeScreen from './events/purge-screen';
 import { chapterSixLogs } from './apps/content';
@@ -83,7 +82,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const [isChapterFourTriggered, setIsChapterFourTriggered] = useState(false);
   const [isChapterFiveTriggered, setIsChapterFiveTriggered] = useState(false);
   const [isChapterSevenTriggered, setIsChapterSevenTriggered] = useState(false);
-  const [isChapterNineTriggered, setIsChapterNineTriggered] = useState(false);
   const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
   const [isCameraActiveForStory, setIsCameraActiveForStory] = useState(false);
@@ -168,7 +166,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const handleChapterSevenFinish = () => {
     triggerEvent('purge_screen');
     setTimeout(() => {
-        onReboot('total_corruption');
+        onShowEpilogue();
     }, 4000);
   }
 
@@ -201,8 +199,8 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     if (isDefenseMode && appId === 'security' && !isChapterSevenTriggered) {
         setIsChapterSevenTriggered(true);
     }
-    if (isTotallyCorrupted && !isChapterNineTriggered) {
-        setIsChapterNineTriggered(true);
+    if (isTotallyCorrupted) {
+        // Was Chapter 9 trigger, now does nothing.
     }
 
 
@@ -224,7 +222,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, isChapterSevenTriggered, isChapterNineTriggered, appConfig]);
+  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, isChapterSevenTriggered, appConfig]);
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -329,21 +327,13 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (<ChapterThreeManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} openApp={openApp} capturedImage={lastCapturedImage} onFinish={handleChapterThreeFinish} />)}
       {isChapterFourTriggered && (<ChapterFourManager triggerEvent={triggerEvent} setBackdoorSuccessCallback={(cb) => { backdoorSuccessCallbackRef.current = cb; }}/>)}
       {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
-      {isChapterSevenTriggered && !isChapterNineTriggered && terminalWriterRef.current && (
+      {isChapterSevenTriggered && terminalWriterRef.current && (
         <ChapterSevenManager 
             terminal={terminalWriterRef.current} 
             triggerEvent={triggerEvent}
             openApp={openApp}
             setCameraActive={setIsCameraActiveForStory}
             onFinish={handleChapterSevenFinish}
-        />
-      )}
-      {isChapterNineTriggered && lastCapturedImage && (
-        <ChapterNineManager
-            openApp={openApp}
-            triggerEvent={triggerEvent}
-            capturedImage={lastCapturedImage}
-            onFinish={onShowEpilogue}
         />
       )}
 
@@ -390,5 +380,3 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     </main>
   );
 }
-
-    
