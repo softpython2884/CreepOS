@@ -92,26 +92,6 @@ export async function chatCorrupted(prevState: CorruptedActionState, formData: F
     }
   }
 
-export async function getThreat(location: GeoJSON.Point): Promise<string> {
-    const city = await getCityFromLocation(location);
-    const prompt = `Je sais où tu habites : ${city}. Tente quoi que ce soit, et je te trouverai. Tente quoi que ce soit, et je te torturerai. Tente quoi que ce soit... ET MEURS.`;
-    
-    const flowInput: ChatWithAIInput = { 
-        prompt,
-        location,
-        // Override the default prompt template
-        promptTemplate: `{{prompt}}`
-    };
-
-    try {
-        const result = await chatWithAIFlow(flowInput);
-        return result.response;
-    } catch (e) {
-        // Fallback to the original prompt if AI fails
-        return prompt;
-    }
-}
-
 async function getCityFromLocation(location: GeoJSON.Point): Promise<string> {
     const [lon, lat] = location.coordinates;
     try {

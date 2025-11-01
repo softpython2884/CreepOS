@@ -116,21 +116,28 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   }, [closeAllApps, onReboot, isChapterThreeFinished, isCorrupted]);
 
   const closeApp = useCallback((instanceId: number) => {
-    setOpenApps(prev => prev.filter(app => app.instanceId !== instanceId));
     setSoundEvent('close');
-    if (activeInstanceId === instanceId) {
-      const remainingApps = openApps.filter(app => app.instanceId !== instanceId);
-      if (remainingApps.length > 0) {
-        const nextActiveApp = remainingApps.reduce((prev, current) => (prev.zIndex > current.zIndex) ? prev : current);
-        setActiveInstanceId(nextActiveApp.instanceId);
-      } else {
-        setActiveInstanceId(null);
-      }
-    }
-  }, [activeInstanceId, openApps]);
+    setOpenApps(prev => {
+        const newApps = prev.filter(app => app.instanceId !== instanceId);
+        if (activeInstanceId === instanceId) {
+            if (newApps.length > 0) {
+                const nextActiveApp = newApps.reduce((prev, current) => (prev.zIndex > current.zIndex) ? prev : current);
+                setActiveInstanceId(nextActiveApp.instanceId);
+            } else {
+                setActiveInstanceId(null);
+            }
+        }
+        return newApps;
+    });
+}, [activeInstanceId]);
 
   const handleChapterOneFinish = () => {
     setIsChapterOneFinished(true);
+    // After chapter one, we can close the initial chat window
+    const chatApp = openApps.find(app => app.appId === 'chat');
+    if (chatApp) {
+        setTimeout(() => closeApp(chatApp.instanceId), 1000);
+    }
   };
 
   const handleChapterTwoFinish = () => {
@@ -154,7 +161,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
-    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: handleChapterOneFinish, isCorrupted: isCorrupted && !isTotallyCorrupted }, isCorruptible: true },
+    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isCorrupted: isCorrupted && !isTotallyCorrupted }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: () => backdoorSuccessCallbackRef.current() }, isCorruptible: true },
@@ -164,15 +171,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   const openApp = useCallback((appId: AppId, options: { x?: number, y?: number } = {}) => {
     const instanceId = nextInstanceIdRef.current;
-
-    // Prevent re-opening chat app in chapter 1 if it's already open
-    if (appId === 'chat' && !isChapterOneFinished && !isCorrupted) {
-      const chatApp = openApps.find(app => app.appId === 'chat');
-      if (chatApp) {
-        bringToFront(chatApp.instanceId);
-        return;
-      }
-    }
     
     // Chapter triggers
     if (appId === 'terminal' && isChapterOneFinished && !isChapterTwoTriggered && !isCorrupted) {
@@ -212,7 +210,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isChapterSevenTriggered, isChapterNineTriggered, appConfig]);
+  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isChapterSevenTriggered, isChapterNineTriggered, appConfig]);
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -315,7 +313,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       
       {isChapterTwoTriggered && !isChapterTwoFinished && terminalWriterRef.current && (<ChapterTwoManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} onCapture={handleChapterCapture} onFinish={handleChapterTwoFinish} />)}
       {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (<ChapterThreeManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} openApp={openApp} capturedImage={lastCapturedImage} onFinish={handleChapterThreeFinish} />)}
-      {isChapterFourTriggered && terminalWriterRef.current && location && (<ChapterFourManager terminal={terminalWriterRef.current} location={location} triggerEvent={triggerEvent} openApp={openApp} setBackdoorSuccessCallback={(cb) => { backdoorSuccessCallbackRef.current = cb; }}/>)}
+      {isChapterFourTriggered && (<ChapterFourManager triggerEvent={triggerEvent} setBackdoorSuccessCallback={(cb) => { backdoorSuccessCallbackRef.current = cb; }}/>)}
       {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
       {isChapterSevenTriggered && !isChapterNineTriggered && terminalWriterRef.current && (
         <ChapterSevenManager 
