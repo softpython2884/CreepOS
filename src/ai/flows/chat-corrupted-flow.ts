@@ -4,7 +4,7 @@
  * @fileOverview Implements a Genkit flow for the corrupted AI in Chapter 5.
  */
 
-import { ai } from '@/ai/genkit';
+import {ai} from '@/ai/genkit';
 import { z } from 'genkit';
 
 const ChatCorruptedInputSchema = z.object({

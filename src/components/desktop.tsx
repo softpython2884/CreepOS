@@ -19,8 +19,6 @@ import type { GeoJSON } from 'geojson';
 import BlueScreen from './events/blue-screen';
 import Screamer from './events/screamer';
 import AudioManager, { SoundEvent } from './audio-manager';
-import ChapterFiveManager from './story/chapter-five-manager';
-import ChapterSevenManager from './story/chapter-seven-manager';
 import PurgeScreen from './events/purge-screen';
 import Epilogue from './events/epilogue';
 import { chapterSixLogs, initialFileSystem, chapterTwoFiles, chapterFourFiles, type FileSystemNode } from './apps/content';
@@ -316,18 +314,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       <GpsTracker onLocationUpdate={setLocation} />
       <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
       
-      {/* Chapter Managers */}
-      {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
-      {isChapterSevenTriggered && terminalWriterRef.current && (
-        <ChapterSevenManager 
-            terminal={terminalWriterRef.current} 
-            triggerEvent={triggerEvent}
-            openApp={openApp}
-            setCameraActive={setIsCameraActiveForStory}
-            onFinish={handleChapterSevenFinish}
-        />
-      )}
-
       {activeEvent !== 'bsod' && activeEvent !== 'die_screen' && activeEvent !== 'purge_screen' && (
         <>
             <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">CAUCHEMAR VIRTUEL</h1>
