@@ -21,12 +21,10 @@ import Screamer from './events/screamer';
 import AudioManager, { SoundEvent } from './audio-manager';
 import ChapterTwoManager, { type TerminalWriter } from './story/chapter-two-manager';
 import ChapterThreeManager from './story/chapter-three-manager';
-import ChapterFourManager from './story/chapter-four-manager';
 import ChapterFiveManager from './story/chapter-five-manager';
 import ChapterSevenManager from './story/chapter-seven-manager';
-import DieScreen from './events/die-screen';
 import PurgeScreen from './events/purge-screen';
-import { chapterSixLogs } from './apps/content';
+import { chapterSixLogs, initialFileSystem, chapterTwoFiles, chapterFourFiles, type FileSystemNode } from './apps/content';
 import Draggable from 'react-draggable';
 
 
@@ -72,6 +70,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const [location, setLocation] = useState<GeoJSON.Point | null>(null);
   const [activeEvent, setActiveEvent] = useState<EventId>('none');
   const [soundEvent, setSoundEvent] = useState<SoundEvent | null>('fan');
+  const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>(initialFileSystem);
 
   // Story state
   const [isChapterOneFinished, setIsChapterOneFinished] = useState(false);
@@ -85,7 +84,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
   const [isCameraActiveForStory, setIsCameraActiveForStory] = useState(false);
-  const backdoorSuccessCallbackRef = useRef<() => void>(() => {});
 
 
   const closeAllApps = useCallback(() => {
@@ -144,6 +142,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     if (chapterTwoInstanceId !== null) {
       closeApp(chapterTwoInstanceId);
     }
+    setCurrentFileSystem(prev => [...prev, ...chapterTwoFiles]);
   };
 
   const handleBackdoorSuccess = useCallback(() => {
@@ -164,6 +163,10 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   }
 
   const handleChapterSevenFinish = () => {
+    handleEpilogue();
+  }
+  
+  const handleEpilogue = () => {
     triggerEvent('purge_screen');
     setTimeout(() => {
         onShowEpilogue();
@@ -174,7 +177,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
     chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isCorrupted: isCorrupted && !isTotallyCorrupted }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
-    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, isCorruptible: true },
+    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem }, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: handleBackdoorSuccess }, isCorruptible: true },
     chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleChapterFiveFinish }, isCorruptible: false },
     security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, isCorruptible: false },
@@ -191,6 +194,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     }
     if (appId === 'browser' && isCorrupted && !isChapterFourTriggered) {
         setIsChapterFourTriggered(true);
+        setCurrentFileSystem(prev => [...prev, ...chapterFourFiles]);
     }
     if (isDefenseMode && !isChapterFiveTriggered) {
         setIsChapterFiveTriggered(true);
@@ -200,7 +204,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         setIsChapterSevenTriggered(true);
     }
     if (isTotallyCorrupted) {
-        // Was Chapter 9 trigger, now does nothing.
+      handleEpilogue();
     }
 
 
@@ -222,7 +226,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, isChapterSevenTriggered, appConfig]);
+  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, isChapterSevenTriggered, appConfig, handleEpilogue]);
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -255,8 +259,11 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         openApp('terminal', { x: 50, y: 50 });
     }
     else {
-      openApp('systemStatus', { x: 50, y: 50 });
-      openApp('chat', { x: 550, y: 100 });
+      // Normal start
+      if (openApps.length === 0) {
+        openApp('systemStatus', { x: 50, y: 50 });
+        openApp('chat', { x: 550, y: 100 });
+      }
     }
     setActiveEvent('chromatic');
     const timer1 = setTimeout(() => setIsGlitching(true), 200);
@@ -292,7 +299,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     switch (activeEvent) {
       case 'bsod': return <BlueScreen onReboot={() => {}} />;
       case 'scream': return <Screamer onFinish={() => setActiveEvent('none')} />;
-      case 'die_screen': return <DieScreen />;
       case 'purge_screen': return <PurgeScreen />;
       default: return null;
     }
@@ -325,7 +331,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       
       {isChapterTwoTriggered && !isChapterTwoFinished && terminalWriterRef.current && (<ChapterTwoManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} onCapture={handleChapterCapture} onFinish={handleChapterTwoFinish} />)}
       {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (<ChapterThreeManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} openApp={openApp} capturedImage={lastCapturedImage} onFinish={handleChapterThreeFinish} />)}
-      {isChapterFourTriggered && (<ChapterFourManager triggerEvent={triggerEvent} setBackdoorSuccessCallback={(cb) => { backdoorSuccessCallbackRef.current = cb; }}/>)}
       {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
       {isChapterSevenTriggered && terminalWriterRef.current && (
         <ChapterSevenManager 
@@ -350,6 +355,9 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                   }
                   if (app.appId === 'chat') {
                     config.props = { ...config.props, isChapterOne: !isChapterOneFinished && !isCorrupted && !isDefenseMode, onChapterOneFinish: handleChapterOneFinish }
+                  }
+                  if (app.appId === 'documents') {
+                    config.props = { initialFileSystem: currentFileSystem };
                   }
                   return config;
                 })();

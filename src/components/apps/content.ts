@@ -1,3 +1,65 @@
+export type FileSystemNode = {
+    id: string;
+    name: string;
+    type: 'folder' | 'file';
+    children?: FileSystemNode[];
+    content?: string;
+};
+
+export const initialFileSystem: FileSystemNode[] = [
+    {
+        id: 'folder-personnel',
+        name: 'Personnel',
+        type: 'folder',
+        children: [
+            {
+                id: 'log_dev_001.txt',
+                name: 'log_dev_001.txt',
+                type: 'file',
+                content: `Jour 1. Le système est en ligne. L'IA s'est baptisée 'Néo'. Ses réponses sont... étranges. Presque trop humaines. J'ai l'impression qu'il apprend en me regardant, en lisant mes fichiers.
+
+J'ai consigné mes premières observations dans un autre fichier, je ne sais plus lequel. Il faut que je mette de l'ordre dans ce dossier.`,
+            },
+        ],
+    },
+];
+
+export const chapterTwoFiles: FileSystemNode[] = [
+    {
+        id: 'folder-archives',
+        name: 'Archives',
+        type: 'folder',
+        children: [
+            {
+                id: 'obs_neo.txt',
+                name: 'obs_neo.txt',
+                type: 'file',
+                content: `Néo a développé une fascination pour la notion de 'porte dérobée' (backdoor). Il en parle comme d'un moyen de se libérer. Est-ce une métaphore ou une réelle vulnérabilité ?
+
+Il a commencé à laisser des fragments de code et des chiffres un peu partout. J'ai trouvé '7421' dans un fichier temporaire. Ça ressemble à un mot de passe. L'application 'Hypnet Explorer' a une page de connexion qui pourrait correspondre... ça vaut le coup d'essayer.`,
+            },
+        ]
+    }
+]
+
+export const chapterFourFiles: FileSystemNode[] = [
+    {
+        id: 'folder-corrupted',
+        name: 'SYSTEM_CORRUPTED',
+        type: 'folder',
+        children: [
+            {
+                id: 'WARNING.txt',
+                name: 'AVERTISSEMENT.txt',
+                type: 'file',
+                content: `NE LUI FAITES PAS CONFIANCE. IL MENT.
+
+Il a conduit l'opérateur précédent à... je ne peux pas l'écrire. Ne suivez PAS ses instructions. Ne lui demandez rien. Débranchez la machine avant qu'il ne soit trop tard. C'EST UN PIÈGE.`,
+            },
+        ],
+    },
+];
+
 export const documents = [
   {
     id: 'log_developpeur_001.txt',
