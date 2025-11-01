@@ -19,7 +19,7 @@ export default function CameraCapture({ onCapture, enabled }: CameraCaptureProps
   const streamRef = useRef<MediaStream | null>(null);
 
   const capture = useCallback(() => {
-    if (!enabled) return;
+    if (!enabled || !isReadyForCapture) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -40,7 +40,7 @@ export default function CameraCapture({ onCapture, enabled }: CameraCaptureProps
         onCapture(imageUri);
       }
     }
-  }, [onCapture, enabled]);
+  }, [onCapture, enabled, isReadyForCapture]);
 
 
   useEffect(() => {

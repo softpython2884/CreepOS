@@ -16,9 +16,11 @@ interface ChapterFourManagerProps {
 
 export default function ChapterFourManager({ terminal, location, triggerEvent, openApp, setBackdoorSuccessCallback }: ChapterFourManagerProps) {
     const hasRun = useRef(false);
-    const sequenceTimeout = useRef<NodeJS.Timeout>();
 
     const runPanicSequence = useCallback(async () => {
+        if (hasRun.current) return;
+        hasRun.current = true;
+
         // 1. Visual effects
         triggerEvent('red_screen');
 
@@ -38,24 +40,8 @@ export default function ChapterFourManager({ terminal, location, triggerEvent, o
     }, [triggerEvent, openApp, terminal, location]);
 
     useEffect(() => {
-        // This function will be called from the browser component when the backdoor is accessed.
-        const handleBackdoorSuccess = () => {
-            if (!hasRun.current) {
-                hasRun.current = true;
-                
-                // Start a 15-second timer before the panic sequence
-                sequenceTimeout.current = setTimeout(runPanicSequence, 15000);
-            }
-        };
-
-        setBackdoorSuccessCallback(handleBackdoorSuccess);
-
-        // Cleanup the timer if the component unmounts
-        return () => {
-            if (sequenceTimeout.current) {
-                clearTimeout(sequenceTimeout.current);
-            }
-        };
+        // This function will be called from the browser component when the button is clicked.
+        setBackdoorSuccessCallback(() => runPanicSequence);
     }, [setBackdoorSuccessCallback, runPanicSequence]);
 
 

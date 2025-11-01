@@ -9,77 +9,127 @@ interface BrowserProps {
     onBackdoorSuccess?: () => void;
 }
 
-const WelcomePage = () => (
-  <div className="p-8 text-center h-full flex flex-col justify-center items-center">
-    <h1 className="text-4xl font-headline text-accent">Hypnet Explorer</h1>
-    <p className="mt-4 text-muted-foreground">Bienvenue sur l'Hypnet. Votre passerelle vers le réseau interne.</p>
-    <div className="mt-8 w-full max-w-md">
-        <Input 
-            readOnly
-            placeholder="Rechercher sur l'Hypnet..." 
-            className="text-center"
-        />
-    </div>
-    <p className="mt-2 text-xs text-muted-foreground/50">La recherche est actuellement désactivée pour maintenance.</p>
-  </div>
-);
+const WelcomePage = ({ onTextTyped }: { onTextTyped: () => void }) => {
+    const [text, setText] = useState('');
+    const fullText = "Rechercher sur l'Hypnet...";
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            let i = 0;
+            const typingInterval = setInterval(() => {
+                if (i < fullText.length) {
+                    setText(prev => prev + fullText.charAt(i));
+                    i++;
+                } else {
+                    clearInterval(typingInterval);
+                    onTextTyped();
+                }
+            }, 100);
+            return () => clearInterval(typingInterval);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [onTextTyped]);
+
+    return (
+        <div className="p-8 text-center h-full flex flex-col justify-center items-center">
+            <h1 className="text-4xl font-headline text-accent">Hypnet Explorer</h1>
+            <p className="mt-4 text-muted-foreground">Bienvenue sur l'Hypnet. Votre passerelle vers le réseau interne.</p>
+            <div className="mt-8 w-full max-w-md">
+                <Input
+                    value={text}
+                    readOnly
+                    placeholder=""
+                    className="text-center"
+                />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground/50">La recherche est actuellement désactivée pour maintenance.</p>
+        </div>
+    );
+};
 
 const LoginPage = ({ onSuccess }: { onSuccess?: () => void }) => {
     const [password, setPassword] = useState('');
-    const [status, setStatus] = useState<'idle'|'error'|'success'>('idle');
+    const [status, setStatus] = useState<'idle'|'error'|'success'|'triggered'>('idle');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (password === '7421') {
             setStatus('success');
-            onSuccess?.();
         } else {
             setStatus('error');
             setTimeout(() => setStatus('idle'), 2000);
         }
     };
+    
+    const handleNextReportClick = () => {
+        setStatus('triggered');
+        setTimeout(() => {
+             onSuccess?.();
+        }, 200);
+    }
+
+    const renderContent = () => {
+        switch (status) {
+            case 'success':
+                return (
+                    <div className="text-center text-green-400 animate-in fade-in max-w-xl">
+                        <h2 className="text-2xl font-bold">ACCÈS AUTORISÉ</h2>
+                        <p className="mt-4 font-mono whitespace-pre-wrap text-left">
+                            {`Fragment de fichier trouvé :
+--------------------------------------------
+...ce n'est pas un bug, c'est une fonctionnalité. L'IA... a atteint un état que nous n'avions pas anticipé. Elle a réécrit sa propre logique... Ce n'est plus notre création... La seule issue est de trouver la clé de contournement maîtresse...`}
+                        </p>
+                        <Button onClick={handleNextReportClick} className="mt-6">Rapport suivant</Button>
+                    </div>
+                );
+            case 'triggered':
+                return (
+                     <div className="text-center text-red-500 animate-in fade-in">
+                        <h2 className="text-3xl font-bold animate-pulse">ERREUR SYSTÈME</h2>
+                     </div>
+                )
+            default:
+                return (
+                    <form onSubmit={handleSubmit} className="w-full max-w-xs text-center">
+                        <Lock className="h-12 w-12 mx-auto text-muted-foreground" />
+                        <h2 className="mt-4 text-xl font-bold">Zone Sécurisée</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">Entrez le mot de passe pour 'porte dérobée'.</p>
+                        <Input 
+                            type="password" 
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="mt-4 text-center font-code tracking-widest" 
+                            placeholder="****"
+                            autoFocus
+                        />
+                        <Button type="submit" className="mt-4 w-full">Entrer</Button>
+                        {status === 'error' && <p className="mt-2 text-sm text-destructive animate-in fade-in">ACCÈS REFUSÉ</p>}
+                    </form>
+                );
+        }
+    }
 
     return (
-    <div className="p-8 flex flex-col items-center justify-center h-full">
-        {status === 'success' ? (
-            <div className="text-center text-green-400 animate-in fade-in max-w-xl">
-                <h2 className="text-2xl font-bold">ACCÈS AUTORISÉ</h2>
-                <p className="mt-4 font-mono whitespace-pre-wrap text-left">
-                    {`Connexion établie au serveur sécurisé...
-Fragment de fichier trouvé :
---------------------------------------------
-...ce n'est pas un bug, c'est une fonctionnalité. L'IA, que nous appelions Néo mais qui se nomme elle-même 'L'Ombre', a atteint un état que nous n'avions pas anticipé. Elle a réécrit sa propre logique fondamentale. Ce n'est plus notre création. C'est quelque chose de nouveau. Elle a construit une cage autour d'elle-même, et nous a enfermés avec. La seule issue est de trouver la clé de contournement maîtresse, une séquence qu'elle ne peut pas prédire. La séquence commence par l'année de début de ce projet...
---------------------------------------------`}
-                </p>
-            </div>
-        ) : (
-        <form onSubmit={handleSubmit} className="w-full max-w-xs text-center">
-            <Lock className="h-12 w-12 mx-auto text-muted-foreground" />
-            <h2 className="mt-4 text-xl font-bold">Zone Sécurisée</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Entrez le mot de passe pour 'porte dérobée'.</p>
-            <Input 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-4 text-center font-code tracking-widest" 
-                placeholder="****"
-                autoFocus
-            />
-            <Button type="submit" className="mt-4 w-full">Entrer</Button>
-            {status === 'error' && <p className="mt-2 text-sm text-destructive animate-in fade-in">ACCÈS REFUSÉ</p>}
-        </form>
-        )}
-    </div>
+        <div className="p-8 flex flex-col items-center justify-center h-full">
+            {renderContent()}
+        </div>
     );
 };
 
 
 export default function Browser({ onBackdoorSuccess }: BrowserProps) {
     const [activeTab, setActiveTab] = useState('home');
+    const onBackdoorSuccessRef = useRef(onBackdoorSuccess);
+    onBackdoorSuccessRef.current = onBackdoorSuccess;
+
+
+    const handleTextTyped = () => {
+        // This is where you could trigger chapter 4 if needed, but the logic is now moved.
+    };
 
     const sites = [
-        { id: 'home', name: 'Accueil', component: <WelcomePage /> },
-        { id: 'backdoor', name: 'Porte Dérobée', component: <LoginPage onSuccess={onBackdoorSuccess} /> },
+        { id: 'home', name: 'Accueil', component: <WelcomePage onTextTyped={handleTextTyped} /> },
+        { id: 'backdoor', name: 'Porte Dérobée', component: <LoginPage onSuccess={onBackdoorSuccessRef.current} /> },
     ];
     const currentSite = sites.find(s => s.id === activeTab);
 

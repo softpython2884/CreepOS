@@ -35,6 +35,8 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
   const formRef = useRef<HTMLFormElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const corruptedIntervalRef = useRef<NodeJS.Timeout>();
+
 
   const addMessage = (sender: 'user' | 'ai', text: string) => {
     setMessages(prev => [...prev, { id: Date.now() + Math.random(), sender, text }]);
@@ -55,13 +57,21 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
     if (isCorrupted) {
       const initialMessage = () => addMessage('ai', corruptedLoopMessage);
       initialMessage(); // Add message immediately
-      const interval = setInterval(() => {
+      corruptedIntervalRef.current = setInterval(() => {
         addMessage('ai', corruptedLoopMessage);
       }, 2000);
       setIsReadOnly(true);
-      return () => clearInterval(interval);
+    } else {
+        if(corruptedIntervalRef.current) {
+            clearInterval(corruptedIntervalRef.current);
+        }
+        setIsReadOnly(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+        if(corruptedIntervalRef.current) {
+            clearInterval(corruptedIntervalRef.current);
+        }
+    }
   }, [isCorrupted]);
 
   useEffect(() => {
@@ -159,5 +169,3 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
     </div>
   );
 }
-
-    

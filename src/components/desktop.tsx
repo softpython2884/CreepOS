@@ -109,7 +109,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
     if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic', 'red_screen', 'freeze', 'system_collapse'].includes(eventId)) {
       const duration = eventId === 'lag' ? 5000 : (eventId === 'red_screen' ? 1500 : (eventId === 'chromatic' ? 500 : (eventId === 'freeze' ? 1000000 : 3000)));
-      if(eventId !== 'system_collapse' && eventId !== 'freeze') {
+      if(eventId !== 'system_collapse' && eventId !== 'freeze' && eventId !== 'die_screen') {
         setTimeout(() => setActiveEvent('none'), duration);
       }
     }
@@ -150,7 +150,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
-    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: () => setIsChapterOneFinished(true), isCorrupted }, isCorruptible: true },
+    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: () => setIsChapterOneFinished(true), isCorrupted: isCorrupted && !isTotallyCorrupted }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: () => backdoorSuccessCallbackRef.current() }, isCorruptible: true },
@@ -257,10 +257,10 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     }
   }, [isTotallyCorrupted, openApp, triggerEvent]);
 
-  const handleNewCapture = (imageUri: string) => {
+  const handleNewCapture = useCallback((imageUri: string) => {
     const newCapture: ImagePlaceholder = { id: `capture-${Date.now()}`, description: "It's you.", imageUrl: imageUri, imageHint: "self portrait" };
     setCapturedImages(prev => [...prev, newCapture]);
-  };
+  }, []);
   
   const handleChapterCapture = useCallback((imageUri: string) => {
       const newCapture: ImagePlaceholder = { id: `story-capture-${Date.now()}`, description: "...", imageUrl: imageUri, imageHint: "self portrait" };
@@ -299,7 +299,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     >
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
       
-      <CameraCapture onCapture={handleNewCapture} enabled={isCameraActiveForStory} />
+      <CameraCapture onCapture={handleNewCapture} enabled={isChapterTwoTriggered && !isChapterTwoFinished} />
       <GpsTracker onLocationUpdate={setLocation} />
       <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
       
