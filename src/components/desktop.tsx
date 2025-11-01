@@ -25,7 +25,7 @@ import SystemPanicTimer from './events/system-panic-timer';
 
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser' | 'chatbot' | 'security' | 'systemStatus';
-export type EventId = 'panic' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'red_screen' | 'die_screen' | 'freeze' | 'total_corruption' | 'purge_screen' | 'system_collapse' | 'none';
+export type EventId = 'panic' | 'scream' | 'lag' | 'corrupt' | 'glitch' | 'tear' | 'chromatic' | 'red_screen' | 'die_screen' | 'freeze' | 'total_corruption' | 'purge_screen' | 'system_collapse' | 'bsod' | 'none';
 
 type AppConfig = {
   [key in AppId]: {
@@ -52,13 +52,15 @@ interface DesktopProps {
   onShowEpilogue: () => void;
   onSoundEvent: (event: SoundEvent) => void;
   onMusicEvent: (event: MusicEvent) => void;
+  activeEvent: EventId;
+  setActiveEvent: (event: EventId) => void;
   isCorrupted: boolean;
   isDefenseMode: boolean;
   isTotallyCorrupted: boolean;
   username: string;
 }
 
-export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusicEvent, isCorrupted, isDefenseMode, isTotallyCorrupted, username }: DesktopProps) {
+export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusicEvent, activeEvent, setActiveEvent, isCorrupted, isDefenseMode, isTotallyCorrupted, username }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [nextZIndex, setNextZIndex] = useState(10);
@@ -66,7 +68,6 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
   const desktopRef = useRef<HTMLDivElement>(null);
   const [capturedImages, setCapturedImages] = useState<ImagePlaceholder[]>([]);
   const [location, setLocation] = useState<GeoJSON.Point | null>(null);
-  const [activeEvent, setActiveEvent] = useState<EventId>('none');
   const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>(initialFileSystem);
   const [isPanicSolved, setIsPanicSolved] = useState(false);
 
@@ -85,18 +86,23 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
   }, []);
   
   const triggerEvent = useCallback((eventId: EventId) => {
-    if (eventId === 'panic') {
-        closeAllApps();
-        onMusicEvent('none');
-        onSoundEvent('bsod');
-        setActiveEvent('panic');
-        setIsPanicSolved(false); // Reset panic state
-        // The reboot will be triggered by the timer or by the user solving it
-        return;
-    }
     setActiveEvent(eventId);
 
     if (eventId === 'scream') onSoundEvent('scream');
+    if (eventId === 'bsod') {
+        onMusicEvent('none');
+        onSoundEvent('bsod');
+        setTimeout(() => onReboot('corrupted'), 4000);
+        return;
+    }
+    if (eventId === 'panic') {
+        closeAllApps();
+        onMusicEvent('none');
+        onSoundEvent('glitch');
+        setIsPanicSolved(false); // Reset panic state
+        return;
+    }
+
     if (eventId === 'corrupt' || eventId === 'glitch') {
         // Trigger multiple glitches
         onSoundEvent('glitch');
@@ -110,7 +116,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
         setTimeout(() => setActiveEvent('none'), duration);
       }
     }
-  }, [closeAllApps, onReboot, onSoundEvent, onMusicEvent]);
+  }, [closeAllApps, onReboot, onSoundEvent, onMusicEvent, setActiveEvent]);
 
   const closeApp = useCallback((instanceId: number) => {
     onSoundEvent('close');
@@ -146,11 +152,11 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     setIsPanicSolved(true);
     setActiveEvent('none');
     onReboot('corrupted');
-  }, [onReboot]);
+  }, [onReboot, setActiveEvent]);
 
 
   const handleBackdoorSuccess = useCallback(() => {
-    triggerEvent('panic');
+    triggerEvent('bsod');
   }, [triggerEvent]);
 
   const handleFatalError = () => {
@@ -193,6 +199,11 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
       return;
     }
 
+    if (isCorrupted && appId === 'documents') {
+        triggerEvent('panic');
+        return;
+    }
+
 
     nextInstanceIdRef.current += 1;
 
@@ -210,7 +221,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     setNextZIndex(prev => prev + 1);
     
     onSoundEvent('click');
-  }, [nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, appConfig, onShowEpilogue, openApps, onSoundEvent]);
+  }, [nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, appConfig, onShowEpilogue, openApps, onSoundEvent, triggerEvent]);
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -298,7 +309,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     setCapturedImages(prev => [...prev, newCapture]);
   }, []);
   
-  const renderEvent = () => {
+  const renderEventOverlays = () => {
     switch (activeEvent) {
       case 'panic':
         return !isPanicSolved ? (
@@ -333,7 +344,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
       <CameraCapture onCapture={handleNewCapture} enabled={isChapterTwoFinished && !isChapterThreeFinished} />
       <GpsTracker onLocationUpdate={setLocation} />
       
-      {activeEvent !== 'die_screen' && activeEvent !== 'purge_screen' && (
+      {activeEvent !== 'die_screen' && activeEvent !== 'purge_screen' && activeEvent !== 'bsod' && (
         <>
             <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">CAUCHEMAR VIRTUEL</h1>
             {openApps.map((app) => {
@@ -387,7 +398,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
             {activeEvent !== 'panic' && <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} isCorrupted={isTotallyCorrupted} isDefenseMode={isDefenseMode} />}
         </>
       )}
-      {renderEvent()}
+      {renderEventOverlays()}
     </main>
   );
 }

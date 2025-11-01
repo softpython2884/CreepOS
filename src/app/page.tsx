@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { User, Lock, Power } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Desktop from '@/components/desktop';
+import Desktop, { type EventId } from '@/components/desktop';
 import Epilogue from '@/components/events/epilogue';
 import FinalBattle from '@/components/final-battle';
 import AudioManager, { MusicEvent, SoundEvent } from '@/components/audio-manager';
+import BlueScreen from '@/components/events/blue-screen';
 
 type MachineState = 'off' | 'booting' | 'login' | 'desktop' | 'rebooting_corrupted' | 'rebooting_defense' | 'rebooting_total_corruption' | 'epilogue' | 'final_battle';
 
@@ -173,6 +174,7 @@ export default function Home() {
     const [currentUser, setCurrentUser] = useState('D.C. Omen');
     const [soundEvent, setSoundEvent] = useState<SoundEvent>(null);
     const [musicEvent, setMusicEvent] = useState<MusicEvent>('none');
+    const [activeEvent, setActiveEvent] = useState<EventId>('none');
 
     useEffect(() => {
         const updateScale = () => {
@@ -196,6 +198,7 @@ export default function Home() {
     }, []);
 
     const handleReboot = (mode: 'corrupted' | 'defense' | 'total_corruption' = 'corrupted') => {
+        setActiveEvent('none');
         setMusicEvent('epic');
         if (mode === 'corrupted') {
             setSystemState({ isCorrupted: true, isDefenseMode: false, isTotallyCorrupted: false });
@@ -250,7 +253,7 @@ export default function Home() {
         }
         
         if (machineState === 'final_battle') {
-            return <FinalBattle username={currentUser} onFinish={restartGame} />;
+            return <FinalBattle username={currentUser} onFinish={restartGame} onMusicEvent={setMusicEvent} onSoundEvent={setSoundEvent} />;
         }
 
         if (machineState === 'epilogue') {
@@ -274,6 +277,10 @@ export default function Home() {
                 </div>
             );
         }
+        
+        if (activeEvent === 'bsod') {
+            return <BlueScreen />;
+        }
 
         if (machineState === 'login') {
             return (
@@ -284,7 +291,7 @@ export default function Home() {
         }
 
         if (machineState === 'desktop') {
-            return <Desktop key={gameCycle} onReboot={handleReboot} onShowEpilogue={startEpilogue} onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} username={currentUser} {...systemState} />;
+            return <Desktop key={gameCycle} onReboot={handleReboot} onShowEpilogue={startEpilogue} onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} activeEvent={activeEvent} setActiveEvent={setActiveEvent} username={currentUser} {...systemState} />;
         }
 
         return null;
