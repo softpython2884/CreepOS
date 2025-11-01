@@ -181,7 +181,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: handleBackdoorSuccess }, isCorruptible: true },
     chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleChapterFiveFinish }, isCorruptible: false },
     security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, isCorruptible: false },
-    systemStatus: { title: 'System Status', component: SystemStatus, width: 450, height: 250, props: {}, isCorruptible: false },
+    systemStatus: { title: 'System Status', component: SystemStatus, width: 450, height: 250, props: { isDefenseMode: isDefenseMode }, isCorruptible: false },
   };
 
   const openApp = useCallback((appId: AppId, options: { x?: number, y?: number } = {}) => {
@@ -257,7 +257,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         openApp('systemStatus', { x: 50, y: 50 });
         openApp('chatbot');
     } else if (isTotallyCorrupted) {
-        openApp('terminal', { x: 50, y: 50 });
+      onShowEpilogue();
     }
     else {
       // Normal start
@@ -378,7 +378,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                       onStart={() => bringToFront(app.instanceId)}
                     >
                       <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentApp_Config.width} height={currentAppConfig.height} isCorrupted={isAppCorrupted}>
+                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} isCorrupted={isAppCorrupted}>
                               <AppComponent {...currentAppConfig.props}/>
                           </Window>
                       </div>
