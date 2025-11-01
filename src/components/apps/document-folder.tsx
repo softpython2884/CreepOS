@@ -12,9 +12,10 @@ import { Input } from '@/components/ui/input';
 interface DocumentFolderProps {
     initialFileSystem: FileSystemNode[];
     onFolderUnlocked?: (folderId: string) => void;
+    onSoundEvent?: (event: 'click') => void;
 }
 
-export default function DocumentFolder({ initialFileSystem, onFolderUnlocked }: DocumentFolderProps) {
+export default function DocumentFolder({ initialFileSystem, onFolderUnlocked, onSoundEvent }: DocumentFolderProps) {
     const [fileSystem, setFileSystem] = useState<FileSystemNode[]>(initialFileSystem);
     const [history, setHistory] = useState<FileSystemNode[][]>([initialFileSystem]);
     const [selectedFile, setSelectedFile] = useState<FileSystemNode | null>(null);
@@ -25,6 +26,7 @@ export default function DocumentFolder({ initialFileSystem, onFolderUnlocked }: 
     const currentFolderItems = history[history.length - 1];
 
     const openNode = (node: FileSystemNode) => {
+        onSoundEvent?.('click');
         if (node.isLocked) {
             setLockedFolder(node);
             setPassword('');
@@ -41,6 +43,7 @@ export default function DocumentFolder({ initialFileSystem, onFolderUnlocked }: 
     };
 
     const goBack = () => {
+        onSoundEvent?.('click');
         if (history.length > 1) {
             const newHistory = history.slice(0, -1);
             setHistory(newHistory);
@@ -48,6 +51,7 @@ export default function DocumentFolder({ initialFileSystem, onFolderUnlocked }: 
     };
 
     const handlePasswordSubmit = () => {
+        onSoundEvent?.('click');
         if (lockedFolder && password === lockedFolder.password) {
             const unlockedFolder = { ...lockedFolder, isLocked: false };
             
@@ -90,7 +94,7 @@ export default function DocumentFolder({ initialFileSystem, onFolderUnlocked }: 
                 <Card className="h-full bg-secondary border-0 flex flex-col">
                     <CardHeader className="flex flex-row items-center justify-between p-2 pl-4 border-b">
                         <CardTitle className="text-sm font-medium">{selectedFile.name}</CardTitle>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setSelectedFile(null)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { setSelectedFile(null); onSoundEvent?.('click');}}>
                             <X size={16} />
                         </Button>
                     </CardHeader>

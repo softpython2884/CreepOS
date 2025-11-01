@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { finalBattleContent } from './apps/content';
 import { Terminal, ShieldCheck, MessageSquare, AlertTriangle, X } from 'lucide-react';
 import { SoundEvent, MusicEvent } from './audio-manager';
+import Image from 'next/image';
 
 interface FinalBattleProps {
   username: string;
@@ -44,13 +45,17 @@ const AnomalyWindow = ({ anomaly, onClose }: { anomaly: Anomaly, onClose: () => 
                 <button onClick={onClose}><X size={16} /></button>
             </div>
             {anomaly.type === 'terminal_delete' && <p>&gt; {anomaly.content}</p>}
-            {anomaly.type === 'image_flash' && <div className="flex-grow bg-cover bg-center" style={{backgroundImage: `url(${anomaly.content})`}} />}
+            {anomaly.type === 'image_flash' && 
+                <div className="flex-grow relative">
+                    <Image src={anomaly.content} alt="Anomaly" layout="fill" objectFit="cover" />
+                </div>
+            }
         </motion.div>
     );
 };
 
 
-export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
+export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicEvent }: FinalBattleProps) {
   const [phase, setPhase] = useState<BattlePhase>('intro');
   
   // Content States
@@ -67,6 +72,8 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
   const objectiveIntervalRef = useRef<NodeJS.Timeout>();
   const chatbotIntervalRef = useRef<NodeJS.Timeout>();
   const anomalyIntervalRef = useRef<NodeJS.Timeout>();
+  const chatScrollViewRef = useRef<HTMLDivElement>(null);
+
 
     // Terminal Input Ref
     const terminalInputRef = useRef<HTMLInputElement>(null);
@@ -77,6 +84,12 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
         }
     }, [phase]);
 
+    useEffect(() => {
+        if (chatScrollViewRef.current) {
+            chatScrollViewRef.current.scrollTop = chatScrollViewRef.current.scrollHeight;
+        }
+    }, [chatbotMessages]);
+
   const addTerminalLine = (line: string) => setTerminalHistory(prev => [...prev, line]);
 
   const triggerAnomaly = () => {
@@ -84,20 +97,22 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
     const newAnomaly = { ...randomAnomaly, id: Date.now() } as Anomaly;
     setAnomalies(prev => [...prev, newAnomaly]);
     if (newAnomaly.type === 'sound') {
-        // onSoundEvent(newAnomaly.content as SoundEvent);
+        onSoundEvent(newAnomaly.content as SoundEvent);
+    } else {
+        onSoundEvent('glitch');
     }
   };
 
   const startAttackWave = useCallback(() => {
     if (phase !== 'resistance' && phase !== 'revelation') return;
     setIsUnderAttack(true);
-    // onSoundEvent('glitch');
+    onSoundEvent('glitch');
     anomalyIntervalRef.current = setInterval(triggerAnomaly, 3000);
     setTimeout(() => {
         setIsUnderAttack(false);
         if (anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
     }, 15000); // 15 second wave
-  }, [phase]);
+  }, [phase, onSoundEvent]);
 
   const handleCommand = () => {
     addTerminalLine(`> ${terminalInput}`);
@@ -110,7 +125,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
     } else if (command === 'SIGNATURE_CHECK') {
         response = finalBattleContent.terminal.signatureCheck;
         setIsUnderAttack(false);
-        // onSoundEvent(null);
+        onMusicEvent('calm');
         if (anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
         if (phase === 'awareness') setPhase('resistance');
     } else if (['SIG_OMEN_734', 'SIG_VANCE_42', 'SIG_FINCH_01'].includes(command)) {
@@ -119,7 +134,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
             newSignatures.add(command);
             setEnteredSignatures(newSignatures);
             response = finalBattleContent.terminal.signatureSuccess;
-            // onSoundEvent('click');
+            onSoundEvent('click');
 
             if (newSignatures.size === 3) {
                 setPhase('climax');
@@ -136,6 +151,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
   useEffect(() => {
     // Intro phase
     if (phase === 'intro') {
+        onMusicEvent('epic');
         objectiveIntervalRef.current = setInterval(() => {
             setSystemStatusObjective(obj => {
                 const currentIndex = finalBattleContent.systemStatus.objective.indexOf(obj);
@@ -172,6 +188,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
 
     // Revelation phase: reveal final plan
     if (phase === 'revelation') {
+        onMusicEvent('epic');
         let planMsgIndex = 0;
         chatbotIntervalRef.current = setInterval(() => {
             if (planMsgIndex < finalBattleContent.chatbot.finalPlan.length) {
@@ -189,12 +206,13 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
         if (objectiveIntervalRef.current) clearInterval(objectiveIntervalRef.current);
         if (chatbotIntervalRef.current) clearInterval(chatbotIntervalRef.current);
         if (anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
-        // onSoundEvent('bsod');
+        onSoundEvent('bsod');
         setTimeout(() => setPhase('liberation'), 4000);
     }
 
      // Liberation phase
      if (phase === 'liberation') {
+        onMusicEvent('calm');
         setChatbotMessages([]);
         let liberationMsgIndex = 0;
         chatbotIntervalRef.current = setInterval(() => {
@@ -210,6 +228,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
 
     // Epilogue
     if (phase === 'epilogue') {
+        onMusicEvent('none');
         setChatbotMessages([finalBattleContent.chatbot.neoEpilogue]);
         setTimeout(onFinish, 8000);
     }
@@ -220,7 +239,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
       if (chatbotIntervalRef.current) clearInterval(chatbotIntervalRef.current);
       if (anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
     };
-  }, [phase, onFinish, startAttackWave]);
+  }, [phase, onFinish, startAttackWave, onMusicEvent, onSoundEvent]);
 
 
   const renderContent = () => {
@@ -275,7 +294,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
                     <p className="mt-2 pt-2 border-t border-dashed border-blue-400/20 text-xs text-blue-300/70">{finalBattleContent.systemStatus.notes}</p>
                 </div>
                 {/* Chatbot */}
-                <div className="w-2/3 bg-black/50 border border-blue-400/30 rounded-lg p-4 font-mono text-blue-300 h-48 overflow-y-auto">
+                <div ref={chatScrollViewRef} className="w-2/3 bg-black/50 border border-blue-400/30 rounded-lg p-4 font-mono text-blue-300 h-48 overflow-y-auto">
                     <h2 className="flex items-center gap-2 text-lg border-b border-blue-400/50 pb-2 mb-2"><MessageSquare /> CONSCIOUSNESS STREAM</h2>
                     <div className="space-y-1 text-sm">
                         {chatbotMessages.map((msg, i) => <p key={i}>&gt; {msg}</p>)}

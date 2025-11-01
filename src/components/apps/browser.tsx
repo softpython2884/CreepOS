@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 
 interface BrowserProps {
     onBackdoorSuccess?: () => void;
+    onSoundEvent?: (event: 'click') => void;
 }
 
 const WelcomePage = ({ onTextTyped }: { onTextTyped: () => void }) => {
@@ -47,12 +48,13 @@ const WelcomePage = ({ onTextTyped }: { onTextTyped: () => void }) => {
     );
 };
 
-const LoginPage = ({ onSuccess }: { onSuccess?: () => void }) => {
+const LoginPage = ({ onSuccess, onSoundEvent }: { onSuccess?: () => void, onSoundEvent?: (event: 'click') => void }) => {
     const [password, setPassword] = useState('');
     const [status, setStatus] = useState<'idle'|'error'|'success'|'triggered'>('idle');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        onSoundEvent?.('click');
         if (password === '7421') {
             setStatus('success');
         } else {
@@ -62,6 +64,7 @@ const LoginPage = ({ onSuccess }: { onSuccess?: () => void }) => {
     };
     
     const handleNextReportClick = () => {
+        onSoundEvent?.('click');
         setStatus('triggered');
         setTimeout(() => {
              onSuccess?.();
@@ -117,22 +120,27 @@ const LoginPage = ({ onSuccess }: { onSuccess?: () => void }) => {
 };
 
 
-export default function Browser({ onBackdoorSuccess }: BrowserProps) {
+export default function Browser({ onBackdoorSuccess, onSoundEvent }: BrowserProps) {
     const [activeTab, setActiveTab] = useState('home');
 
     const handleTextTyped = () => {
         // This is where you could trigger chapter 4 if needed, but the logic is now moved.
     };
+    
+    const handleTabChange = (value: string) => {
+        onSoundEvent?.('click');
+        setActiveTab(value);
+    }
 
     const sites = [
         { id: 'home', name: 'Accueil', component: <WelcomePage onTextTyped={handleTextTyped} /> },
-        { id: 'backdoor', name: 'Porte Dérobée', component: <LoginPage onSuccess={onBackdoorSuccess} /> },
+        { id: 'backdoor', name: 'Porte Dérobée', component: <LoginPage onSuccess={onBackdoorSuccess} onSoundEvent={onSoundEvent} /> },
     ];
     const currentSite = sites.find(s => s.id === activeTab);
 
   return (
     <div className="h-full flex flex-col bg-secondary">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col h-full">
         <div className="flex items-center gap-2 p-2 border-b bg-card">
             <div className="flex-none">
                 <TabsList className="h-8">
