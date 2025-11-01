@@ -71,8 +71,10 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
     const terminalInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        terminalInputRef.current?.focus();
-    }, []);
+        if (phase === 'awareness') {
+            terminalInputRef.current?.focus();
+        }
+    }, [phase]);
 
   const addTerminalLine = (line: string) => setTerminalHistory(prev => [...prev, line]);
 
@@ -281,7 +283,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
             </div>
 
             {/* Bottom Row / Terminal */}
-            <div className="h-2/3 mt-8 bg-black/50 border border-blue-400/30 rounded-lg p-4 font-mono text-blue-300 flex flex-col">
+            <div className={cn("h-2/3 mt-8 bg-black/50 border border-blue-400/30 rounded-lg p-4 font-mono text-blue-300 flex flex-col transition-all", phase === 'awareness' && 'animate-pulse-strong border-accent shadow-lg shadow-accent/50')}>
                 <h2 className="flex items-center gap-2 text-lg border-b border-blue-400/50 pb-2 mb-2 flex-shrink-0"><Terminal/> CORE INTERFACE</h2>
                 <div className="flex-grow overflow-y-auto pr-2">
                     {terminalHistory.map((line, i) => <p key={i}>{line}</p>)}

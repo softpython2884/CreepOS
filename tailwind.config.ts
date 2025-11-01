@@ -178,8 +178,8 @@ export default {
             '80%': { transform: 'scale(0.98) skewX(-2deg)', filter: 'none' },
         },
         'pulse-strong': {
-            '0%, 100%': { boxShadow: '0 0 0 0 hsl(var(--accent) / 0.7)' },
-            '50%': { boxShadow: '0 0 0 8px hsl(var(--accent) / 0)' },
+            '0%, 100%': { boxShadow: '0 0 0 0 hsl(var(--accent) / 0.7)', borderColor: 'hsl(var(--accent))' },
+            '50%': { boxShadow: '0 0 0 12px hsl(var(--accent) / 0)', borderColor: 'hsl(var(--blue-400))' },
         },
         'red-screen': {
           '0%': { backgroundColor: 'transparent', filter: 'invert(0)'},
@@ -219,7 +219,7 @@ export default {
         'lag': 'lag 1.5s linear infinite alternate',
         'chromatic-aberration': 'chromatic-aberration 1s steps(1, end) infinite',
         'image-deform': 'image-deform 4s ease-in-out forwards, screen-tear 2s ease-in-out infinite alternate',
-        'pulse-strong': 'pulse-strong 2s infinite',
+        'pulse-strong': 'pulse-strong 2s cubic-bezier(0, 0, 0.2, 1) infinite',
         'red-screen': 'red-screen 1.5s ease-in-out forwards',
         'die-spam': 'die-spam 0.5s linear infinite',
         'ping-freeze': 'ping-freeze 2s ease-in-out forwards',
