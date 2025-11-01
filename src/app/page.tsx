@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { User, Lock, Power } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Desktop, { type EventId } from '@/components/desktop';
+import Desktop from '@/components/desktop';
 import Epilogue from '@/components/events/epilogue';
 import FinalBattle from '@/components/final-battle';
 import AudioManager, { MusicEvent, SoundEvent } from '@/components/audio-manager';
