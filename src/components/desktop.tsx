@@ -129,6 +129,10 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     }
   }, [activeInstanceId, openApps]);
 
+  const handleChapterOneFinish = () => {
+    setIsChapterOneFinished(true);
+  };
+
   const handleChapterTwoFinish = () => {
     setIsChapterTwoFinished(true);
     if (chapterTwoInstanceId !== null) {
@@ -150,7 +154,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
-    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: () => setIsChapterOneFinished(true), isCorrupted: isCorrupted && !isTotallyCorrupted }, isCorruptible: true },
+    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isChapterOne: !isChapterOneFinished && !isCorrupted, onChapterOneFinish: handleChapterOneFinish, isCorrupted: isCorrupted && !isTotallyCorrupted }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: () => backdoorSuccessCallbackRef.current() }, isCorruptible: true },
@@ -161,18 +165,26 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const openApp = useCallback((appId: AppId, options: { x?: number, y?: number } = {}) => {
     const instanceId = nextInstanceIdRef.current;
 
-    if (appId === 'browser' && isCorrupted && !isChapterFourTriggered) setIsChapterFourTriggered(true);
-    if (appId === 'chat' && !isChapterTwoTriggered && !isCorrupted) {
-        const chatApp = openApps.find(app => app.appId === 'chat');
-        if (chatApp) { bringToFront(chatApp.instanceId); return; }
+    // Prevent re-opening chat app in chapter 1 if it's already open
+    if (appId === 'chat' && !isChapterOneFinished && !isCorrupted) {
+      const chatApp = openApps.find(app => app.appId === 'chat');
+      if (chatApp) {
+        bringToFront(chatApp.instanceId);
+        return;
+      }
     }
-    if (appId === 'terminal' && isChapterOneFinished && !isChapterTwoTriggered) {
+    
+    // Chapter triggers
+    if (appId === 'terminal' && isChapterOneFinished && !isChapterTwoTriggered && !isCorrupted) {
         setIsChapterTwoTriggered(true);
         setChapterTwoInstanceId(instanceId);
     }
+    if (appId === 'browser' && isCorrupted && !isChapterFourTriggered) {
+        setIsChapterFourTriggered(true);
+    }
     if (isDefenseMode && !isChapterFiveTriggered) {
         setIsChapterFiveTriggered(true);
-        appId = 'chatbot';
+        appId = 'chatbot'; // Force open chatbot
     }
     if (isDefenseMode && appId === 'security' && !isChapterSevenTriggered) {
         setIsChapterSevenTriggered(true);
@@ -180,9 +192,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     if (isChapterSevenTriggered && !isChapterNineTriggered) {
         setIsChapterNineTriggered(true);
     }
-    if (appId === 'browser' && isCorrupted && !isChapterFourTriggered) {
-        setIsChapterFourTriggered(true);
-    }
+
 
     nextInstanceIdRef.current += 1;
 
@@ -202,7 +212,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isChapterSevenTriggered, isChapterNineTriggered]);
+  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, openApps, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isChapterSevenTriggered, isChapterNineTriggered, appConfig]);
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -329,8 +339,20 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
             <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">CAUCHEMAR VIRTUEL</h1>
             {openApps.map((app) => {
                 const isAppCorrupted = ((isCorrupted || isTotallyCorrupted || activeEvent === 'system_collapse') && appConfig[app.appId].isCorruptible);
-                const currentAppConfig = app.appId === 'photos' ? { ...appConfig.photos, props: { ...appConfig.photos.props, highlightedImageId: lastCapturedImage?.id, isSystemCollapsing: activeEvent === 'system_collapse' } } : appConfig[app.appId];
+                
+                const currentAppConfig = (() => {
+                  let config = { ...appConfig[app.appId] };
+                  if (app.appId === 'photos') {
+                    config.props = { ...config.props, highlightedImageId: lastCapturedImage?.id, isSystemCollapsing: activeEvent === 'system_collapse' };
+                  }
+                  if (app.appId === 'chat') {
+                    config.props = { ...config.props, isChapterOne: !isChapterOneFinished && !isCorrupted && !isDefenseMode, onChapterOneFinish: handleChapterOneFinish }
+                  }
+                  return config;
+                })();
+
                 const AppComponent = currentAppConfig.component;
+                
                 return (
                     <Draggable
                       key={app.instanceId}

@@ -40,8 +40,13 @@ export default function ChapterFourManager({ terminal, location, triggerEvent, o
     }, [triggerEvent, openApp, terminal, location]);
 
     useEffect(() => {
+        const handleSuccess = () => {
+            setTimeout(() => {
+                runPanicSequence();
+            }, 200);
+        };
         // This function will be called from the browser component when the button is clicked.
-        setBackdoorSuccessCallback(() => runPanicSequence);
+        setBackdoorSuccessCallback(() => handleSuccess);
     }, [setBackdoorSuccessCallback, runPanicSequence]);
 
 
