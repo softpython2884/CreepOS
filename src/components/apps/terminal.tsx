@@ -52,17 +52,21 @@ export default function Terminal({ triggerEvent, setTerminalWriter }: TerminalPr
     const newHistory: HistoryItem[] = [...history, { type: 'command', content: input }];
     const [command, ...args] = input.trim().split(' ');
 
+    const availableDocs = [
+        ...documents.filter(d => ['log_dev_001.txt', 'obs_neo.txt', 'AVERTISSEMENT.txt'].includes(d.title)),
+    ];
+
     switch (command.toLowerCase()) {
       case 'help':
-        newHistory.push({ type: 'output', content: 'Available commands: help, ls, cat [filename], clear, bsod, scream, lag, corrupt, glitch, tear, chromatic' });
+        newHistory.push({ type: 'output', content: 'Available commands: help, ls, cat [filename], clear' });
         break;
       case 'ls':
-        const fileList = documents.map(doc => doc.title).join('\n');
+        const fileList = availableDocs.map(doc => doc.title).join('\n');
         newHistory.push({ type: 'output', content: fileList });
         break;
       case 'cat':
         const filename = args.join(' ');
-        const doc = documents.find(d => d.title === filename);
+        const doc = availableDocs.find(d => d.title === filename);
         if (doc) {
           newHistory.push({ type: 'output', content: doc.content });
         } else {
@@ -73,34 +77,6 @@ export default function Terminal({ triggerEvent, setTerminalWriter }: TerminalPr
         setHistory([]);
         setInput('');
         return;
-      case 'bsod':
-        triggerEvent('bsod');
-        newHistory.push({ type: 'output', content: 'FATAL_SYSTEM_ERROR' });
-        break;
-      case 'scream':
-        triggerEvent('scream');
-        newHistory.push({ type: 'output', content: 'Unknown resource requested.' });
-        break;
-      case 'lag':
-        triggerEvent('lag');
-        newHistory.push({ type: 'output', content: 'System unresponsive. Please wait...' });
-        break;
-      case 'corrupt':
-        triggerEvent('corrupt');
-        newHistory.push({ type: 'output', content: 'WARNING: File system integrity compromised.' });
-        break;
-      case 'glitch':
-        triggerEvent('glitch');
-        newHistory.push({ type: 'output', content: 'Display driver unstable.' });
-        break;
-      case 'tear':
-        triggerEvent('tear');
-        newHistory.push({ type: 'output', content: 'VSYNC failure.' });
-        break;
-      case 'chromatic':
-        triggerEvent('chromatic');
-        newHistory.push({ type: 'output', content: 'Color calibration error.' });
-        break;
       case '':
         break;
       default:

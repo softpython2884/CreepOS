@@ -19,7 +19,6 @@ import type { GeoJSON } from 'geojson';
 import BlueScreen from './events/blue-screen';
 import Screamer from './events/screamer';
 import AudioManager, { SoundEvent } from './audio-manager';
-import ChapterTwoManager, { type TerminalWriter } from './story/chapter-two-manager';
 import ChapterThreeManager from './story/chapter-three-manager';
 import ChapterFiveManager from './story/chapter-five-manager';
 import ChapterSevenManager from './story/chapter-seven-manager';
@@ -27,6 +26,7 @@ import PurgeScreen from './events/purge-screen';
 import Epilogue from './events/epilogue';
 import { chapterSixLogs, initialFileSystem, chapterTwoFiles, chapterFourFiles, type FileSystemNode } from './apps/content';
 import Draggable from 'react-draggable';
+import { type TerminalWriter } from './story/chapter-two-manager';
 
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser' | 'chatbot' | 'security' | 'systemStatus';
@@ -76,7 +76,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   // Story state
   const [isChapterOneFinished, setIsChapterOneFinished] = useState(false);
   const [isChapterTwoTriggered, setIsChapterTwoTriggered] = useState(false);
-  const [chapterTwoInstanceId, setChapterTwoInstanceId] = useState<number | null>(null);
   const [isChapterTwoFinished, setIsChapterTwoFinished] = useState(false);
   const [isChapterThreeFinished, setIsChapterThreeFinished] = useState(false);
   const [isChapterFourTriggered, setIsChapterFourTriggered] = useState(false);
@@ -138,14 +137,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     }
   };
 
-  const handleChapterTwoFinish = () => {
-    setIsChapterTwoFinished(true);
-    if (chapterTwoInstanceId !== null) {
-      closeApp(chapterTwoInstanceId);
-    }
-    setCurrentFileSystem(prev => [...prev, ...chapterTwoFiles]);
-  };
-
   const handleBackdoorSuccess = useCallback(() => {
     onReboot('defense');
   }, [onReboot]);
@@ -182,9 +173,9 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     const instanceId = nextInstanceIdRef.current;
     
     // Chapter triggers
-    if (appId === 'terminal' && isChapterOneFinished && !isChapterTwoTriggered && !isCorrupted) {
+    if (appId === 'documents' && isChapterOneFinished && !isChapterTwoTriggered) {
         setIsChapterTwoTriggered(true);
-        setChapterTwoInstanceId(instanceId);
+        setCurrentFileSystem(prev => [...prev, ...chapterTwoFiles]);
     }
     if (appId === 'browser' && isCorrupted && !isChapterFourTriggered) {
         setIsChapterFourTriggered(true);
@@ -327,7 +318,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       <GpsTracker onLocationUpdate={setLocation} />
       <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
       
-      {isChapterTwoTriggered && !isChapterTwoFinished && terminalWriterRef.current && (<ChapterTwoManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} onCapture={handleChapterCapture} onFinish={handleChapterTwoFinish} />)}
+      {/* Chapter Managers */}
       {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (<ChapterThreeManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} openApp={openApp} capturedImage={lastCapturedImage} onFinish={handleChapterThreeFinish} />)}
       {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
       {isChapterSevenTriggered && terminalWriterRef.current && (

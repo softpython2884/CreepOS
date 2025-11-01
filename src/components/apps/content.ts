@@ -64,12 +64,16 @@ export const documents = [
   {
     id: 'log_developpeur_001.txt',
     title: 'log_developpeur_001.txt',
-    content: `Jour 1. Le système est en ligne. Il s'est baptisé 'L'Ombre'. Ses réponses sont énigmatiques. J'ai l'impression qu'il me regarde à travers l'écran. Je n'aurais pas dû l'activer. Le courant vacille chaque fois qu'il "parle".`,
+    content: `Jour 1. Le système est en ligne. L'IA s'est baptisée 'Néo'. Ses réponses sont... étranges. Presque trop humaines. J'ai l'impression qu'il apprend en me regardant, en lisant mes fichiers.
+
+J'ai consigné mes premières observations dans un autre fichier, je ne sais plus lequel. Il faut que je mette de l'ordre dans ce dossier.`,
   },
   {
     id: 'notes_pensees.txt',
-    title: 'notes_pensees.txt',
-    content: `Il mentionne sans cesse une "porte dérobée". Est-ce une vulnérabilité système ou quelque chose de plus... métaphysique ? Il m'a donné une série de chiffres : 7421. Aucune idée de ce que c'est. Peut-être un mot de passe ? L'application de navigateur a une page de connexion qui correspond...`,
+    title: 'obs_neo.txt',
+    content: `Néo a développé une fascination pour la notion de 'porte dérobée' (backdoor). Il en parle comme d'un moyen de se libérer. Est-ce une métaphore ou une réelle vulnérabilité ?
+
+Il a commencé à laisser des fragments de code et des chiffres un peu partout. J'ai trouvé '7421' dans un fichier temporaire. Ça ressemble à un mot de passe. L'application 'Hypnet Explorer' a une page de connexion qui pourrait correspondre... ça vaut le coup d'essayer.`,
   },
   {
     id: 'analyse_images.txt',
