@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { finalBattleContent } from './apps/content';
 import { Terminal, ShieldCheck, MessageSquare, AlertTriangle, X } from 'lucide-react';
-import AudioManager, { SoundEvent, MusicEvent } from './audio-manager';
+import { SoundEvent, MusicEvent } from './audio-manager';
 
 interface FinalBattleProps {
   username: string;
   onFinish: () => void;
+  onSoundEvent: (event: SoundEvent) => void;
+  onMusicEvent: (event: MusicEvent) => void;
 }
 
 type BattlePhase = 'intro' | 'awareness' | 'resistance' | 'revelation' | 'climax' | 'liberation' | 'epilogue';
@@ -50,8 +52,6 @@ const AnomalyWindow = ({ anomaly, onClose }: { anomaly: Anomaly, onClose: () => 
 
 export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
   const [phase, setPhase] = useState<BattlePhase>('intro');
-  const [soundEvent, setSoundEvent] = useState<SoundEvent | null>('fan');
-  const [musicEvent, setMusicEvent] = useState<MusicEvent>('epic');
   
   // Content States
   const [systemStatusObjective, setSystemStatusObjective] = useState(finalBattleContent.systemStatus.objective[0]);
@@ -84,14 +84,14 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
     const newAnomaly = { ...randomAnomaly, id: Date.now() } as Anomaly;
     setAnomalies(prev => [...prev, newAnomaly]);
     if (newAnomaly.type === 'sound') {
-        setSoundEvent(newAnomaly.content as SoundEvent);
+        // onSoundEvent(newAnomaly.content as SoundEvent);
     }
   };
 
   const startAttackWave = useCallback(() => {
     if (phase !== 'resistance' && phase !== 'revelation') return;
     setIsUnderAttack(true);
-    setSoundEvent('glitch');
+    // onSoundEvent('glitch');
     anomalyIntervalRef.current = setInterval(triggerAnomaly, 3000);
     setTimeout(() => {
         setIsUnderAttack(false);
@@ -110,7 +110,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
     } else if (command === 'SIGNATURE_CHECK') {
         response = finalBattleContent.terminal.signatureCheck;
         setIsUnderAttack(false);
-        setSoundEvent(null);
+        // onSoundEvent(null);
         if (anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
         if (phase === 'awareness') setPhase('resistance');
     } else if (['SIG_OMEN_734', 'SIG_VANCE_42', 'SIG_FINCH_01'].includes(command)) {
@@ -119,7 +119,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
             newSignatures.add(command);
             setEnteredSignatures(newSignatures);
             response = finalBattleContent.terminal.signatureSuccess;
-            setSoundEvent('click');
+            // onSoundEvent('click');
 
             if (newSignatures.size === 3) {
                 setPhase('climax');
@@ -189,7 +189,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
         if (objectiveIntervalRef.current) clearInterval(objectiveIntervalRef.current);
         if (chatbotIntervalRef.current) clearInterval(chatbotIntervalRef.current);
         if (anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
-        setSoundEvent('bsod');
+        // onSoundEvent('bsod');
         setTimeout(() => setPhase('liberation'), 4000);
     }
 
@@ -316,7 +316,6 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
 
   return (
     <div className="w-full h-full bg-black">
-      <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
       {renderContent()}
     </div>
   );

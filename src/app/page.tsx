@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import Desktop from '@/components/desktop';
 import Epilogue from '@/components/events/epilogue';
 import FinalBattle from '@/components/final-battle';
+import AudioManager, { MusicEvent, SoundEvent } from '@/components/audio-manager';
 
 type MachineState = 'off' | 'booting' | 'login' | 'desktop' | 'rebooting_corrupted' | 'rebooting_defense' | 'rebooting_total_corruption' | 'epilogue' | 'final_battle';
 
@@ -170,6 +171,8 @@ export default function Home() {
     const [machineState, setMachineState] = useState<MachineState>('off');
     const [systemState, setSystemState] = useState({ isCorrupted: false, isDefenseMode: false, isTotallyCorrupted: false });
     const [currentUser, setCurrentUser] = useState('D.C. Omen');
+    const [soundEvent, setSoundEvent] = useState<SoundEvent>(null);
+    const [musicEvent, setMusicEvent] = useState<MusicEvent>('none');
 
     useEffect(() => {
         const updateScale = () => {
@@ -193,6 +196,7 @@ export default function Home() {
     }, []);
 
     const handleReboot = (mode: 'corrupted' | 'defense' | 'total_corruption' = 'corrupted') => {
+        setMusicEvent('epic');
         if (mode === 'corrupted') {
             setSystemState({ isCorrupted: true, isDefenseMode: false, isTotallyCorrupted: false });
             setMachineState('rebooting_corrupted');
@@ -206,6 +210,7 @@ export default function Home() {
     }
     
     const startEpilogue = () => {
+        setMusicEvent('none');
         setMachineState('epilogue');
     }
 
@@ -214,17 +219,30 @@ export default function Home() {
         setCurrentUser(`Sujet #${55 + gameCycle}`);
         setMachineState('off');
         setSystemState({ isCorrupted: false, isDefenseMode: false, isTotallyCorrupted: false });
+        setMusicEvent('none');
     }
     
     const startFinalBattle = () => {
+        setMusicEvent('epic');
         setMachineState('final_battle');
+    }
+
+    const handleStartSystem = () => {
+        setSoundEvent('fan');
+        setMusicEvent('epic');
+        setMachineState('booting');
+    }
+    
+    const handleLogin = () => {
+        setMusicEvent('calm');
+        setMachineState('desktop');
     }
 
     const renderState = () => {
         if (gameCycle > 1 && machineState === 'off') {
             return (
                 <div className="w-full h-full flex flex-col justify-center items-center bg-black">
-                    <Button variant="outline" size="lg" className="gap-2 text-lg p-8 animate-pulse" onClick={() => startFinalBattle()}>
+                    <Button variant="outline" size="lg" className="gap-2 text-lg p-8 animate-pulse" onClick={startFinalBattle}>
                         <Power /> INJECT // SUBJECT #{55 + gameCycle}
                     </Button>
                 </div>
@@ -242,7 +260,7 @@ export default function Home() {
         if (machineState === 'off') {
             return (
                 <div className="w-full h-full flex flex-col justify-center items-center bg-black">
-                    <Button variant="outline" size="lg" className="gap-2 text-lg p-8 animate-pulse" onClick={() => setMachineState('booting')}>
+                    <Button variant="outline" size="lg" className="gap-2 text-lg p-8 animate-pulse" onClick={handleStartSystem}>
                         <Power /> Start System
                     </Button>
                 </div>
@@ -260,13 +278,13 @@ export default function Home() {
         if (machineState === 'login') {
             return (
                 <div className={cn("w-full h-full flex flex-col justify-center items-center", (systemState.isCorrupted || systemState.isTotallyCorrupted) && "corrupted", machineState === 'rebooting_defense' && "animate-chromatic-aberration")}>
-                    <LoginScreen onLogin={() => setMachineState('desktop')} corrupted={systemState.isCorrupted || systemState.isTotallyCorrupted} defense={systemState.isDefenseMode} username={currentUser} />
+                    <LoginScreen onLogin={handleLogin} corrupted={systemState.isCorrupted || systemState.isTotallyCorrupted} defense={systemState.isDefenseMode} username={currentUser} />
                 </div>
             );
         }
 
         if (machineState === 'desktop') {
-            return <Desktop key={gameCycle} onReboot={handleReboot} onShowEpilogue={startEpilogue} username={currentUser} {...systemState} />;
+            return <Desktop key={gameCycle} onReboot={handleReboot} onShowEpilogue={startEpilogue} onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} username={currentUser} {...systemState} />;
         }
 
         return null;
@@ -275,6 +293,7 @@ export default function Home() {
     return (
         <main className="h-screen w-screen flex justify-center items-center bg-black">
             <div id="viewport" className="absolute w-[1920px] h-[1080px] bg-background">
+                <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
                 {renderState()}
             </div>
         </main>

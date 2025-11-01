@@ -11,15 +11,14 @@ import DocumentFolder from '@/components/apps/document-folder';
 import Browser from '@/components/apps/browser';
 import Chatbot from '@/components/apps/chatbot';
 import SecurityApp from './apps/security-app';
-import SystemStatus from './apps/system-status'; // New App
+import SystemStatus from './apps/system-status';
 import { cn } from '@/lib/utils';
 import CameraCapture from './camera-capture';
 import type { ImagePlaceholder } from '@/lib/placeholder-images';
 import GpsTracker from './gps-tracker';
-import type { GeoJSON } from 'geojson';
 import BlueScreen from './events/blue-screen';
 import Screamer from './events/screamer';
-import AudioManager, { SoundEvent, MusicEvent } from './audio-manager';
+import { SoundEvent, MusicEvent } from './audio-manager';
 import PurgeScreen from './events/purge-screen';
 import { initialFileSystem, chapterTwoFiles, chapterFourFiles, type FileSystemNode } from './apps/content';
 import Draggable from 'react-draggable';
@@ -51,13 +50,15 @@ type OpenApp = {
 interface DesktopProps {
   onReboot: (mode: 'corrupted' | 'defense' | 'total_corruption') => void;
   onShowEpilogue: () => void;
+  onSoundEvent: (event: SoundEvent) => void;
+  onMusicEvent: (event: MusicEvent) => void;
   isCorrupted: boolean;
   isDefenseMode: boolean;
   isTotallyCorrupted: boolean;
   username: string;
 }
 
-export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefenseMode, isTotallyCorrupted, username }: DesktopProps) {
+export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusicEvent, isCorrupted, isDefenseMode, isTotallyCorrupted, username }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [nextZIndex, setNextZIndex] = useState(10);
@@ -66,8 +67,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const [capturedImages, setCapturedImages] = useState<ImagePlaceholder[]>([]);
   const [location, setLocation] = useState<GeoJSON.Point | null>(null);
   const [activeEvent, setActiveEvent] = useState<EventId>('none');
-  const [soundEvent, setSoundEvent] = useState<SoundEvent>('fan');
-  const [musicEvent, setMusicEvent] = useState<MusicEvent>('calm');
   const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>(initialFileSystem);
 
   // Story state
@@ -87,19 +86,19 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const triggerEvent = useCallback((eventId: EventId) => {
     if (eventId === 'bsod') {
         closeAllApps();
-        setSoundEvent('bsod');
+        onSoundEvent('bsod');
         setActiveEvent('bsod');
         setTimeout(() => onReboot('corrupted'), 8000);
         return;
     }
     setActiveEvent(eventId);
 
-    if (eventId === 'scream') setSoundEvent('scream');
+    if (eventId === 'scream') onSoundEvent('scream');
     if (eventId === 'corrupt' || eventId === 'glitch') {
         // Trigger multiple glitches
-        setSoundEvent('glitch');
-        setTimeout(() => setSoundEvent('glitch'), 150);
-        setTimeout(() => setSoundEvent('glitch'), 300);
+        onSoundEvent('glitch');
+        setTimeout(() => onSoundEvent('glitch'), 150);
+        setTimeout(() => onSoundEvent('glitch'), 300);
     };
 
     if (['lag', 'corrupt', 'glitch', 'tear', 'chromatic', 'red_screen', 'freeze', 'system_collapse'].includes(eventId)) {
@@ -108,10 +107,10 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         setTimeout(() => setActiveEvent('none'), duration);
       }
     }
-  }, [closeAllApps, onReboot]);
+  }, [closeAllApps, onReboot, onSoundEvent]);
 
   const closeApp = useCallback((instanceId: number) => {
-    setSoundEvent('close');
+    onSoundEvent('close');
     setOpenApps(prev => {
         const newApps = prev.filter(app => app.instanceId !== instanceId);
         if (activeInstanceId === instanceId) {
@@ -124,7 +123,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         }
         return newApps;
     });
-}, [activeInstanceId]);
+}, [activeInstanceId, onSoundEvent]);
 
   const handleChapterOneFinish = () => {
     setIsChapterOneFinished(true);
@@ -200,8 +199,8 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setActiveInstanceId(instanceId);
     setNextZIndex(prev => prev + 1);
     
-    setSoundEvent('click');
-  }, [nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, appConfig, onShowEpilogue, openApps]);
+    onSoundEvent('click');
+  }, [nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, appConfig, onShowEpilogue, openApps, onSoundEvent]);
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -303,7 +302,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       
       <CameraCapture onCapture={handleNewCapture} enabled={isChapterTwoFinished && !isChapterThreeFinished} />
       <GpsTracker onLocationUpdate={setLocation} />
-      <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
       
       {activeEvent !== 'bsod' && activeEvent !== 'die_screen' && activeEvent !== 'purge_screen' && (
         <>
