@@ -167,7 +167,7 @@ export const finalBattleContent = {
     },
     anomalies: [
         { type: 'terminal_delete', content: "PURGE /USERS/D.C.OMEN..." },
-        { type: 'image_flash', content: "https://i.ibb.co/9vWz2sV/giygas.jpg" }, // Custom image
+        { type: 'image_flash', content: "https://mediaproxy.tvtropes.org/width/1200/https://static.tvtropes.org/pmwiki/pub/images/img_0287_4.jpeg" }, // Custom image
         { type: 'sound', content: 'scream' },
     ]
 }

@@ -92,7 +92,7 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
 
   const addTerminalLine = (line: string) => setTerminalHistory(prev => [...prev, line]);
 
-  const triggerAnomaly = () => {
+  const triggerAnomaly = useCallback(() => {
     const randomAnomaly = finalBattleContent.anomalies[Math.floor(Math.random() * finalBattleContent.anomalies.length)];
     const newAnomaly = { ...randomAnomaly, id: Date.now() } as Anomaly;
     setAnomalies(prev => [...prev, newAnomaly]);
@@ -101,18 +101,18 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
     } else {
         onSoundEvent('glitch');
     }
-  };
+  }, [onSoundEvent]);
 
   const startAttackWave = useCallback(() => {
     if (phase !== 'resistance' && phase !== 'revelation') return;
     setIsUnderAttack(true);
-    onSoundEvent('glitch');
-    anomalyIntervalRef.current = setInterval(triggerAnomaly, 3000);
+    triggerAnomaly(); // one immediate
+    anomalyIntervalRef.current = setInterval(triggerAnomaly, 4000);
     setTimeout(() => {
         setIsUnderAttack(false);
         if (anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
-    }, 15000); // 15 second wave
-  }, [phase, onSoundEvent]);
+    }, 12000); // 12 second wave
+  }, [phase, triggerAnomaly]);
 
   const handleCommand = () => {
     addTerminalLine(`> ${terminalInput}`);
@@ -201,18 +201,26 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
         setTimeout(startAttackWave, 1000);
     }
 
-    // Climax phase: screen shatter
+    // Climax phase: intense effects, then silence
     if (phase === 'climax') {
         if (objectiveIntervalRef.current) clearInterval(objectiveIntervalRef.current);
         if (chatbotIntervalRef.current) clearInterval(chatbotIntervalRef.current);
         if (anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
-        onSoundEvent('bsod');
-        setTimeout(() => setPhase('liberation'), 4000);
+        setIsUnderAttack(true); // Full glitch effect
+        onMusicEvent('epic'); // Ensure epic music is playing
+        onSoundEvent('scream');
+        
+        // Sudden stop after crescendo
+        setTimeout(() => {
+            setIsUnderAttack(false);
+            onMusicEvent('none'); // Abrupt silence
+            onSoundEvent('bsod'); // A final crash sound
+            setPhase('liberation');
+        }, 4000);
     }
 
      // Liberation phase
      if (phase === 'liberation') {
-        onMusicEvent('calm');
         setChatbotMessages([]);
         let liberationMsgIndex = 0;
         chatbotIntervalRef.current = setInterval(() => {
@@ -239,15 +247,14 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
       if (chatbotIntervalRef.current) clearInterval(chatbotIntervalRef.current);
       if (anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, onFinish, startAttackWave, onMusicEvent, onSoundEvent]);
 
 
   const renderContent = () => {
     if (phase === 'climax') {
         return (
-            <div className="w-full h-full bg-white flex items-center justify-center animate-in fade-in">
-                <div className="w-full h-full absolute bg-black animate-shatter" />
-            </div>
+             <div className="w-full h-full bg-black flex items-center justify-center animate-super-glitch" />
         )
     }
 
@@ -261,7 +268,7 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
                             key={i}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            transition={{ delay: i * 0.5 }}
+                            transition={{ delay: i * 2 }}
                         >
                             {msg}
                         </motion.p>
@@ -275,7 +282,7 @@ export default function FinalBattle({ username, onFinish, onSoundEvent, onMusicE
     return (
         <div className={cn(
             "h-full w-full relative p-8 flex flex-col justify-between transition-all duration-1000",
-            isUnderAttack ? 'animate-super-glitch' : 'animate-pulse-slow'
+            isUnderAttack && 'animate-vibration',
         )}
             onClick={() => terminalInputRef.current?.focus()}
         >
