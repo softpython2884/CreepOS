@@ -65,7 +65,7 @@ const LoginPage = ({ onSuccess }: { onSuccess?: () => void }) => {
         setStatus('triggered');
         setTimeout(() => {
              onSuccess?.();
-        }, 200);
+        }, 500); // Small delay to show the error message
     }
 
     const renderContent = () => {

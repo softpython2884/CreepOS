@@ -19,7 +19,6 @@ import type { GeoJSON } from 'geojson';
 import BlueScreen from './events/blue-screen';
 import Screamer from './events/screamer';
 import AudioManager, { SoundEvent } from './audio-manager';
-import ChapterThreeManager from './story/chapter-three-manager';
 import ChapterFiveManager from './story/chapter-five-manager';
 import ChapterSevenManager from './story/chapter-seven-manager';
 import PurgeScreen from './events/purge-screen';
@@ -137,14 +136,9 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   };
 
   const handleBackdoorSuccess = useCallback(() => {
-    onReboot('defense');
-  }, [onReboot]);
+    triggerEvent('bsod');
+  }, [triggerEvent]);
 
-
-  const handleChapterThreeFinish = () => {
-      setIsChapterThreeFinished(true);
-      triggerEvent('bsod');
-  }
 
   const handleChapterFiveFinish = () => {
     triggerEvent('freeze');
@@ -317,7 +311,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
       <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
       
       {/* Chapter Managers */}
-      {isChapterTwoFinished && !isChapterThreeFinished && terminalWriterRef.current && lastCapturedImage && (<ChapterThreeManager terminal={terminalWriterRef.current} triggerEvent={triggerEvent} openApp={openApp} capturedImage={lastCapturedImage} onFinish={handleChapterThreeFinish} />)}
       {isChapterFiveTriggered && (<ChapterFiveManager onFinish={handleChapterFiveFinish} openApp={openApp} />)}
       {isChapterSevenTriggered && terminalWriterRef.current && (
         <ChapterSevenManager 
@@ -378,5 +371,3 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     </main>
   );
 }
-
-    
