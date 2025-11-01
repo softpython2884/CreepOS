@@ -203,8 +203,26 @@ export default function Home() {
 
     useEffect(() => {
         const updateScale = () => {
-          const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
-          document.documentElement.style.setProperty('--viewport-scale', scale.toString());
+            const viewportWidth = 1920;
+            const viewportHeight = 1080;
+            const { innerWidth: windowWidth, innerHeight: windowHeight } = window;
+    
+            const scaleX = windowWidth / viewportWidth;
+            const scaleY = windowHeight / viewportHeight;
+    
+            // Use 'cover' logic: fill the screen, potentially cropping
+            const scale = Math.max(scaleX, scaleY);
+    
+            // Or use 'contain' logic: fit within the screen, potentially letterboxing
+            // const scale = Math.min(scaleX, scaleY); 
+    
+            const left = (windowWidth - viewportWidth * scale) / 2;
+            const top = (windowHeight - viewportHeight * scale) / 2;
+    
+            const root = document.documentElement;
+            root.style.setProperty('--viewport-scale', scale.toString());
+            root.style.setProperty('--viewport-left', `${left}px`);
+            root.style.setProperty('--viewport-top', `${top}px`);
         };
       
         updateScale();
@@ -343,8 +361,8 @@ export default function Home() {
     }
 
     return (
-        <main className="h-screen w-screen flex justify-center items-center bg-black">
-            <div id="viewport" className="absolute w-[1920px] h-[1080px] bg-background">
+        <main className="h-screen w-screen flex justify-center items-center bg-black overflow-hidden">
+            <div id="viewport" className="absolute w-[1920px] h-[1080px] bg-background origin-top-left">
                 <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
                 {renderState()}
             </div>

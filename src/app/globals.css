@@ -7,6 +7,8 @@
     --background: 0 0% 13%;
     --foreground: 0 0% 98%;
     --viewport-scale: 1;
+    --viewport-left: 0px;
+    --viewport-top: 0px;
 
     --card: 0 0% 15%;
     --card-foreground: 0 0% 98%;
@@ -93,8 +95,8 @@
   }
 
   #viewport {
-    transform: scale(var(--viewport-scale)) translate(-50%, -50%);
-    top: 50%;
-    left: 50%;
+    transform: scale(var(--viewport-scale));
+    top: var(--viewport-top);
+    left: var(--viewport-left);
   }
 }
