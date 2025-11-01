@@ -1,9 +1,10 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Lock } from 'lucide-react';
 import { Button } from '../ui/button';
+import Image from 'next/image';
 
 interface BrowserProps {
     onBackdoorSuccess?: () => void;
@@ -44,6 +45,19 @@ const WelcomePage = ({ onTextTyped }: { onTextTyped: () => void }) => {
                 />
             </div>
             <p className="mt-2 text-xs text-muted-foreground/50">La recherche est actuellement désactivée pour maintenance.</p>
+
+            <div className="absolute bottom-4 right-4 w-64 bg-card p-2 rounded-lg border border-border/50 animate-pulse-slow">
+                <div className="relative w-full h-32 mb-2 rounded overflow-hidden">
+                    <Image 
+                        src="https://preview.redd.it/invest-in-this-hdmi-cable-v0-ydguzfztxomf1.jpeg?width=640&crop=smart&auto=webp&s=d86e750b427cf05910133c94bbe05a1a51430ea6"
+                        alt="HDMI to Chicken Soup Converter Ad"
+                        layout="fill"
+                        objectFit="cover"
+                    />
+                </div>
+                <h4 className="text-sm font-bold text-accent-foreground">Produit de l'année !</h4>
+                <p className="text-xs text-muted-foreground">Le convertisseur HDMI vers soupe au poulet. Ne posez pas de questions.</p>
+            </div>
         </div>
     );
 };

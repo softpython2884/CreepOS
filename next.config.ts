@@ -42,6 +42,12 @@ const nextConfig: NextConfig = {
         hostname: 'mediaproxy.tvtropes.org',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'preview.redd.it',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
