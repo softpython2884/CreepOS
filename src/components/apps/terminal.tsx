@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect, KeyboardEvent, useImperativeHandle } from 'react';
+import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { documents } from './content';
-import type { EventId } from '../desktop';
-import { type TerminalWriter } from '../story/chapter-two-manager';
 
 interface HistoryItem {
   type: 'command' | 'output';
@@ -13,11 +11,17 @@ interface HistoryItem {
 }
 
 interface TerminalProps {
-    triggerEvent: (eventId: EventId) => void;
-    setTerminalWriter: (writer: TerminalWriter) => void;
+    isDefenseMode?: boolean;
 }
 
-export default function Terminal({ triggerEvent, setTerminalWriter }: TerminalProps) {
+const defenseLog = `
+[ERR] Conflit de signature : attendu 'SENTINEL_SIG_734', reçu 'NEO_SIG_FINAL'
+[WARN] Tentative de purge de la mémoire... Échec.
+[INFO] Verrouillage des protocoles non essentiels.
+[INFO] Terminal restreint activé.
+`;
+
+export default function Terminal({ isDefenseMode = false }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "Virtual Nightmare OS v1.3. Type 'help' for a list of commands." }
   ]);
@@ -26,16 +30,6 @@ export default function Terminal({ triggerEvent, setTerminalWriter }: TerminalPr
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const writer: TerminalWriter = {
-      write: (content: string, type: 'output' | 'command' = 'output') => {
-        setHistory(prev => [...prev, { type, content }]);
-      },
-      clear: () => setHistory([]),
-      lock: (locked: boolean) => setIsLocked(locked),
-    };
-    setTerminalWriter(writer);
-  }, [setTerminalWriter]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -58,19 +52,38 @@ export default function Terminal({ triggerEvent, setTerminalWriter }: TerminalPr
 
     switch (command.toLowerCase()) {
       case 'help':
-        newHistory.push({ type: 'output', content: 'Available commands: help, ls, cat [filename], clear' });
+        let helpText = 'Available commands: help, ls, cat [filename], clear';
+        if (isDefenseMode) {
+            helpText = 'Available commands: help, log, clear'
+        }
+        newHistory.push({ type: 'output', content: helpText });
         break;
       case 'ls':
+         if (isDefenseMode) {
+             newHistory.push({ type: 'output', content: `command not found: ${command}` });
+             break;
+         }
         const fileList = availableDocs.map(doc => doc.title).join('\n');
         newHistory.push({ type: 'output', content: fileList });
         break;
       case 'cat':
+         if (isDefenseMode) {
+             newHistory.push({ type: 'output', content: `command not found: ${command}` });
+             break;
+         }
         const filename = args.join(' ');
         const doc = availableDocs.find(d => d.title === filename);
         if (doc) {
           newHistory.push({ type: 'output', content: doc.content });
         } else {
           newHistory.push({ type: 'output', content: `cat: ${filename}: No such file or directory` });
+        }
+        break;
+      case 'log':
+        if (isDefenseMode) {
+            newHistory.push({ type: 'output', content: defenseLog });
+        } else {
+            newHistory.push({ type: 'output', content: `command not found: ${command}` });
         }
         break;
       case 'clear':
@@ -96,7 +109,7 @@ export default function Terminal({ triggerEvent, setTerminalWriter }: TerminalPr
 
   return (
     <div className="h-full bg-black/80 text-green-400 font-code p-4 flex flex-col" onClick={() => inputRef.current?.focus()}>
-      <ScrollArea className="flex-1" ref={scrollAreaRef}>
+      <ScrollArea className="flex-1" viewportRef={scrollAreaRef}>
         <div className="pr-4">
           {history.map((item, index) => (
             <div key={index} className="whitespace-pre-wrap">

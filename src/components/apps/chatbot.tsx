@@ -65,11 +65,14 @@ export default function Chatbot({ onFinish }: ChatbotProps) {
 
   return (
     <div className={cn("h-full flex flex-col bg-card font-code")}>
+       <div className="p-2 text-center border-b text-sm text-blue-300 bg-black/20">
+            Protocole de communication sécurisé
+        </div>
       <ScrollArea className="flex-1" viewportRef={viewportRef}>
         <div className="space-y-4 p-4">
           {messages.map((msg) => (
             <div key={msg.id} className={cn('flex items-start gap-3', msg.sender === 'user' ? 'justify-end' : 'justify-start')}>
-              {msg.sender === 'ai' && <Bot className="w-6 h-6 text-accent flex-shrink-0 mt-1" />}
+              {msg.sender === 'ai' && <Bot className="w-6 h-6 text-blue-400 flex-shrink-0 mt-1" />}
               <div className={cn('max-w-sm rounded-lg px-4 py-2 text-sm whitespace-pre-wrap', 
                 msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
               )}>
@@ -80,7 +83,7 @@ export default function Chatbot({ onFinish }: ChatbotProps) {
           ))}
           {isChatPending && (
              <div className="flex items-start gap-3 justify-start animate-in fade-in duration-500">
-                <Bot className="w-6 h-6 text-accent animate-pulse" />
+                <Bot className="w-6 h-6 text-blue-400 animate-pulse" />
                 <div className="max-w-sm rounded-lg px-4 py-2 text-sm bg-secondary flex items-center space-x-1">
                     <span className="h-2 w-2 bg-muted-foreground/30 rounded-full animate-pulse delay-0"></span>
                     <span className="h-2 w-2 bg-muted-foreground/30 rounded-full animate-pulse delay-200"></span>

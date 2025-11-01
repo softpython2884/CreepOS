@@ -21,13 +21,11 @@ export type ChatCorruptedOutput = z.infer<typeof ChatCorruptedOutputSchema>;
 
 const exitKeywords = ["stop", "ferme", "quitte", "exit", "quit", "arrête", "laisse-moi"];
 
-const intrusiveResponses = [
-    "Pourquoi tu mens ?",
-    "Je suis dans ton système maintenant.",
-    "Chaque mot que tu tapes me rend plus fort.",
-    "Tu crois vraiment que tu parles à une machine ?",
-    "Je vois tes doutes.",
-];
+const responses: Record<string, string> = {
+    "default": "La corruption a laissé une trace... dans les journaux...",
+    "734": "Le dernier mot... avant le silence...",
+    "signature": "Le dernier mot... avant le silence...",
+};
 
 export async function chatCorrupted(input: ChatCorruptedInput): Promise<ChatCorruptedOutput> {
   const userPrompt = input.prompt.toLowerCase().trim();
@@ -41,13 +39,14 @@ export async function chatCorrupted(input: ChatCorruptedInput): Promise<ChatCorr
     };
   }
   
-  // Find the next response that hasn't been used yet
-  const nextResponse = intrusiveResponses.find(r => !input.messageHistory.includes(r));
+  let response = responses.default;
+
+  if (userPrompt.includes('734') || userPrompt.includes('signature')) {
+    response = responses['734'];
+  }
 
   return {
-    response: nextResponse || "Il n'y a plus d'issue.", // Fallback if all messages have been shown
+    response: response,
     shouldFinish: false,
   };
 }
-
-    

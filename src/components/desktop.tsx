@@ -77,9 +77,9 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   const [isChapterThreeFinished, setIsChapterThreeFinished] = useState(false);
   const [isChapterFourTriggered, setIsChapterFourTriggered] = useState(false);
   const [isChapterFiveTriggered, setIsChapterFiveTriggered] = useState(false);
-  const [lastCapturedImage, setLastCapturedImage] = useState<ImagePlaceholder | null>(null);
+  const lastCapturedImage = null;
   const terminalWriterRef = useRef<TerminalWriter | null>(null);
-  const [isCameraActiveForStory, setIsCameraActiveForStory] = useState(false);
+  const isCameraActiveForStory = false;
 
 
   const closeAllApps = useCallback(() => {
@@ -136,26 +136,25 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     triggerEvent('bsod');
   }, [triggerEvent]);
 
-
-  const handleChapterFiveFinish = () => {
+  const handleFatalError = () => {
     triggerEvent('freeze');
     setTimeout(() => {
         onReboot('total_corruption');
     }, 2000);
   }
 
-  const handleCorruptionFinish = () => {
+  const handleCorruptionFinish = useCallback(() => {
     onReboot('defense');
-  };
+  }, [onReboot]);
   
   const appConfig: AppConfig = {
-    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
+    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, isDefenseMode }, isCorruptible: true },
     chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isCorrupted: isCorrupted && !isTotallyCorrupted, onCorruptionFinish: handleCorruptionFinish }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onFolderUnlocked: (folderId: string) => { if (folderId === 'folder-archives') setIsChapterTwoFinished(true)} }, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: handleBackdoorSuccess }, isCorruptible: true },
-    chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleChapterFiveFinish }, isCorruptible: false },
-    security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, isCorruptible: false },
+    chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleFatalError }, isCorruptible: false },
+    security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, props: { onFatalError: handleFatalError }, isCorruptible: false },
     systemStatus: { title: 'System Status', component: SystemStatus, width: 450, height: 250, props: { isDefenseMode: isDefenseMode, username: username }, isCorruptible: false },
   };
 
@@ -172,7 +171,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     }
     if (isDefenseMode && !isChapterFiveTriggered) {
         setIsChapterFiveTriggered(true);
-        appId = 'chatbot'; // Force open chatbot
     }
     if (isTotallyCorrupted) {
       if (openApps.length === 0) { // Prevent loop
@@ -272,7 +270,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   
   const handleChapterCapture = useCallback((imageUri: string) => {
       const newCapture: ImagePlaceholder = { id: `story-capture-${Date.now()}`, description: "...", imageUrl: imageUri, imageHint: "self portrait" };
-      setLastCapturedImage(newCapture);
       setCapturedImages(prev => [...prev, newCapture]);
   }, []);
 
@@ -330,6 +327,9 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                   if (app.appId === 'systemStatus') {
                     config.props = { ...config.props, isDefenseMode, username };
                   }
+                   if (app.appId === 'terminal') {
+                    config.props = { ...config.props, isDefenseMode };
+                  }
                   return config;
                 })();
 
@@ -345,7 +345,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                       onStart={() => bringToFront(app.instanceId)}
                     >
                       <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} isCorrupted={isAppCorrupted}>
+                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppCofig.width} height={currentAppConfig.height} isCorrupted={isAppCorrupted}>
                               <AppComponent {...currentAppConfig.props}/>
                           </Window>
                       </div>
@@ -359,5 +359,3 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     </main>
   );
 }
-
-    
