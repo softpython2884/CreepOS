@@ -167,7 +167,7 @@ export const finalBattleContent = {
     },
     anomalies: [
         { type: 'terminal_delete', content: "PURGE /USERS/D.C.OMEN..." },
-        { type: 'image_flash', content: "https://i.ibb.co/hZJc8Vz/img-0287-4.jpg" },
+        { type: 'image_flash', content: "https://i.ibb.co/C09H3sP/screamer.jpg" },
         { type: 'sound', content: 'scream' },
     ]
 }

@@ -31,18 +31,23 @@ export default function AudioManager({ event, onEnd }: AudioManagerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const fanAudioRef = useRef<HTMLAudioElement>(null);
   const ambientAudioRef = useRef<HTMLAudioElement>(null);
+  const isPlayingAmbient = useRef(false);
 
   // Play ambient sound on mount
   useEffect(() => {
     const playAmbient = async () => {
-        if (ambientAudioRef.current) {
+        if (ambientAudioRef.current && !isPlayingAmbient.current) {
             try {
+                isPlayingAmbient.current = true;
                 ambientAudioRef.current.src = ambientSound.src;
                 ambientAudioRef.current.volume = ambientSound.volume;
                 ambientAudioRef.current.loop = true;
                 await ambientAudioRef.current.play();
             } catch (error) {
-                console.warn('Could not play ambient sound:', error);
+                isPlayingAmbient.current = false;
+                if ((error as Error).name !== 'AbortError') {
+                    console.warn('Could not play ambient sound:', error);
+                }
             }
         }
     };
@@ -56,6 +61,7 @@ export default function AudioManager({ event, onEnd }: AudioManagerProps) {
     const enableAutoplay = () => {
         const audio = new Audio(SILENT_WAV);
         audio.play().catch(() => {});
+        playAmbient(); // Try to play ambient again after interaction
         window.removeEventListener('click', enableAutoplay);
         window.removeEventListener('keydown', enableAutoplay);
     };
@@ -70,30 +76,35 @@ export default function AudioManager({ event, onEnd }: AudioManagerProps) {
 
   useEffect(() => {
     const fanAudio = fanAudioRef.current;
+    if (!fanAudio) return;
 
     const playFanSound = async () => {
-        if (fanAudio) {
-            try {
-                const sound = sounds['fan'];
-                fanAudio.src = sound.src;
-                fanAudio.volume = sound.volume;
-                fanAudio.loop = sound.loop || false;
-                await fanAudio.play();
-            } catch (error) {
+        try {
+            const sound = sounds['fan'];
+            fanAudio.src = sound.src;
+            fanAudio.volume = sound.volume;
+            fanAudio.loop = sound.loop || false;
+            await fanAudio.play();
+        } catch (error) {
+            if ((error as Error).name !== 'AbortError') {
                 console.warn('Could not play fan sound:', error);
             }
         }
     };
+    
+    const stopFanSound = () => {
+        if (!fanAudio.paused) {
+            fanAudio.pause();
+            fanAudio.currentTime = 0;
+        }
+    }
 
     if (event === 'fan') {
         playFanSound();
+    } else {
+        stopFanSound();
     }
 
-    return () => {
-      if (fanAudio && event === 'fan') {
-          fanAudio.pause();
-      }
-    };
   }, [event]);
 
 
@@ -103,7 +114,11 @@ export default function AudioManager({ event, onEnd }: AudioManagerProps) {
       if (sound) {
         audioRef.current.src = sound.src;
         audioRef.current.volume = sound.volume;
-        audioRef.current.play().catch(error => console.warn(`Could not play sound (${event}):`, error));
+        audioRef.current.play().catch(error => {
+            if ((error as Error).name !== 'AbortError') {
+                console.warn(`Could not play sound (${event}):`, error);
+            }
+        });
       }
     }
   }, [event]);

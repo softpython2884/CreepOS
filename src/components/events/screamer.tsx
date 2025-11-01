@@ -8,7 +8,7 @@ interface ScreamerProps {
 }
 
 const screamerImage = {
-    imageUrl: "https://i.ibb.co/hZJc8Vz/img-0287-4.jpg",
+    imageUrl: "https://i.ibb.co/C09H3sP/screamer.jpg",
     description: "A distorted, ghostly face screaming from the darkness."
 };
 
