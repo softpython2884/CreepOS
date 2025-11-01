@@ -254,6 +254,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         y: (1080 / 2) - (appConfig.chat.height / 2)
       });
     } else if (isDefenseMode) {
+        openApp('systemStatus', { x: 50, y: 50 });
         openApp('chatbot');
     } else if (isTotallyCorrupted) {
         openApp('terminal', { x: 50, y: 50 });
@@ -359,6 +360,9 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                   if (app.appId === 'documents') {
                     config.props = { initialFileSystem: currentFileSystem };
                   }
+                  if (app.appId === 'systemStatus') {
+                    config.props = { ...config.props, isDefenseMode };
+                  }
                   return config;
                 })();
 
@@ -374,7 +378,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                       onStart={() => bringToFront(app.instanceId)}
                     >
                       <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} isCorrupted={isAppCorrupted}>
+                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentApp_Config.width} height={currentAppConfig.height} isCorrupted={isAppCorrupted}>
                               <AppComponent {...currentAppConfig.props}/>
                           </Window>
                       </div>
