@@ -103,7 +103,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
     let response = finalBattleContent.terminal.invalidCommand;
 
     if (command === 'HELP') {
-        response = phase === 'revelation' ? finalBattleContent.terminal.finalHelp : finalBattleContent.terminal.restrictedHelp;
+        response = (phase === 'revelation' || phase === 'climax') ? finalBattleContent.terminal.finalHelp : finalBattleContent.terminal.restrictedHelp;
     } else if (command === 'SIGNATURE_CHECK') {
         response = finalBattleContent.terminal.signatureCheck;
         setIsUnderAttack(false);
@@ -111,7 +111,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
         if (anomalyIntervalRef.current) clearInterval(anomalyIntervalRef.current);
         if (phase === 'awareness') setPhase('resistance');
     } else if (['SIG_OMEN_734', 'SIG_VANCE_42', 'SIG_FINCH_01'].includes(command)) {
-        if (phase === 'revelation') {
+        if (phase === 'revelation' || phase === 'climax') {
             const newSignatures = new Set(enteredSignatures);
             newSignatures.add(command);
             setEnteredSignatures(newSignatures);
@@ -272,7 +272,7 @@ export default function FinalBattle({ username, onFinish }: FinalBattleProps) {
                     <p className="mt-2 pt-2 border-t border-dashed border-blue-400/20 text-xs text-blue-300/70">{finalBattleContent.systemStatus.notes}</p>
                 </div>
                 {/* Chatbot */}
-                <div className="w-2/3 bg-black/50 border border-blue-400/30 rounded-lg p-4 font-mono text-blue-300 h-48 overflow-hidden">
+                <div className="w-2/3 bg-black/50 border border-blue-400/30 rounded-lg p-4 font-mono text-blue-300 h-48 overflow-y-auto">
                     <h2 className="flex items-center gap-2 text-lg border-b border-blue-400/50 pb-2 mb-2"><MessageSquare /> CONSCIOUSNESS STREAM</h2>
                     <div className="space-y-1 text-sm">
                         {chatbotMessages.map((msg, i) => <p key={i}>&gt; {msg}</p>)}
