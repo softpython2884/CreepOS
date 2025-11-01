@@ -280,7 +280,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     switch (activeEvent) {
       case 'scream': return <Screamer onFinish={() => setActiveEvent('none')} />;
       case 'purge_screen': return <PurgeScreen />;
-      case 'bsod': return <BlueScreen onReboot={() => onReboot('corrupted')} />;
+      case 'bsod': return <BlueScreen />;
       default: return null;
     }
   }
@@ -341,3 +341,5 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     </main>
   );
 }
+
+    
