@@ -24,6 +24,7 @@ import ChapterThreeManager from './story/chapter-three-manager';
 import ChapterFiveManager from './story/chapter-five-manager';
 import ChapterSevenManager from './story/chapter-seven-manager';
 import PurgeScreen from './events/purge-screen';
+import Epilogue from './events/epilogue';
 import { chapterSixLogs, initialFileSystem, chapterTwoFiles, chapterFourFiles, type FileSystemNode } from './apps/content';
 import Draggable from 'react-draggable';
 
@@ -162,17 +163,10 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     }, 2000);
   }
 
-  const handleChapterSevenFinish = () => {
-    handleEpilogue();
-  }
+  const handleChapterSevenFinish = useCallback(() => {
+    onShowEpilogue();
+  }, [onShowEpilogue]);
   
-  const handleEpilogue = () => {
-    triggerEvent('purge_screen');
-    setTimeout(() => {
-        onShowEpilogue();
-    }, 4000);
-  }
-
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
     chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isCorrupted: isCorrupted && !isTotallyCorrupted }, isCorruptible: true },
@@ -204,7 +198,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         setIsChapterSevenTriggered(true);
     }
     if (isTotallyCorrupted) {
-      handleEpilogue();
+      handleChapterSevenFinish();
     }
 
 
@@ -226,7 +220,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     setSoundEvent('click');
     setIsGlitching(true);
     setTimeout(() => setIsGlitching(false), 200);
-  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, isChapterSevenTriggered, appConfig, handleEpilogue]);
+  }, [isChapterOneFinished, isChapterTwoTriggered, nextZIndex, isCorrupted, isChapterFourTriggered, isDefenseMode, isChapterFiveTriggered, isTotallyCorrupted, isChapterSevenTriggered, appConfig, handleChapterSevenFinish]);
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -257,19 +251,22 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
         openApp('systemStatus', { x: 50, y: 50 });
         openApp('chatbot');
     } else if (isTotallyCorrupted) {
-      onShowEpilogue();
+      handleChapterSevenFinish();
     }
     else {
-      // Normal start
-      if (openApps.length === 0) {
+      // Normal start - Chapter 1
+      if (openApps.length === 0 && !isChapterOneFinished) {
         openApp('systemStatus', { x: 50, y: 50 });
         openApp('chat', { x: 550, y: 100 });
       }
     }
-    setActiveEvent('chromatic');
-    const timer1 = setTimeout(() => setIsGlitching(true), 200);
-    const timer2 = setTimeout(() => { setActiveEvent('none'); setIsGlitching(false); }, 500);
-    return () => { clearTimeout(timer1); clearTimeout(timer2); };
+    
+    if (isCorrupted || isDefenseMode || isTotallyCorrupted) {
+        setActiveEvent('chromatic');
+        const timer1 = setTimeout(() => setIsGlitching(true), 200);
+        const timer2 = setTimeout(() => { setActiveEvent('none'); setIsGlitching(false); }, 500);
+        return () => { clearTimeout(timer1); clearTimeout(timer2); };
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCorrupted, isDefenseMode, isTotallyCorrupted]);
 
@@ -392,3 +389,5 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     </main>
   );
 }
+
+    

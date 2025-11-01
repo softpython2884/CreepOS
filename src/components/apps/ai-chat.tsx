@@ -24,14 +24,14 @@ interface AIChatProps {
 }
 
 const initialActionState = { response: undefined, error: undefined };
-const chapterOneWelcome = "Bonjour, D.C. Omen. Je suis Néo, votre assistant personnel. Je suis là pour vous aider dans toutes vos tâches quotidiennes. Je vous laisse découvrir votre nouvel environnement.";
+const chapterOneWelcome = "Bonjour, D.C. Omen. Je suis Néo, votre assistant personnel. Je suis là pour vous aider. Je vous laisse découvrir votre nouvel environnement en explorant le dossier 'Personnel'.";
 const corruptedLoopMessage = "Watch your death in agony. I'll be back in your nightmares.";
 
 export default function AIChat({ location, isChapterOne = false, onChapterOneFinish, isCorrupted = false }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatState, chatFormAction, isChatPending] = useActionState(chatWithAI, initialActionState);
   const [hintState, hintFormAction, isHintPending] = useActionState(generateInitialHint, initialActionState);
-  const [isReadOnly, setIsReadOnly] = useState(false);
+  const [isReadOnly, setIsReadOnly] = useState(isChapterOne);
   const formRef = useRef<HTMLFormElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -45,10 +45,10 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
   useEffect(() => {
     if (isChapterOne) {
         addMessage('ai', chapterOneWelcome);
+        setIsReadOnly(true);
         setTimeout(() => {
-          setIsReadOnly(true);
           onChapterOneFinish?.();
-        }, 3000);
+        }, 4000); // Wait a bit longer before closing the window
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isChapterOne]);
@@ -65,14 +65,16 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
         if(corruptedIntervalRef.current) {
             clearInterval(corruptedIntervalRef.current);
         }
-        setIsReadOnly(false);
+        if (!isChapterOne) {
+            setIsReadOnly(false);
+        }
     }
     return () => {
         if(corruptedIntervalRef.current) {
             clearInterval(corruptedIntervalRef.current);
         }
     }
-  }, [isCorrupted]);
+  }, [isCorrupted, isChapterOne]);
 
   useEffect(() => {
     if (chatState.response) {
@@ -161,7 +163,7 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
           <Button type="submit" size="icon" disabled={isPending || isReadOnly}>
             <CornerDownLeft size={16} />
           </Button>
-          <Button type="button" size="icon" variant="outline" onClick={handleHintClick} disabled={isPending || isReadOnly} aria-label="Get a hint">
+          <Button type="button" size="icon" variant="outline" onClick={handleHintClick} disabled={isPending || isReadOnly || isChapterOne} aria-label="Get a hint">
             <BrainCircuit size={16}/>
           </Button>
         </form>
@@ -169,3 +171,5 @@ export default function AIChat({ location, isChapterOne = false, onChapterOneFin
     </div>
   );
 }
+
+    
