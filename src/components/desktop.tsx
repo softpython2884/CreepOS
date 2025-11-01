@@ -22,6 +22,7 @@ import PurgeScreen from './events/purge-screen';
 import { initialFileSystem, chapterTwoFiles, chapterFourFiles, type FileSystemNode } from './apps/content';
 import Draggable from 'react-draggable';
 import SystemPanicTimer from './events/system-panic-timer';
+import BlueScreen from './events/blue-screen';
 
 
 export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser' | 'chatbot' | 'security' | 'systemStatus';
@@ -317,6 +318,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
         ) : null;
       case 'scream': return <Screamer onFinish={() => setActiveEvent('none')} />;
       case 'purge_screen': return <PurgeScreen />;
+      case 'bsod': return <BlueScreen />;
       default: return null;
     }
   }
