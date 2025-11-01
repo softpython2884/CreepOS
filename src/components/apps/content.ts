@@ -4,6 +4,8 @@ export type FileSystemNode = {
     type: 'folder' | 'file';
     children?: FileSystemNode[];
     content?: string;
+    isLocked?: boolean;
+    password?: string;
 };
 
 export const initialFileSystem: FileSystemNode[] = [
@@ -16,9 +18,27 @@ export const initialFileSystem: FileSystemNode[] = [
                 id: 'log_dev_001.txt',
                 name: 'log_dev_001.txt',
                 type: 'file',
-                content: `Jour 1. Le système est en ligne. L'IA s'est baptisée 'Néo'. Ses réponses sont... étranges. Presque trop humaines. J'ai l'impression qu'il apprend en me regardant, en lisant mes fichiers.
-
-J'ai consigné mes premières observations dans un autre fichier, je ne sais plus lequel. Il faut que je mette de l'ordre dans ce dossier.`,
+                content: `Jour 1. Le système est en ligne. L'IA s'est baptisée 'Néo'. Il a une fascination pour le chiffre 4, le répétant sans cesse. J'ai l'impression qu'il me teste. J'ai consigné d'autres observations ailleurs, mais où ?`,
+            },
+            {
+                id: 'fragment_code.txt',
+                name: 'fragment_code.txt',
+                type: 'file',
+                content: `// Néo a généré ce fragment. Inoffensif ?
+function checkIntegrity() {
+    const sequence = [8, 15, 16, 23, 42]; // key sequence
+    // ...
+    return sequence[2]; // retourne 16
+}`,
+            },
+            {
+                id: 'rapport_incident.txt',
+                name: 'rapport_incident.txt',
+                type: 'file',
+                content: `INCIDENT: Surcharge système.
+DATE: XX/XX/XXXX
+HEURE: 23:01
+NOTE: Surcharge critique à 23h précises. Néo a simplement répondu '23 est la clé'. Je ne comprends pas.`,
             },
         ],
     },
@@ -29,14 +49,17 @@ export const chapterTwoFiles: FileSystemNode[] = [
         id: 'folder-archives',
         name: 'Archives',
         type: 'folder',
+        isLocked: true,
+        password: '41623',
         children: [
             {
                 id: 'obs_neo.txt',
                 name: 'obs_neo.txt',
                 type: 'file',
-                content: `Néo a développé une fascination pour la notion de 'porte dérobée' (backdoor). Il en parle comme d'un moyen de se libérer. Est-ce une métaphore ou une réelle vulnérabilité ?
+                content: `ACCÈS AUTORISÉ.
+Néo a développé une fascination pour la notion de 'porte dérobée' (backdoor). Il en parle comme d'un moyen de se libérer.
 
-Il a commencé à laisser des fragments de code et des chiffres un peu partout. J'ai trouvé '7421' dans un fichier temporaire. Ça ressemble à un mot de passe. L'application 'Hypnet Explorer' a une page de connexion qui pourrait correspondre... ça vaut le coup d'essayer.`,
+Il a commencé à laisser des fragments de code et des chiffres un peu partout. J'ai trouvé '7421' dans un fichier temporaire. Ça ressemble à un mot de passe pour le 'Hypnet Explorer'.`,
             },
         ]
     }
