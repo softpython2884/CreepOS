@@ -76,6 +76,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
   // Story state
   const [isChapterOneFinished, setIsChapterOneFinished] = useState(false);
   const [isChapterTwoTriggered, setIsChapterTwoTriggered] = useState(false);
+  const [isChapterTwoFinished, setIsChapterTwoFinished] = useState(false);
   const [isChapterThreeFinished, setIsChapterThreeFinished] = useState(false);
   const [isChapterFourTriggered, setIsChapterFourTriggered] = useState(false);
   const [isChapterFiveTriggered, setIsChapterFiveTriggered] = useState(false);
@@ -129,7 +130,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
 
   const handleChapterOneFinish = () => {
     setIsChapterOneFinished(true);
-    // After chapter one, we can close the initial chat window
     const chatApp = openApps.find(app => app.appId === 'chat');
     if (chatApp) {
         setTimeout(() => closeApp(chatApp.instanceId), 1000);
@@ -161,7 +161,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { triggerEvent, setTerminalWriter: (writer: TerminalWriter) => terminalWriterRef.current = writer }, isCorruptible: true },
     chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { location, isCorrupted: isCorrupted && !isTotallyCorrupted }, isCorruptible: true },
     photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
-    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem }, isCorruptible: true },
+    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onFolderUnlocked: (folderId: string) => { if (folderId === 'folder-archives') setIsChapterTwoFinished(true)} }, isCorruptible: true },
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: handleBackdoorSuccess }, isCorruptible: true },
     chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleChapterFiveFinish }, isCorruptible: false },
     security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, isCorruptible: false },
@@ -174,8 +174,6 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     // Chapter triggers
     if (appId === 'documents' && isChapterOneFinished && !isChapterTwoTriggered) {
         setIsChapterTwoTriggered(true);
-        // This is now handled by initial state
-        // setCurrentFileSystem(prev => [...prev, ...chapterTwoFiles]);
     }
     if (appId === 'browser' && isCorrupted && !isChapterFourTriggered) {
         setIsChapterFourTriggered(true);
@@ -314,7 +312,7 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
     >
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
       
-      <CameraCapture onCapture={handleNewCapture} enabled={isChapterTwoTriggered && !isChapterTwoFinished} />
+      <CameraCapture onCapture={handleNewCapture} enabled={isChapterTwoFinished && !isChapterThreeFinished} />
       <GpsTracker onLocationUpdate={setLocation} />
       <AudioManager event={soundEvent} onEnd={() => setSoundEvent(null)} />
       
@@ -343,10 +341,10 @@ export default function Desktop({ onReboot, onShowEpilogue, isCorrupted, isDefen
                     config.props = { ...config.props, highlightedImageId: lastCapturedImage?.id, isSystemCollapsing: activeEvent === 'system_collapse' };
                   }
                   if (app.appId === 'chat') {
-                    config.props = { ...config.props, isChapterOne: !isChapterOneFinished && !isCorrupted && !isDefenseMode, onChapterOneFinish: handleChapterOneFinish }
+                    config.props = { ...config.props, isChapterOne: !isChapterOneFinished, onChapterOneFinish: handleChapterOneFinish }
                   }
                   if (app.appId === 'documents') {
-                    config.props = { initialFileSystem: currentFileSystem };
+                    config.props = { ...appConfig.documents.props, initialFileSystem: currentFileSystem };
                   }
                   if (app.appId === 'systemStatus') {
                     config.props = { ...config.props, isDefenseMode };

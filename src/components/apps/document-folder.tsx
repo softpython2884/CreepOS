@@ -11,9 +11,10 @@ import { Input } from '@/components/ui/input';
 
 interface DocumentFolderProps {
     initialFileSystem: FileSystemNode[];
+    onFolderUnlocked?: (folderId: string) => void;
 }
 
-export default function DocumentFolder({ initialFileSystem }: DocumentFolderProps) {
+export default function DocumentFolder({ initialFileSystem, onFolderUnlocked }: DocumentFolderProps) {
     const [fileSystem, setFileSystem] = useState<FileSystemNode[]>(initialFileSystem);
     const [history, setHistory] = useState<FileSystemNode[][]>([initialFileSystem]);
     const [selectedFile, setSelectedFile] = useState<FileSystemNode | null>(null);
@@ -72,6 +73,7 @@ export default function DocumentFolder({ initialFileSystem }: DocumentFolderProp
 
             setLockedFolder(null);
             setPassword('');
+            onFolderUnlocked?.(unlockedFolder.id);
             // Directly open the folder after unlocking
             if (unlockedFolder.children) {
                 setHistory(prev => [...prev, unlockedFolder.children!]);
