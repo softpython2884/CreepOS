@@ -1,8 +1,9 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Lock } from 'lucide-react';
+import { Lock, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import Image from 'next/image';
 
@@ -13,6 +14,7 @@ interface BrowserProps {
 
 const WelcomePage = ({ onTextTyped }: { onTextTyped: () => void }) => {
     const [text, setText] = useState('');
+    const [isAdVisible, setIsAdVisible] = useState(true);
     const fullText = "Rechercher sur l'Hypnet...";
 
     useEffect(() => {
@@ -46,18 +48,23 @@ const WelcomePage = ({ onTextTyped }: { onTextTyped: () => void }) => {
             </div>
             <p className="mt-2 text-xs text-muted-foreground/50">La recherche est actuellement désactivée pour maintenance.</p>
 
-            <div className="absolute bottom-4 right-4 w-64 bg-card p-2 rounded-lg border border-border/50 animate-pulse-slow">
-                <div className="relative w-full h-32 mb-2 rounded overflow-hidden">
-                    <Image 
-                        src="https://preview.redd.it/invest-in-this-hdmi-cable-v0-ydguzfztxomf1.jpeg?width=640&crop=smart&auto=webp&s=d86e750b427cf05910133c94bbe05a1a51430ea6"
-                        alt="HDMI to Chicken Soup Converter Ad"
-                        layout="fill"
-                        objectFit="cover"
-                    />
+            {isAdVisible && (
+                 <div className="absolute bottom-4 right-4 w-64 bg-card p-2 rounded-lg border border-border/50 animate-pulse-slow">
+                    <button onClick={() => setIsAdVisible(false)} className="absolute top-1 right-1 z-10 p-1 bg-card/50 rounded-full hover:bg-destructive/20 transition-colors">
+                        <X size={12} />
+                    </button>
+                    <div className="relative w-full h-32 mb-2 rounded overflow-hidden">
+                        <Image 
+                            src="https://preview.redd.it/invest-in-this-hdmi-cable-v0-ydguzfztxomf1.jpeg?width=640&crop=smart&auto=webp&s=d86e750b427cf05910133c94bbe05a1a51430ea6"
+                            alt="HDMI to Chicken Soup Converter Ad"
+                            fill
+                            objectFit="cover"
+                        />
+                    </div>
+                    <h4 className="text-sm font-bold text-accent-foreground">Produit de l'année !</h4>
+                    <p className="text-xs text-muted-foreground">Le convertisseur HDMI vers soupe au poulet. Ne posez pas de questions.</p>
                 </div>
-                <h4 className="text-sm font-bold text-accent-foreground">Produit de l'année !</h4>
-                <p className="text-xs text-muted-foreground">Le convertisseur HDMI vers soupe au poulet. Ne posez pas de questions.</p>
-            </div>
+            )}
         </div>
     );
 };
@@ -184,3 +191,5 @@ export default function Browser({ onBackdoorSuccess, onSoundEvent }: BrowserProp
     </div>
   );
 }
+
+    
