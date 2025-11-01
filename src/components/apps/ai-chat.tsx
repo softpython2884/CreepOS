@@ -72,7 +72,7 @@ export default function AIChat({ isChapterOne = false, onChapterOneFinish, isCor
   }, [isChapterOne, onChapterOneFinish]);
 
   useEffect(() => {
-    if (isCorrupted) {
+    if (isCorrupted && !isPanicMode) {
         setIsReadOnly(true);
         let i = 0;
         corruptedIntervalRef.current = setInterval(() => {

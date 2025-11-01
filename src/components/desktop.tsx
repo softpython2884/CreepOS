@@ -123,37 +123,6 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     onReboot('defense');
   }, [onReboot]);
   
-  const appConfig: AppConfig = {
-    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { isDefenseMode, onPanicSolved: handlePanicSolved, isPanicMode: activeEvent === 'panic' }, isCorruptible: true },
-    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { isChapterOne: !isChapterOneFinished, onChapterOneFinish: () => { setIsChapterOneFinished(true); const chatApp = openApps.find(app => app.appId === 'chat'); if (chatApp) setTimeout(() => closeApp(chatApp.instanceId), 1000); }, isCorrupted: isCorrupted && !isTotallyCorrupted, onCorruptionFinish: handleCorruptionFinish, isPanicMode: activeEvent === 'panic' }, isCorruptible: true },
-    photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
-    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onFolderUnlocked: (folderId: string) => { if (folderId === 'folder-archives') setIsChapterTwoFinished(true)}, onSoundEvent: onSoundEvent }, isCorruptible: true },
-    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: handleBackdoorSuccess, onSoundEvent: onSoundEvent }, isCorruptible: true },
-    chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleFatalError }, isCorruptible: false },
-    security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, props: { onFatalError: handleFatalError }, isCorruptible: false },
-    systemStatus: { title: 'System Status', component: SystemStatus, width: 450, height: 250, props: { isDefenseMode: isDefenseMode, username: username }, isCorruptible: false },
-  };
-  
-  const openApp = useCallback((appId: AppId, options: { x?: number, y?: number } = {}) => {
-    const instanceId = nextInstanceIdRef.current;
-    nextInstanceIdRef.current += 1;
-
-    const config = appConfig[appId];
-    // Center with some random offset
-    const randomXOffset = (Math.random() - 0.5) * 200;
-    const randomYOffset = (Math.random() - 0.5) * 200;
-    const x = options.x ?? (1920 / 2) - (config.width / 2) + randomXOffset;
-    const y = options.y ?? (1080 / 2) - (config.height / 2) + randomYOffset;
-    
-    const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, x, y, nodeRef: createRef<HTMLDivElement>() };
-
-    setOpenApps(prev => [...prev, newApp]);
-    setActiveInstanceId(instanceId);
-    setNextZIndex(prev => prev + 1);
-    
-    onSoundEvent('click');
-  }, [nextZIndex, onSoundEvent, appConfig]);
-  
   const triggerEvent = useCallback((eventId: EventId) => {
     setActiveEvent(eventId);
 
@@ -197,6 +166,38 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
       }
     }
   }, [onSoundEvent, onMusicEvent, setActiveEvent, onReboot, openApp, closeAllApps, appConfig]);
+  
+  const appConfig: AppConfig = {
+    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: { isDefenseMode, onPanicSolved: handlePanicSolved, isPanicMode: isCorrupted }, isCorruptible: true },
+    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: { isChapterOne: !isChapterOneFinished, onChapterOneFinish: () => { setIsChapterOneFinished(true); const chatApp = openApps.find(app => app.appId === 'chat'); if (chatApp) setTimeout(() => closeApp(chatApp.instanceId), 1000); }, isCorrupted: isCorrupted && !isTotallyCorrupted, onCorruptionFinish: handleCorruptionFinish, isPanicMode: isCorrupted }, isCorruptible: true },
+    photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: { extraImages: capturedImages }, isCorruptible: true },
+    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onFolderUnlocked: (folderId: string) => { if (folderId === 'folder-archives') setIsChapterTwoFinished(true)}, onSoundEvent: onSoundEvent }, isCorruptible: true },
+    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onBackdoorSuccess: handleBackdoorSuccess, onSoundEvent: onSoundEvent }, isCorruptible: true },
+    chatbot: { title: '???', component: Chatbot, width: 400, height: 500, props: { onFinish: handleFatalError }, isCorruptible: false },
+    security: { title: 'SENTINEL', component: SecurityApp, width: 900, height: 650, props: { onFatalError: handleFatalError }, isCorruptible: false },
+    systemStatus: { title: 'System Status', component: SystemStatus, width: 450, height: 250, props: { isDefenseMode: isDefenseMode, username: username }, isCorruptible: false },
+  };
+
+  const openApp = useCallback((appId: AppId, options: { x?: number, y?: number } = {}) => {
+    const instanceId = nextInstanceIdRef.current;
+    nextInstanceIdRef.current += 1;
+
+    const config = appConfig[appId];
+    // Center with some random offset
+    const randomXOffset = (Math.random() - 0.5) * 200;
+    const randomYOffset = (Math.random() - 0.5) * 200;
+    const x = options.x ?? (1920 / 2) - (config.width / 2) + randomXOffset;
+    const y = options.y ?? (1080 / 2) - (config.height / 2) + randomYOffset;
+    
+    const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, x, y, nodeRef: createRef<HTMLDivElement>() };
+
+    setOpenApps(prev => [...prev, newApp]);
+    setActiveInstanceId(instanceId);
+    setNextZIndex(prev => prev + 1);
+    
+    onSoundEvent('click');
+  }, [nextZIndex, onSoundEvent, appConfig]);
+  
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -238,7 +239,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
     if (isCorrupted && !isChapterFourTriggered) {
         setIsChapterFourTriggered(true);
         setCurrentFileSystem(prev => [...prev, ...chapterFourFiles]);
-        triggerEvent('panic'); // Directly trigger panic on corrupted desktop load
+        triggerEvent('panic');
     } 
     // Defense mode - Chapter 5
     else if (isDefenseMode && !isChapterFiveTriggered) {
@@ -315,8 +316,7 @@ export default function Desktop({ onReboot, onShowEpilogue, onSoundEvent, onMusi
                 const currentAppConfig = (() => {
                   let config = { ...appConfig[app.appId] };
                   
-                  // Dynamically set props based on game state
-                  const isPanicMode = activeEvent === 'panic';
+                  const isPanicMode = isCorrupted && !isPanicSolved;
 
                   if (app.appId === 'photos') {
                     config.props = { ...config.props, highlightedImageId: lastCapturedImage?.id, isSystemCollapsing: activeEvent === 'system_collapse' };
