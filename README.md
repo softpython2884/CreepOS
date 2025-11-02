@@ -2,6 +2,8 @@
 
 **Un projet réalisé pour le Hackathon de Holberton School.**
 
+juste une demo, le jeu complet bientôt disponible
+
 ---
 
 ## 1. Introduction
