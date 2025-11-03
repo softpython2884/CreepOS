@@ -58,16 +58,6 @@ export default {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
-        sidebar: {
-          DEFAULT: 'hsl(var(--sidebar-background))',
-          foreground: 'hsl(var(--sidebar-foreground))',
-          primary: 'hsl(var(--sidebar-primary))',
-          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-          accent: 'hsl(var(--sidebar-accent))',
-          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-          border: 'hsl(var(--sidebar-border))',
-          ring: 'hsl(var(--sidebar-ring))',
-        },
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -176,10 +166,6 @@ export default {
             '20%': { transform: 'scale(1.02) skewX(2deg)', filter: 'url(#chromatic-aberration-filter-1)' },
             '50%': { clipPath: 'inset(20% 0 30% 0)' },
             '80%': { transform: 'scale(0.98) skewX(-2deg)', filter: 'none' },
-        },
-        'pulse-strong': {
-            '0%, 100%': { boxShadow: '0 0 0 0 hsl(var(--accent) / 0.7)', borderColor: 'hsl(var(--accent))' },
-            '50%': { boxShadow: '0 0 0 12px hsl(var(--accent) / 0)', borderColor: 'hsl(var(--blue-400))' },
         },
         'red-screen': {
           '0%': { backgroundColor: 'transparent', filter: 'invert(0)'},

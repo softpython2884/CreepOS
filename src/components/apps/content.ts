@@ -67,6 +67,7 @@ export const initialFileSystem: FileSystemNode[] = [
             { id: 'file-player', name: 'player.anscii.bin', type: 'file', content: 'Binary executable', isSystemFile: true },
             { id: 'file-analyzer', name: 'analyzer.bin', type: 'file', content: 'Binary executable', isSystemFile: true },
             { id: 'file-nano', name: 'nano.bin', type: 'file', content: 'Text editor executable', isSystemFile: true },
+            { id: 'file-porthack', name: 'porthack.bin', type: 'file', content: 'Port cracking utility', isSystemFile: true },
         ]
     },
     {

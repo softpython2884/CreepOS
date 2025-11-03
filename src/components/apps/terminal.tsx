@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileSystemNode } from './content';
+import { network, type PC } from '@/lib/network';
 
 interface HistoryItem {
   type: 'command' | 'output';
@@ -184,6 +185,20 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             }
         } else if (executable.id === 'file-exploit') {
             newHistory.push({ type: 'output', content: 'Exploit successful. Sub-system vulnerabilities detected.' });
+        } else if (executable.id === 'file-porthack') {
+            const targetIp = args[0];
+            if (!targetIp) {
+                newHistory.push({ type: 'output', content: 'porthack: missing target IP address' });
+            } else {
+                const targetPC = network.find(pc => pc.ip === targetIp);
+                if (!targetPC) {
+                    newHistory.push({ type: 'output', content: `porthack: unable to resolve host ${targetIp}` });
+                } else if (targetPC.requiredPorts === 0) {
+                     newHistory.push({ type: 'output', content: `PortHack successful on ${targetIp}. All ports opened.` });
+                } else {
+                    newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required.` });
+                }
+            }
         } else {
              newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
         }
@@ -203,12 +218,13 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 '  ls [path]      - List files and directories',
                 '  cd <path>      - Change directory',
                 '  cat <file>     - Display file content',
-                '  touch <file>   - Create an empty file',
                 '  echo <text>    - Display a line of text. Supports > and >> redirection.',
+                '  touch <file>   - Create an empty file',
                 '  cp <src> <dest> - Copy a file or directory',
                 '  mv <src> <dest> - Move or rename a file or directory',
                 '  rm <file>      - Remove a file',
                 '  nano <file>    - Open a simple text editor',
+                '  porthack <ip>  - Attempts to open all ports on a target system',
                 '  clear          - Clear the terminal screen',
             ].join('\n');
             newHistory.push({ type: 'output', content: helpText });
