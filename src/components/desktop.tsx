@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useCallback, createRef } from 'react';
+import { useState, useRef, useCallback, createRef, useEffect } from 'react';
 import Dock from '@/components/dock';
 import Window from '@/components/window';
 import Terminal from '@/components/apps/terminal';
@@ -43,20 +43,34 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [nextZIndex, setNextZIndex] = useState(10);
   const nextInstanceIdRef = useRef(0);
-  const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>(initialFileSystem);
+  const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>([]);
+
+  useEffect(() => {
+    // Dynamically create the file system with the current username
+    const personalizeFileSystem = (nodes: FileSystemNode[]): FileSystemNode[] => {
+      return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, username));
+    };
+    setCurrentFileSystem(personalizeFileSystem(initialFileSystem));
+  }, [username]);
+
 
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: {} },
-    documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onSoundEvent: onSoundEvent } },
+    documents: { title: 'File Explorer', component: DocumentFolder, width: 700, height: 500, props: { initialFileSystem: currentFileSystem, onSoundEvent: onSoundEvent } },
   };
 
   const openApp = useCallback((appId: AppId) => {
+    // Prevent opening documents if file system is not ready
+    if (appId === 'documents' && currentFileSystem.length === 0) return;
+
     const instanceId = nextInstanceIdRef.current++;
     const config = appConfig[appId];
     
-    const viewportStyle = getComputedStyle(document.getElementById('viewport')!);
-    const viewportWidth = parseInt(viewportStyle.width, 10);
-    const viewportHeight = parseInt(viewportStyle.height, 10);
+    const viewport = document.getElementById('viewport');
+    if (!viewport) return;
+
+    const viewportWidth = viewport.offsetWidth;
+    const viewportHeight = viewport.offsetHeight;
 
     const randomXOffset = (Math.random() - 0.5) * 200;
     const randomYOffset = (Math.random() - 0.5) * 200;
@@ -69,7 +83,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
     setActiveInstanceId(instanceId);
     setNextZIndex(prev => prev + 1);
     onSoundEvent('click');
-  }, [nextZIndex, onSoundEvent, appConfig]);
+  }, [nextZIndex, onSoundEvent, appConfig, currentFileSystem]);
 
   const closeApp = useCallback((instanceId: number) => {
     onSoundEvent('close');
@@ -117,6 +131,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
         <>
             {openApps.map((app) => {
                 const currentAppConfig = appConfig[app.appId];
+                if (!currentAppConfig) return null;
                 const AppComponent = currentAppConfig.component;
                 
                 return (

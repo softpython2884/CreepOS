@@ -12,7 +12,7 @@ interface HistoryItem {
 
 export default function Terminal() {
   const [history, setHistory] = useState<HistoryItem[]>([
-    { type: 'output', content: "SUBSYSTEM OS [Version 1.0.0]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
+    { type: 'output', content: "SUBSYSTEM OS [Version 2.0.0]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
     { type: 'output', content: "Type 'help' for a list of commands." }
   ]);
   const [input, setInput] = useState('');
@@ -40,11 +40,11 @@ export default function Terminal() {
         newHistory.push({ type: 'output', content: helpText });
         break;
     case 'ls':
-        newHistory.push({ type: 'output', content: 'Documents\nSystem' });
+        newHistory.push({ type: 'output', content: 'home\nsys\nbin\nlogs' });
         break;
     case 'cat':
         const filename = args.join(' ');
-        newHistory.push({ type: 'output', content: `cat: ${filename}: No such file or directory. Try looking in the 'Documents' application.` });
+        newHistory.push({ type: 'output', content: `cat: ${filename}: No such file or directory. Try using the file explorer.` });
         break;
     case 'echo':
         newHistory.push({ type: 'output', content: args.join(' ') });
