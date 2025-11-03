@@ -6,7 +6,7 @@ import Dock from '@/components/dock';
 import Window from '@/components/window';
 import Terminal from '@/components/apps/terminal';
 import DocumentFolder from '@/components/apps/document-folder';
-import TextEditor from '@/components/apps/text-editor'; // Import the new editor
+import TextEditor from '@/components/apps/text-editor';
 import { cn } from '@/lib/utils';
 import { SoundEvent, MusicEvent } from './audio-manager';
 import { initialFileSystem, type FileSystemNode } from './apps/content';
@@ -65,39 +65,41 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
     setEditingFile({ path, content });
   };
 
-  const handleSaveFile = (path: string[], newContent: string) => {
-    const recursiveUpdate = (nodes: FileSystemNode[], currentPath: string[], content: string): FileSystemNode[] => {
-        if (currentPath.length === 1) { // We are at the parent folder
-            const fileName = path[path.length - 1];
-            const fileExists = nodes.some(node => node.name === fileName);
-            
-            if (fileExists) { // Update existing file
-                return nodes.map(node =>
-                    node.name === fileName ? { ...node, content } : node
-                );
-            } else { // Create new file
-                const newFile: FileSystemNode = {
-                    id: `file-${Date.now()}`,
-                    name: fileName,
-                    type: 'file',
-                    content,
-                };
-                return [...nodes, newFile];
+    const handleSaveFile = (path: string[], newContent: string) => {
+        const parentPath = path.slice(0, -1);
+        const fileName = path[path.length - 1];
+
+        const recursiveUpdate = (nodes: FileSystemNode[], currentPath: string[]): FileSystemNode[] => {
+            if (currentPath.length === 0) {
+                // We are at the target directory
+                const fileExists = nodes.some(node => node.name === fileName);
+                if (fileExists) {
+                    return nodes.map(node => 
+                        node.name === fileName ? { ...node, content: newContent } : node
+                    );
+                } else {
+                    const newFile: FileSystemNode = {
+                        id: `file-${Date.now()}`,
+                        name: fileName,
+                        type: 'file',
+                        content: newContent,
+                    };
+                    return [...nodes, newFile];
+                }
             }
-        }
-    
-        const [next, ...rest] = currentPath;
-        return nodes.map(node => 
-            (node.name === next && node.type === 'folder')
-                ? { ...node, children: recursiveUpdate(node.children || [], rest, content) }
-                : node
-        );
+
+            const [next, ...rest] = currentPath;
+            return nodes.map(node => 
+                (node.name === next && node.type === 'folder')
+                    ? { ...node, children: recursiveUpdate(node.children || [], rest) }
+                    : node
+            );
+        };
+
+        setFileSystem(prevFs => recursiveUpdate(prevFs, parentPath));
+        setEditingFile(null); // Close editor
+        onSoundEvent('click');
     };
-    
-    const parentPath = path.slice(0, -1);
-    setFileSystem(prevFs => recursiveUpdate(prevFs, parentPath, newContent));
-    setEditingFile(null); // Close editor
-  };
 
   const appConfig: AppConfig = {
     terminal: { 

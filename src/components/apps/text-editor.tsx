@@ -39,7 +39,7 @@ export default function TextEditor({ fileContent, onSave }: TextEditorProps) {
             />
             <div className="flex justify-end p-2 border-t">
                  <span className="text-xs text-muted-foreground mr-4 self-center">Ctrl+S pour sauvegarder</span>
-                <Button onClick={() => onSave(content)} size="sm">
+                <Button onClick={() => onSave(content)} size="sm" variant="outline">
                     <Save className="mr-2 h-4 w-4" />
                     Enregistrer & Quitter
                 </Button>
