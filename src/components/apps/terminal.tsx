@@ -16,6 +16,7 @@ interface TerminalProps {
     onFileSystemUpdate: (newFileSystem: FileSystemNode[]) => void;
     username: string;
     onSoundEvent?: (event: 'click') => void;
+    onOpenFileEditor: (path: string[], content: string) => void;
 }
 
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
@@ -42,7 +43,7 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
     return foundNode;
 };
 
-export default function Terminal({ fileSystem, onFileSystemUpdate, username, onSoundEvent }: TerminalProps) {
+export default function Terminal({ fileSystem, onFileSystemUpdate, username, onSoundEvent, onOpenFileEditor }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
     { type: 'output', content: "Type 'help' for a list of commands." }
@@ -77,8 +78,10 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
   };
   
   const resolvePath = (pathArg: string): string[] => {
+    if (!pathArg) return [...currentDirectory];
+    
     let newPath: string[];
-    if (pathArg === '/') return [];
+    
     if (pathArg.startsWith('/')) {
         newPath = pathArg.split('/').filter(p => p);
     } else {
@@ -110,35 +113,16 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     const redirect = fullCommand.includes('>');
     
     let commandPart = fullCommand;
-    let redirectPath = '';
-    let redirectFilename = '';
+    let redirectPathArg = '';
     
-    if (redirect) {
+    if (redirect || append) {
         const split = fullCommand.split(append ? '>>' : '>');
         commandPart = split[0].trim();
-        const redirectArg = split[1].trim();
-        const resolvedRedirectPath = resolvePath(redirectArg);
-        redirectFilename = resolvedRedirectPath.pop() || '';
-        redirectPath = resolvedRedirectPath.join('/');
+        redirectPathArg = split[1].trim();
     }
     
     const [command, ...args] = commandPart.trim().split(' ');
     
-    const getCurrentNodeChildren = () => {
-        let currentLevel: FileSystemNode[] = fileSystem;
-        for (const part of currentDirectory) {
-            const next = currentLevel?.find(c => c.name === part && c.type === 'folder');
-            if (next && next.children) {
-                currentLevel = next.children;
-            } else {
-                return [];
-            }
-        }
-        return currentLevel;
-    }
-
-    const currentChildren = getCurrentNodeChildren();
-
     const recursiveUpdate = (nodes: FileSystemNode[], path: string[], updater: (items: FileSystemNode[]) => FileSystemNode[]): FileSystemNode[] => {
         if (path.length === 0) {
             return updater(nodes);
@@ -154,9 +138,12 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     };
 
     const handleOutput = (output: string) => {
-        if (redirect && redirectFilename) {
-             const resolvedRedirectPath = resolvePath(redirectPath);
-             const newFileSystem = recursiveUpdate(fileSystem, resolvedRedirectPath, (items) => {
+        if ((redirect || append) && redirectPathArg) {
+             const resolvedRedirectPath = resolvePath(redirectPathArg);
+             const redirectFilename = resolvedRedirectPath.pop() || '';
+             const parentPath = resolvedRedirectPath;
+
+             const newFileSystem = recursiveUpdate(fileSystem, parentPath, (items) => {
                 const existingIndex = items.findIndex(item => item.name === redirectFilename);
                 if (existingIndex !== -1) {
                     const newItems = [...items];
@@ -182,15 +169,25 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     const executable = binFolder?.children?.find(file => file.name === `${command}.bin`);
 
     if (executable) {
-        switch (executable.id) {
-            case 'file-exploit':
-                newHistory.push({ type: 'output', content: 'Exploit successful. Sub-system vulnerabilities detected.' });
-                break;
-            // Future executables can be added here
-            default:
-                newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
-                break;
+        if (command === 'nano') {
+            const pathArg = args[0];
+            if (!pathArg) {
+                newHistory.push({ type: 'output', content: `nano: missing file operand` });
+            } else {
+                const filePath = resolvePath(pathArg);
+                const file = findNodeByPath(filePath, fileSystem);
+                if (file && file.type === 'folder') {
+                    newHistory.push({ type: 'output', content: `nano: cannot edit directory '${pathArg}'` });
+                } else {
+                    onOpenFileEditor(filePath, file?.content || '');
+                }
+            }
+        } else if (executable.id === 'file-exploit') {
+            newHistory.push({ type: 'output', content: 'Exploit successful. Sub-system vulnerabilities detected.' });
+        } else {
+             newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
         }
+
         setHistory(newHistory);
         setInput('');
         return;
@@ -211,6 +208,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 '  cp <src> <dest> - Copy a file or directory',
                 '  mv <src> <dest> - Move or rename a file or directory',
                 '  rm <file>      - Remove a file',
+                '  nano <file>    - Open a simple text editor',
                 '  clear          - Clear the terminal screen',
             ].join('\n');
             newHistory.push({ type: 'output', content: helpText });
@@ -224,13 +222,16 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             let currentPathResolved = true;
 
             for(const part of targetPath) {
-                const nextNode = targetNode.children?.find(c => c.name === part && c.type === 'folder');
+                if (!targetNode?.children) {
+                    currentPathResolved = false;
+                    break;
+                }
+                const nextNode = targetNode.children.find(c => c.name === part && c.type === 'folder');
                 if (nextNode) {
                     targetNode = nextNode;
                 } else {
-                    // Check if the last part is a file
-                    const fileNode = targetNode.children?.find(c => c.name === part && c.type === 'file');
-                    if(fileNode) {
+                    const fileNode = targetNode.children.find(c => c.name === part && c.type === 'file');
+                    if(fileNode && targetPath[targetPath.length-1] === part) {
                         targetNode = null;
                         handleOutput(fileNode.name);
                     } else {
@@ -312,6 +313,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             }
             const path = resolvePath(filename);
             const newFileName = path.pop() || '';
+            const parentPath = path;
             
             const existing = findNodeByPath(resolvePath(filename), fileSystem);
             if (existing) {
@@ -326,7 +328,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 content: '',
             };
 
-            const newFileSystem = recursiveUpdate(fileSystem, path, (items) => [...items, newFile]);
+            const newFileSystem = recursiveUpdate(fileSystem, parentPath, (items) => [...items, newFile]);
             onFileSystemUpdate(newFileSystem);
             break;
         }

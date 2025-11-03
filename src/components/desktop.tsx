@@ -6,6 +6,7 @@ import Dock from '@/components/dock';
 import Window from '@/components/window';
 import Terminal from '@/components/apps/terminal';
 import DocumentFolder from '@/components/apps/document-folder';
+import TextEditor from '@/components/apps/text-editor'; // Import the new editor
 import { cn } from '@/lib/utils';
 import { SoundEvent, MusicEvent } from './audio-manager';
 import { initialFileSystem, type FileSystemNode } from './apps/content';
@@ -32,6 +33,12 @@ type OpenApp = {
   nodeRef: React.RefObject<HTMLDivElement>;
 };
 
+// New type for the file being edited
+type EditingFile = {
+  path: string[];
+  content: string;
+} | null;
+
 interface DesktopProps {
   onSoundEvent: (event: SoundEvent) => void;
   onMusicEvent: (event: MusicEvent) => void;
@@ -44,15 +51,52 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
   const [nextZIndex, setNextZIndex] = useState(10);
   const nextInstanceIdRef = useRef(0);
   const [fileSystem, setFileSystem] = useState<FileSystemNode[]>([]);
+  const [editingFile, setEditingFile] = useState<EditingFile>(null);
 
   useEffect(() => {
-    // Dynamically create the file system with the current username
     const personalizeFileSystem = (nodes: FileSystemNode[]): FileSystemNode[] => {
       return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, username));
     };
     setFileSystem(personalizeFileSystem(initialFileSystem));
   }, [username]);
 
+  const handleOpenFileEditor = (path: string[], content: string) => {
+    setEditingFile({ path, content });
+  };
+
+  const handleSaveFile = (path: string[], newContent: string) => {
+    const recursiveUpdate = (nodes: FileSystemNode[], currentPath: string[], content: string): FileSystemNode[] => {
+        if (currentPath.length === 1) { // We are at the parent folder
+            const fileName = path[path.length - 1];
+            const fileExists = nodes.some(node => node.name === fileName);
+            
+            if (fileExists) { // Update existing file
+                return nodes.map(node =>
+                    node.name === fileName ? { ...node, content } : node
+                );
+            } else { // Create new file
+                const newFile: FileSystemNode = {
+                    id: `file-${Date.now()}`,
+                    name: fileName,
+                    type: 'file',
+                    content,
+                };
+                return [...nodes, newFile];
+            }
+        }
+    
+        const [next, ...rest] = currentPath;
+        return nodes.map(node => 
+            (node.name === next && node.type === 'folder')
+                ? { ...node, children: recursiveUpdate(node.children || [], rest, content) }
+                : node
+        );
+    };
+    
+    const parentPath = path.slice(0, -1);
+    setFileSystem(prevFs => recursiveUpdate(prevFs, parentPath, newContent));
+    setEditingFile(null); // Close editor
+  };
 
   const appConfig: AppConfig = {
     terminal: { 
@@ -65,6 +109,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
             onFileSystemUpdate: setFileSystem,
             onSoundEvent: onSoundEvent,
             username: username,
+            onOpenFileEditor: handleOpenFileEditor, // Pass the handler
         } 
     },
     documents: { 
@@ -82,7 +127,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
   };
 
   const openApp = useCallback((appId: AppId) => {
-    // Prevent opening documents if file system is not ready
     if (appId === 'documents' && fileSystem.length === 0) return;
 
     const instanceId = nextInstanceIdRef.current++;
@@ -105,7 +149,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
     setActiveInstanceId(instanceId);
     setNextZIndex(prev => prev + 1);
     onSoundEvent('click');
-  }, [nextZIndex, onSoundEvent, appConfig, fileSystem]);
+  }, [nextZIndex, onSoundEvent, appConfig, fileSystem.length]);
 
   const closeApp = useCallback((instanceId: number) => {
     onSoundEvent('close');
@@ -150,34 +194,49 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
     >
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
       
-        <>
-            {openApps.map((app) => {
-                const currentAppConfig = appConfig[app.appId];
-                if (!currentAppConfig) return null;
-                const AppComponent = currentAppConfig.component;
+      {openApps.map((app) => {
+          const currentAppConfig = appConfig[app.appId];
+          if (!currentAppConfig) return null;
+          const AppComponent = currentAppConfig.component;
+          
+          const props = { ...currentAppConfig.props, fileSystem, onFileSystemUpdate: setFileSystem };
+          
+          return (
+              <Draggable
+                key={app.instanceId}
+                handle=".handle"
+                defaultPosition={{x: app.x, y: app.y}}
+                bounds="parent"
+                nodeRef={app.nodeRef}
+                onStart={() => bringToFront(app.instanceId)}
+              >
+                <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
+                    <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height}>
+                        <AppComponent {...props}/>
+                    </Window>
+                </div>
+              </Draggable>
+          )
+      })}
+      
+      {editingFile && (
+        <div style={{ zIndex: nextZIndex + 1 }} className="absolute">
+          <Draggable
+            handle=".handle"
+            bounds="parent"
+            defaultPosition={{ x: window.innerWidth / 4, y: window.innerHeight / 8 }}
+          >
+              <Window title={`nano - ${editingFile.path.join('/')}`} onClose={() => setEditingFile(null)} width={800} height={600}>
+                  <TextEditor 
+                      fileContent={editingFile.content}
+                      onSave={(newContent) => handleSaveFile(editingFile.path, newContent)}
+                  />
+              </Window>
+          </Draggable>
+        </div>
+      )}
 
-                // Refresh props for documents app to pass the latest fileSystem state
-                const props = { ...currentAppConfig.props, fileSystem, onFileSystemUpdate: setFileSystem };
-                
-                return (
-                    <Draggable
-                      key={app.instanceId}
-                      handle=".handle"
-                      defaultPosition={{x: app.x, y: app.y}}
-                      bounds="parent"
-                      nodeRef={app.nodeRef}
-                      onStart={() => bringToFront(app.instanceId)}
-                    >
-                      <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                          <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height}>
-                              <AppComponent {...props}/>
-                          </Window>
-                      </div>
-                    </Draggable>
-                )
-            })}
-            <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} />
-        </>
+      <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} />
     </main>
   );
 }

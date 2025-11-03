@@ -65,7 +65,8 @@ export const initialFileSystem: FileSystemNode[] = [
         children: [
             { id: 'file-viewer', name: 'viewer.bin', type: 'file', content: 'Binary executable', isSystemFile: true },
             { id: 'file-player', name: 'player.anscii.bin', type: 'file', content: 'Binary executable', isSystemFile: true },
-            { id: 'file-analyzer', name: 'analyzer.bin', type: 'file', content: 'Binary executable', isSystemFile: true }
+            { id: 'file-analyzer', name: 'analyzer.bin', type: 'file', content: 'Binary executable', isSystemFile: true },
+            { id: 'file-nano', name: 'nano.bin', type: 'file', content: 'Text editor executable', isSystemFile: true },
         ]
     },
     {
