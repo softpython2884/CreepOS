@@ -159,7 +159,7 @@ export default function Home() {
         const updateScale = () => {
             const viewportBaseWidth = 1920;
             const viewportWidth = viewportBaseWidth;
-            const viewportHeight = viewportBaseWidth / aspectRatio;
+            const viewportHeight = viewportWidth / aspectRatio;
 
             const { innerWidth: windowWidth, innerHeight: windowHeight } = window;
     
@@ -234,10 +234,6 @@ export default function Home() {
             <div 
                 id="viewport" 
                 className="absolute bg-background origin-top-left"
-                style={{
-                    width: 'var(--viewport-width)',
-                    height: 'var(--viewport-height)',
-                }}
             >
                 <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
                 {renderState()}

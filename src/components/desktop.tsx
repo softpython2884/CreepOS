@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useCallback, createRef } from 'react';
+import { useState, useRef, useCallback, createRef } from 'react';
 import Dock from '@/components/dock';
 import Window from '@/components/window';
 import Terminal from '@/components/apps/terminal';
@@ -54,8 +54,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
     const instanceId = nextInstanceIdRef.current++;
     const config = appConfig[appId];
     
-    const viewportWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--viewport-width')) || 1920;
-    const viewportHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--viewport-height')) || 1080;
+    const viewportStyle = getComputedStyle(document.getElementById('viewport')!);
+    const viewportWidth = parseInt(viewportStyle.width, 10);
+    const viewportHeight = parseInt(viewportStyle.height, 10);
 
     const randomXOffset = (Math.random() - 0.5) * 200;
     const randomYOffset = (Math.random() - 0.5) * 200;

@@ -97,6 +97,7 @@
   }
 
   #viewport {
+    position: absolute;
     transform: scale(var(--viewport-scale));
     top: var(--viewport-top);
     left: var(--viewport-left);
