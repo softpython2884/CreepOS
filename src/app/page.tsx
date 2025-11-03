@@ -11,7 +11,21 @@ import AudioManager, { MusicEvent, SoundEvent } from '@/components/audio-manager
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 
-type MachineState = 'off' | 'booting' | 'login' | 'desktop';
+type MachineState = 'off' | 'bios' | 'booting' | 'login' | 'desktop';
+
+const biosLines = [
+    'NEO-SYSTEM BIOS v1.0.3',
+    'Copyright (C) 2024 VIRTUAL NIGHTMARE Corp.',
+    '',
+    'Main Processor: Quantum Core @ 4.2THz',
+    'Memory Testing: 65536M OK',
+    '',
+    'Detecting drives...',
+    '  Primary Drive: /dev/sys_storage',
+    '  Secondary Drive: Not Detected',
+    '',
+    'Initializing boot sequence from Primary Drive...',
+];
 
 const bootLines = [
     'NEO-SYS KERNEL v2.1.0-beta',
@@ -61,6 +75,36 @@ const OffScreen = ({ onStart, onRatioChange, currentRatio }: { onStart: () => vo
         </div>
     );
 };
+
+const BiosScreen = ({ onComplete }: { onComplete: () => void }) => {
+    const [lines, setLines] = useState<string[]>([]);
+    
+    useEffect(() => {
+        let i = 0;
+        const intervalId = setInterval(() => {
+            if (i < biosLines.length) {
+                setLines(prev => [...prev, biosLines[i]]);
+            } else {
+                clearInterval(intervalId);
+                setTimeout(onComplete, 1000);
+            }
+            i++;
+        }, 200);
+
+        return () => clearInterval(intervalId);
+    }, [onComplete]);
+
+    return (
+        <div className="bg-black p-8 w-full h-full text-gray-300 font-code cursor-none">
+            <div className="whitespace-pre-wrap text-lg">
+                {lines.map((line, i) => (
+                    <p key={i}>{line}</p>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 
 const BootScreen = ({ onBootComplete }: { onBootComplete: () => void }) => {
     const [lines, setLines] = useState<string[]>([]);
@@ -195,6 +239,10 @@ export default function Home() {
     
     const handleStartSystem = () => {
         setSoundEvent('fan');
+        setMachineState('bios');
+    }
+
+    const handleBiosComplete = () => {
         setMusicEvent('epic');
         setMachineState('booting');
     }
@@ -209,6 +257,12 @@ export default function Home() {
             case 'off':
                 return (
                     <OffScreen onStart={handleStartSystem} onRatioChange={setAspectRatio} currentRatio={aspectRatio}/>
+                );
+            case 'bios':
+                return (
+                    <div className="w-full h-full bg-black">
+                        <BiosScreen onComplete={handleBiosComplete} />
+                    </div>
                 );
             case 'booting':
                 return (
