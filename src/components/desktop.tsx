@@ -75,7 +75,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
                 const fileExists = nodes.some(node => node.name === fileName);
                 if (fileExists) {
                     return nodes.map(node => 
-                        node.name === fileName ? { ...node, content: newContent } : node
+                        node.name === fileName && node.type === 'file' 
+                            ? { ...node, content: newContent } 
+                            : node
                     );
                 } else {
                     const newFile: FileSystemNode = {
