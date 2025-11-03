@@ -198,7 +198,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
       {openApps.map((app) => {
           const currentAppConfig = appConfig[app.appId];
           if (!currentAppConfig) return null;
-          const AppComponent = currentAppAppConfig.component;
+          const AppComponent = currentAppConfig.component;
           
           const props = { ...currentAppConfig.props, fileSystem, onFileSystemUpdate: setFileSystem };
           
@@ -226,8 +226,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
             bounds="parent"
             nodeRef={nanoRef}
             defaultPosition={{ 
-                x: (window.innerWidth / 2) - 400, // Assuming width 800
-                y: (window.innerHeight / 2) - 300, // Assuming height 600
+                x: (document.getElementById('viewport')?.offsetWidth || 1920) / 2 - 400,
+                y: (document.getElementById('viewport')?.offsetHeight || 1080) / 2 - 300,
              }}
         >
             <div ref={nanoRef} style={{ zIndex: nextZIndex + 1 }} className="absolute">
