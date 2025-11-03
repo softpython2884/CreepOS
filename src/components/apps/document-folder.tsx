@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileText, Folder, CornerUpLeft, X, Lock } from 'lucide-react';
 import { type FileSystemNode } from './content';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -10,19 +10,39 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/components/ui/input';
 
 interface DocumentFolderProps {
-    initialFileSystem: FileSystemNode[];
-    onFolderUnlocked?: (folderId: string) => void;
+    fileSystem: FileSystemNode[];
+    onFileSystemUpdate: (newFileSystem: FileSystemNode[]) => void;
     onSoundEvent?: (event: 'click') => void;
 }
 
-export default function DocumentFolder({ initialFileSystem, onFolderUnlocked, onSoundEvent }: DocumentFolderProps) {
-    const [fileSystem, setFileSystem] = useState<FileSystemNode[]>(initialFileSystem);
-    const [path, setPath] = useState<string[]>(['/']);
-    const [currentFolderItems, setCurrentFolderItems] = useState<FileSystemNode[]>(initialFileSystem);
+export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSoundEvent }: DocumentFolderProps) {
+    const [currentPath, setCurrentPath] = useState<string[]>(['/']);
+    const [currentFolderItems, setCurrentFolderItems] = useState<FileSystemNode[]>([]);
     const [selectedFile, setSelectedFile] = useState<FileSystemNode | null>(null);
     const [lockedFolder, setLockedFolder] = useState<FileSystemNode | null>(null);
     const [password, setPassword] = useState('');
     const [passwordError, setPasswordError] = useState(false);
+
+    useEffect(() => {
+        const getNodeFromPath = (nodes: FileSystemNode[], path: string[]): FileSystemNode[] => {
+            if (path.length === 1 && path[0] === '/') {
+                return nodes;
+            }
+            let currentLevel = nodes;
+            for (let i = 1; i < path.length; i++) {
+                const folderName = path[i];
+                const folder = currentLevel.find(f => f.name === folderName && f.type === 'folder');
+                if (folder && folder.children) {
+                    currentLevel = folder.children;
+                } else {
+                    return []; // Path not found
+                }
+            }
+            return currentLevel;
+        };
+        setCurrentFolderItems(getNodeFromPath(fileSystem, currentPath));
+    }, [currentPath, fileSystem]);
+
 
     const openNode = (node: FileSystemNode) => {
         onSoundEvent?.('click');
@@ -34,8 +54,7 @@ export default function DocumentFolder({ initialFileSystem, onFolderUnlocked, on
         }
 
         if (node.type === 'folder' && node.children) {
-            setPath([...path, node.name]);
-            setCurrentFolderItems(node.children);
+            setCurrentPath([...currentPath, node.name]);
         } else if (node.type === 'file') {
             setSelectedFile(node);
         }
@@ -43,28 +62,20 @@ export default function DocumentFolder({ initialFileSystem, onFolderUnlocked, on
 
     const goBack = () => {
         onSoundEvent?.('click');
-        if (path.length > 1) {
-            const newPath = path.slice(0, -1);
-            setPath(newPath);
-
-            let currentLevel = fileSystem;
-            for (let i = 1; i < newPath.length; i++) {
-                const folder = currentLevel.find(f => f.name === newPath[i] && f.type === 'folder');
-                currentLevel = folder?.children || [];
-            }
-            setCurrentFolderItems(currentLevel);
+        if (currentPath.length > 1) {
+            const newPath = currentPath.slice(0, -1);
+            setCurrentPath(newPath);
         }
     };
 
     const handlePasswordSubmit = () => {
         onSoundEvent?.('click');
         if (lockedFolder && password === lockedFolder.password) {
-            const unlockedFolder = { ...lockedFolder, isLocked: false };
             
             const updateNodeRecursively = (nodes: FileSystemNode[]): FileSystemNode[] => {
                 return nodes.map(n => {
-                    if (n.id === unlockedFolder.id) {
-                        return unlockedFolder;
+                    if (n.id === lockedFolder.id) {
+                        return { ...lockedFolder, isLocked: false };
                     }
                     if (n.children) {
                         return { ...n, children: updateNodeRecursively(n.children) };
@@ -74,22 +85,14 @@ export default function DocumentFolder({ initialFileSystem, onFolderUnlocked, on
             };
     
             const newFileSystem = updateNodeRecursively(fileSystem);
-            setFileSystem(newFileSystem);
+            onFileSystemUpdate(newFileSystem);
 
-            let currentLevel = newFileSystem;
-            for (let i = 1; i < path.length; i++) {
-                const folder = currentLevel.find(f => f.name === path[i] && f.type === 'folder');
-                currentLevel = folder?.children || [];
+            if (lockedFolder.children) {
+                setCurrentPath([...currentPath, lockedFolder.name]);
             }
-            setCurrentFolderItems(updateNodeRecursively(currentFolderItems));
-
             setLockedFolder(null);
             setPassword('');
-            onFolderUnlocked?.(unlockedFolder.id);
-            if (unlockedFolder.children) {
-                setPath([...path, unlockedFolder.name]);
-                setCurrentFolderItems(unlockedFolder.children);
-            }
+            
         } else {
             setPasswordError(true);
             setTimeout(() => setPasswordError(false), 2000);
@@ -118,11 +121,11 @@ export default function DocumentFolder({ initialFileSystem, onFolderUnlocked, on
         <>
             <ScrollArea className="h-full bg-card">
                 <div className="p-2 flex items-center border-b">
-                    <Button variant="ghost" size="icon" onClick={goBack} disabled={path.length === 1}>
+                    <Button variant="ghost" size="icon" onClick={goBack} disabled={currentPath.length === 1}>
                         <CornerUpLeft size={16} />
                     </Button>
                     <span className="ml-2 text-sm text-muted-foreground font-code">
-                        {path.join('/')}
+                        {currentPath.join('/').replace('//', '/')}
                     </span>
                 </div>
                 <div className="p-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">

@@ -49,8 +49,6 @@ export const initialFileSystem: FileSystemNode[] = [
         id: 'folder-sys',
         name: 'sys',
         type: 'folder',
-        isLocked: true,
-        password: 'admin', // Placeholder password
         children: [
             { id: 'file-kernel', name: 'kernel.sim', type: 'file', content: 'SYSTEM KERNEL [ENCRYPTED]' },
             { id: 'file-uiconfig', name: 'ui.config', type: 'file', content: 'UI Configuration...' },
@@ -80,4 +78,3 @@ export const initialFileSystem: FileSystemNode[] = [
 ];
 
 export const documents = [];
-

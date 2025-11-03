@@ -43,25 +43,35 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [nextZIndex, setNextZIndex] = useState(10);
   const nextInstanceIdRef = useRef(0);
-  const [currentFileSystem, setCurrentFileSystem] = useState<FileSystemNode[]>([]);
+  const [fileSystem, setFileSystem] = useState<FileSystemNode[]>([]);
 
   useEffect(() => {
     // Dynamically create the file system with the current username
     const personalizeFileSystem = (nodes: FileSystemNode[]): FileSystemNode[] => {
       return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, username));
     };
-    setCurrentFileSystem(personalizeFileSystem(initialFileSystem));
+    setFileSystem(personalizeFileSystem(initialFileSystem));
   }, [username]);
 
 
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: {} },
-    documents: { title: 'File Explorer', component: DocumentFolder, width: 700, height: 500, props: { initialFileSystem: currentFileSystem, onSoundEvent: onSoundEvent } },
+    documents: { 
+        title: 'File Explorer', 
+        component: DocumentFolder, 
+        width: 700, 
+        height: 500, 
+        props: { 
+            fileSystem: fileSystem,
+            onFileSystemUpdate: setFileSystem,
+            onSoundEvent: onSoundEvent 
+        } 
+    },
   };
 
   const openApp = useCallback((appId: AppId) => {
     // Prevent opening documents if file system is not ready
-    if (appId === 'documents' && currentFileSystem.length === 0) return;
+    if (appId === 'documents' && fileSystem.length === 0) return;
 
     const instanceId = nextInstanceIdRef.current++;
     const config = appConfig[appId];
@@ -83,7 +93,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
     setActiveInstanceId(instanceId);
     setNextZIndex(prev => prev + 1);
     onSoundEvent('click');
-  }, [nextZIndex, onSoundEvent, appConfig, currentFileSystem]);
+  }, [nextZIndex, onSoundEvent, appConfig, fileSystem]);
 
   const closeApp = useCallback((instanceId: number) => {
     onSoundEvent('close');
@@ -133,6 +143,11 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
                 const currentAppConfig = appConfig[app.appId];
                 if (!currentAppConfig) return null;
                 const AppComponent = currentAppConfig.component;
+
+                // Refresh props for documents app to pass the latest fileSystem state
+                const props = app.appId === 'documents' 
+                    ? { ...currentAppConfig.props, fileSystem: fileSystem, onFileSystemUpdate: setFileSystem } 
+                    : currentAppConfig.props;
                 
                 return (
                     <Draggable
@@ -145,7 +160,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
                     >
                       <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
                           <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height}>
-                              <AppComponent {...currentAppConfig.props}/>
+                              <AppComponent {...props}/>
                           </Window>
                       </div>
                     </Draggable>
