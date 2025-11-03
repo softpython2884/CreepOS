@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Terminal, Bot, Image as ImageIcon, Folder, Globe } from 'lucide-react';
+import { Terminal, Folder } from 'lucide-react';
 import type { AppId } from '@/components/desktop';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -13,11 +13,8 @@ interface DockProps {
 }
 
 const apps: { id: AppId; name: string; icon: JSX.Element }[] = [
-  { id: 'chat', name: 'Néo Assistant', icon: <Bot /> },
   { id: 'terminal', name: 'Terminal', icon: <Terminal /> },
   { id: 'documents', name: 'Documents', icon: <Folder /> },
-  { id: 'photos', name: 'Photo Viewer', icon: <ImageIcon /> },
-  { id: 'browser', name: 'Hypnet Explorer', icon: <Globe /> },
 ];
 
 export default function Dock({ onAppClick, openApps, activeInstanceId }: DockProps) {

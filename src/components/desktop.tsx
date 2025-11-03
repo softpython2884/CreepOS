@@ -5,17 +5,13 @@ import { useState, useRef, useEffect, useCallback, createRef } from 'react';
 import Dock from '@/components/dock';
 import Window from '@/components/window';
 import Terminal from '@/components/apps/terminal';
-import AIChat from '@/components/apps/ai-chat';
-import PhotoViewer from '@/components/apps/photo-viewer';
 import DocumentFolder from '@/components/apps/document-folder';
-import Browser from '@/components/apps/browser';
 import { cn } from '@/lib/utils';
-import type { ImagePlaceholder } from '@/lib/placeholder-images';
 import { SoundEvent, MusicEvent } from './audio-manager';
 import { initialFileSystem, type FileSystemNode } from './apps/content';
 import Draggable from 'react-draggable';
 
-export type AppId = 'terminal' | 'chat' | 'photos' | 'documents' | 'browser';
+export type AppId = 'terminal' | 'documents';
 
 type AppConfig = {
   [key in AppId]: {
@@ -51,17 +47,13 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
 
   const appConfig: AppConfig = {
     terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: {} },
-    chat: { title: 'Néo', component: AIChat, width: 400, height: 600, props: {} },
-    photos: { title: 'Photo Viewer', component: PhotoViewer, width: 600, height: 400, props: {} },
     documents: { title: 'Documents', component: DocumentFolder, width: 600, height: 400, props: { initialFileSystem: currentFileSystem, onSoundEvent: onSoundEvent } },
-    browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onSoundEvent: onSoundEvent } },
   };
 
   const openApp = useCallback((appId: AppId) => {
     const instanceId = nextInstanceIdRef.current++;
     const config = appConfig[appId];
     
-    // Get viewport dimensions from CSS variables, with fallbacks
     const viewportWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--viewport-width')) || 1920;
     const viewportHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--viewport-height')) || 1080;
 
