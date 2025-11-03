@@ -165,7 +165,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                         newHistory.push({ type: 'output', content: `error: Permission denied: ${redirectFilename} is a system file.`});
                         return items;
                     }
-                    newItems[existingIndex] = { ...existingFile, content: append ? existingFile.content + '\n' + output : output };
+                    newItems[existingIndex] = { ...existingFile, content: append ? (existingFile.content || '') + '\n' + output : output };
                     return newItems;
                 }
                 const newFile: FileSystemNode = { id: `file-${Date.now()}`, name: redirectFilename, type: 'file', content: output };
@@ -176,6 +176,26 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             newHistory.push({ type: 'output', content: output });
         }
     }
+
+    // --- Dynamic Command Execution ---
+    const binFolder = fileSystem.find(node => node.name === 'bin' && node.type === 'folder');
+    const executable = binFolder?.children?.find(file => file.name === `${command}.bin`);
+
+    if (executable) {
+        switch (executable.id) {
+            case 'file-exploit':
+                newHistory.push({ type: 'output', content: 'Exploit successful. Sub-system vulnerabilities detected.' });
+                break;
+            // Future executables can be added here
+            default:
+                newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
+                break;
+        }
+        setHistory(newHistory);
+        setInput('');
+        return;
+    }
+    // --- End Dynamic Command Execution ---
 
 
     switch (command.toLowerCase()) {
@@ -200,7 +220,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             const pathArg = args[0] || '.';
             const targetPath = resolvePath(pathArg);
             
-            let targetNode = { children: fileSystem };
+            let targetNode: { children?: FileSystemNode[] } | null = { children: fileSystem };
             let currentPathResolved = true;
 
             for(const part of targetPath) {
@@ -208,15 +228,22 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 if (nextNode) {
                     targetNode = nextNode;
                 } else {
-                    currentPathResolved = false;
+                    // Check if the last part is a file
+                    const fileNode = targetNode.children?.find(c => c.name === part && c.type === 'file');
+                    if(fileNode) {
+                        targetNode = null;
+                        handleOutput(fileNode.name);
+                    } else {
+                        currentPathResolved = false;
+                    }
                     break;
                 }
             }
 
-            if (currentPathResolved && targetNode.children) {
+            if (currentPathResolved && targetNode && targetNode.children) {
                 const content = targetNode.children.map(node => `${node.name}${node.type === 'folder' ? '/' : ''}`).join('  ');
                 handleOutput(content || "");
-            } else {
+            } else if (!currentPathResolved) {
                  newHistory.push({ type: 'output', content: `ls: cannot access '${pathArg}': No such file or directory` });
             }
             break;
@@ -255,6 +282,10 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
         }
         case 'cat': {
             const filename = args.join(' ');
+            if (!filename) {
+                newHistory.push({ type: 'output', content: `cat: missing file operand` });
+                break;
+            }
             const path = resolvePath(filename);
             const file = findNodeByPath(path, fileSystem);
             
@@ -284,6 +315,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             
             const existing = findNodeByPath(resolvePath(filename), fileSystem);
             if (existing) {
+                // In UNIX, touch updates the timestamp, here we just do nothing.
                 break;
             }
             
@@ -310,7 +342,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             const sourceNode = findNodeByPath(sourcePath, fileSystem);
         
             if (!sourceNode || sourceNode.type === 'folder') { // Simplified: not handling recursive copy
-                newHistory.push({ type: 'output', content: `cp: cannot stat '${sourceArg}': No such file or directory` });
+                newHistory.push({ type: 'output', content: `cp: cannot stat '${sourceArg}': No such file or directory or it is a directory` });
                 break;
             }
         
@@ -328,7 +360,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 finalFileName = destPath[destPath.length - 1];
             }
 
-            const clonedFile: FileSystemNode = { ...sourceNode, id: `file-clone-${Date.now()}`, name: finalFileName };
+            const clonedFile: FileSystemNode = { ...JSON.parse(JSON.stringify(sourceNode)), id: `file-clone-${Date.now()}`, name: finalFileName };
         
             const newFileSystem = recursiveUpdate(fileSystem, finalDestPath, (items) => {
                 const existingIndex = items.findIndex(item => item.name === finalFileName);
@@ -535,5 +567,3 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     </div>
   );
 }
-
-    
