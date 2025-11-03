@@ -52,6 +52,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
   const nextInstanceIdRef = useRef(0);
   const [fileSystem, setFileSystem] = useState<FileSystemNode[]>([]);
   const [editingFile, setEditingFile] = useState<EditingFile>(null);
+  const nanoRef = useRef(null);
 
   useEffect(() => {
     const personalizeFileSystem = (nodes: FileSystemNode[]): FileSystemNode[] => {
@@ -197,7 +198,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
       {openApps.map((app) => {
           const currentAppConfig = appConfig[app.appId];
           if (!currentAppConfig) return null;
-          const AppComponent = currentAppConfig.component;
+          const AppComponent = currentAppAppConfig.component;
           
           const props = { ...currentAppConfig.props, fileSystem, onFileSystemUpdate: setFileSystem };
           
@@ -220,20 +221,24 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
       })}
       
       {editingFile && (
-        <div style={{ zIndex: nextZIndex + 1 }} className="absolute">
-          <Draggable
+        <Draggable
             handle=".handle"
             bounds="parent"
-            defaultPosition={{ x: window.innerWidth / 4, y: window.innerHeight / 8 }}
-          >
+            nodeRef={nanoRef}
+            defaultPosition={{ 
+                x: (window.innerWidth / 2) - 400, // Assuming width 800
+                y: (window.innerHeight / 2) - 300, // Assuming height 600
+             }}
+        >
+            <div ref={nanoRef} style={{ zIndex: nextZIndex + 1 }} className="absolute">
               <Window title={`nano - ${editingFile.path.join('/')}`} onClose={() => setEditingFile(null)} width={800} height={600}>
                   <TextEditor 
                       fileContent={editingFile.content}
                       onSave={(newContent) => handleSaveFile(editingFile.path, newContent)}
                   />
               </Window>
-          </Draggable>
-        </div>
+            </div>
+        </Draggable>
       )}
 
       <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} />
