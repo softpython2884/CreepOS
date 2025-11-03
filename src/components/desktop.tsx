@@ -55,7 +55,18 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
 
 
   const appConfig: AppConfig = {
-    terminal: { title: 'Terminal', component: Terminal, width: 600, height: 400, props: {} },
+    terminal: { 
+        title: 'Terminal', 
+        component: Terminal, 
+        width: 600, 
+        height: 400, 
+        props: { 
+            fileSystem: fileSystem,
+            onFileSystemUpdate: setFileSystem,
+            onSoundEvent: onSoundEvent,
+            username: username,
+        } 
+    },
     documents: { 
         title: 'File Explorer', 
         component: DocumentFolder, 
@@ -64,7 +75,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
         props: { 
             fileSystem: fileSystem,
             onFileSystemUpdate: setFileSystem,
-            onSoundEvent: onSoundEvent 
+            onSoundEvent: onSoundEvent,
+            username: username,
         } 
     },
   };
@@ -145,9 +157,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
                 const AppComponent = currentAppConfig.component;
 
                 // Refresh props for documents app to pass the latest fileSystem state
-                const props = app.appId === 'documents' 
-                    ? { ...currentAppConfig.props, fileSystem: fileSystem, onFileSystemUpdate: setFileSystem } 
-                    : currentAppConfig.props;
+                const props = { ...currentAppConfig.props, fileSystem, onFileSystemUpdate: setFileSystem };
                 
                 return (
                     <Draggable

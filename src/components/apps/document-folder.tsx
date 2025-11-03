@@ -13,9 +13,10 @@ interface DocumentFolderProps {
     fileSystem: FileSystemNode[];
     onFileSystemUpdate: (newFileSystem: FileSystemNode[]) => void;
     onSoundEvent?: (event: 'click') => void;
+    username: string;
 }
 
-export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSoundEvent }: DocumentFolderProps) {
+export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSoundEvent, username }: DocumentFolderProps) {
     const [currentPath, setCurrentPath] = useState<string[]>(['/']);
     const [currentFolderItems, setCurrentFolderItems] = useState<FileSystemNode[]>([]);
     const [selectedFile, setSelectedFile] = useState<FileSystemNode | null>(null);
@@ -99,6 +100,15 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
         }
     };
 
+    const getDisplayPath = () => {
+        const path = currentPath.join('/').replace('//', '/');
+        const homePath = `/home/${username}`;
+        if (path.startsWith(homePath)) {
+            return path.replace(homePath, '~');
+        }
+        return path;
+    }
+
     if (selectedFile) {
         return (
             <div className="h-full bg-card font-code text-sm text-foreground p-4 animate-in fade-in">
@@ -125,7 +135,7 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
                         <CornerUpLeft size={16} />
                     </Button>
                     <span className="ml-2 text-sm text-muted-foreground font-code">
-                        {currentPath.join('/').replace('//', '/')}
+                        {getDisplayPath()}
                     </span>
                 </div>
                 <div className="p-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
