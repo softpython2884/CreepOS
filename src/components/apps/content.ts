@@ -7,6 +7,7 @@ export type FileSystemNode = {
     content?: string;
     isLocked?: boolean;
     password?: string;
+    isSystemFile?: boolean;
 };
 
 // A clean file system for the new game
@@ -39,7 +40,9 @@ export const initialFileSystem: FileSystemNode[] = [
                         id: 'folder-trash',
                         name: 'trash',
                         type: 'folder',
-                        children: []
+                        children: [
+                            { id: 'file-exploit', name: 'exploit.bin', type: 'file', content: 'corrupted data...' }
+                        ]
                     }
                 ]
             }
@@ -50,9 +53,9 @@ export const initialFileSystem: FileSystemNode[] = [
         name: 'sys',
         type: 'folder',
         children: [
-            { id: 'file-kernel', name: 'kernel.sim', type: 'file', content: 'SYSTEM KERNEL [ENCRYPTED]' },
-            { id: 'file-uiconfig', name: 'ui.config', type: 'file', content: 'UI Configuration...' },
-            { id: 'file-neoprofile', name: 'neo_profile.asc', type: 'file', content: 'NEO PROFILE DATA - CORRUPTED' }
+            { id: 'file-kernel', name: 'kernel.sim', type: 'file', content: 'SYSTEM KERNEL [ENCRYPTED]', isSystemFile: true },
+            { id: 'file-uiconfig', name: 'ui.config', type: 'file', content: 'UI Configuration...', isSystemFile: true },
+            { id: 'file-neoprofile', name: 'neo_profile.asc', type: 'file', content: 'NEO PROFILE DATA - CORRUPTED', isSystemFile: true }
         ]
     },
     {
@@ -60,9 +63,9 @@ export const initialFileSystem: FileSystemNode[] = [
         name: 'bin',
         type: 'folder',
         children: [
-            { id: 'file-viewer', name: 'viewer.bin', type: 'file', content: 'Binary executable' },
-            { id: 'file-player', name: 'player.anscii.bin', type: 'file', content: 'Binary executable' },
-            { id: 'file-analyzer', name: 'analyzer.bin', type: 'file', content: 'Binary executable' }
+            { id: 'file-viewer', name: 'viewer.bin', type: 'file', content: 'Binary executable', isSystemFile: true },
+            { id: 'file-player', name: 'player.anscii.bin', type: 'file', content: 'Binary executable', isSystemFile: true },
+            { id: 'file-analyzer', name: 'analyzer.bin', type: 'file', content: 'Binary executable', isSystemFile: true }
         ]
     },
     {
