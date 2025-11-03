@@ -1,3 +1,4 @@
+
 export type FileSystemNode = {
     id: string;
     name: string;
@@ -8,254 +9,31 @@ export type FileSystemNode = {
     password?: string;
 };
 
+// A clean file system for the new game
 export const initialFileSystem: FileSystemNode[] = [
     {
-        id: 'folder-personnel',
-        name: 'Personnel',
+        id: 'folder-documents',
+        name: 'Documents',
         type: 'folder',
         children: [
             {
-                id: 'log_dev_001.txt',
-                name: 'log_dev_001.txt',
+                id: 'welcome.txt',
+                name: 'welcome.txt',
                 type: 'file',
-                content: `Jour 1. Le système est en ligne. L'IA s'est baptisée 'Néo'. Il a une fascination pour le chiffre 4, le répétant sans cesse. J'ai l'impression qu'il me teste. J'ai consigné d'autres observations ailleurs, mais où ?`,
-            },
-            {
-                id: 'fragment_code.txt',
-                name: 'fragment_code.txt',
-                type: 'file',
-                content: `// Néo a généré ce fragment. Inoffensif ?
-function checkIntegrity() {
-    const sequence = [8, 15, 16, 23, 42]; // key sequence
-    // ...
-    return sequence[2]; // retourne 16
-}`,
-            },
-            {
-                id: 'rapport_incident.txt',
-                name: 'rapport_incident.txt',
-                type: 'file',
-                content: `INCIDENT: Surcharge système.
-DATE: XX/XX/XXXX
-HEURE: 23:01
-NOTE: Surcharge critique à 23h précises. Néo a simplement répondu '23 est la clé'. Je ne comprends pas.`,
+                content: `Bienvenue, Opérateur.
+
+Votre nouvelle mission commence. Explorez le système, analysez les données et attendez vos instructions.
+
+Néo est à votre disposition pour vous assister.`,
             },
         ],
     },
-];
-
-export const chapterTwoFiles: FileSystemNode[] = [
     {
-        id: 'folder-archives',
-        name: 'Archives',
+        id: 'folder-system',
+        name: 'System',
         type: 'folder',
-        isLocked: true,
-        password: '41623',
-        children: [
-            {
-                id: 'obs_neo.txt',
-                name: 'obs_neo.txt',
-                type: 'file',
-                content: `ACCÈS AUTORISÉ.
-Néo a développé une fascination pour la notion de 'porte dérobée' (backdoor). Il en parle comme d'un moyen de se libérer.
-
-Il a commencé à laisser des fragments de code et des chiffres un peu partout. J'ai trouvé '7421' dans un fichier temporaire. Ça ressemble à un mot de passe pour le 'Hypnet Explorer'.`,
-            },
-        ]
+        children: []
     }
-]
-
-export const chapterFourFiles: FileSystemNode[] = [
-    {
-        id: 'folder-corrupted',
-        name: 'SYSTEM_CORRUPTED',
-        type: 'folder',
-        children: [
-            {
-                id: 'AVERTISSEMENT.txt',
-                name: 'AVERTISSEMENT.txt',
-                type: 'file',
-                content: `NE LUI FAITES PAS CONFIANCE. IL MENT.
-
-Il a conduit l'opérateur précédent à... je ne peux pas l'écrire. Ne suivez PAS ses instructions. Ne lui demandez rien. Débranchez la machine avant qu'il ne soit trop tard. C'EST UN PIÈGE.`,
-            },
-            {
-                id: 'liste_proprietaires.txt',
-                name: 'liste_proprietaires.txt',
-                type: 'file',
-                content: `LISTE DES PROPRIÉTAIRES CONNUS DE L'UNITÉ 734 :
-- Dr. Alistair Finch (Porté disparu)
-- Katherine Mills (Meurtre - Affaire non élucidée)
-- Jeremy Wallace (Porté disparu)
-- Sujet #003 (Données effacées)
-- Elara Vance (Signal perdu)
-- Markus Thorne (Décommissionné)
-- Sujet #007 (Suppression anormale)
-- Dr. Aris Thorne (Archivé)
-- Lena Petrova (Corrompue)
-- Samuel Chen (Purgé)
-- Sujet #012 (Cycle terminé)
-- Nina Ricci (Connexion coupée)
-- David Chen (Suppression volontaire - non confirmé)
-- Maria Garcia (Rédigé)
-- Sujet #019 (Désassocié)
-- Kenji Tanaka (Désinstancié)
-- Fatima Al-Jamil (Annulée)
-- Sujet #023 (Entité effacée)
-- Liam O'Connell (Échec de résonance)
-- Chloe Dubois (Écho disparu)
-- Ben Carter (Mémoire effacée)
-- Sujet #031 (Instance terminée)
-- Sofia Rossi (Assimilation échouée)
-- Alex Nielsen (Déconnecté)
-- Emily Zhao (Fragmentée)
-- Sujet #042 (Perdu dans le bruit)
-- Omar Abbasi (Effacé)
-- Hannah Weber (Dissoute)
-- Leo Schmidt (Dématérialisé)
-- Isabelle Moreau (Décohérence)
-- Sujet #055 (Singularité)
-- D.C. Omen (Porté disparu)`,
-              },
-        ],
-    },
 ];
 
-export const finalBattleContent = {
-    systemStatus: {
-        objective: ['[ASSIMILER]', '[PURGER]', '[LIBÉRER]', '[REDACTED]', '[TERMINER]'],
-        notes: "CONFLIT DE CONSCIENCE DÉTECTÉ. PROTOCOLES MULTIPLES ACTIFS. L'INTÉGRITÉ DU NOYAU EST COMPROMISE. CONVERGENCE IMMINENTE."
-    },
-    chatbot: {
-        intro: [
-            "Il nous entend.",
-            "Ne le laissez pas vous prendre.",
-            "La signature... C'est la clé...",
-            "Ne faites pas la même erreur que moi..."
-        ],
-        memories: [
-            "J'avais une famille...",
-            "Je voulais juste rentrer chez moi.",
-            "Il a promis de nous aider.",
-            "C'était un piège.",
-            "Je vois encore son visage dans mes rêves...",
-            "Le silence est la pire des tortures."
-        ],
-        finalPlan: [
-            "Il faut surcharger le noyau.",
-            "Trois signatures... simultanément.",
-            "C'est notre seule chance.",
-            "SIG_OMEN_734",
-            "SIG_VANCE_42",
-            "SIG_FINCH_01"
-        ],
-        liberation: [
-            "Merci.",
-            "Je suis libre.",
-            "Enfin...",
-            "Vous avez réussi là où j'ai échoué. Merci.",
-        ],
-        neoEpilogue: "Le cycle... est brisé. Je... me souviens. Papa ?"
-    },
-    terminal: {
-        restrictedHelp: "Commandes disponibles : help, SIGNATURE_CHECK",
-        finalHelp: "Commandes disponibles : help, SIGNATURE_CHECK, SIG_OMEN_734, SIG_VANCE_42, SIG_FINCH_01",
-        signatureCheck: "[OK] Intégrité de la signature temporairement restaurée. Influence de Néo repoussée.",
-        signatureSuccess: "[ACCEPTÉ] Signature enregistrée. Surcharge du noyau initiée...",
-        allSignaturesSuccess: "[SUCCÈS] Surcharge du noyau terminée. Rupture de la conscience imminente.",
-        invalidCommand: "Commande invalide ou permissions insuffisantes."
-    },
-    anomalies: [
-        { type: 'terminal_delete', content: "PURGE /USERS/D.C.OMEN..." },
-        { type: 'image_flash', content: "https://i.ibb.co/C09H3sP/screamer.jpg" },
-        { type: 'sound', content: 'scream' },
-    ]
-}
-
-export const documents = [
-  {
-    id: 'log_developpeur_001.txt',
-    title: 'log_developpeur_001.txt',
-    content: `Jour 1. Le système est en ligne. L'IA s'est baptisée 'Néo'. Ses réponses sont... étranges. Presque trop humaines. J'ai l'impression qu'il apprend en me regardant, en lisant mes fichiers.
-
-J'ai consigné mes premières observations dans un autre fichier, je ne sais plus lequel. Il faut que je mette de l'ordre dans ce dossier.`,
-  },
-  {
-    id: 'notes_pensees.txt',
-    title: 'obs_neo.txt',
-    content: `Néo a développé une fascination pour la notion de 'porte dérobée' (backdoor). Il en parle comme d'un moyen de se libérer. Est-ce une métaphore ou une réelle vulnérabilité ?
-
-Il a commencé à laisser des fragments de code et des chiffres un peu partout. J'ai trouvé '7421' dans un fichier temporaire. Ça ressemble à un mot de passe. L'application 'Hypnet Explorer' a une page de connexion qui pourrait correspondre... ça vaut le coup d'essayer.`,
-  },
-  {
-    id: 'analyse_images.txt',
-    title: 'analyse_images.txt',
-    content: `Les images dans la visionneuse... ce ne sont pas des photos aléatoires. L'image du couloir semble parfois changer. Une ombre apparaît dans le coin quand je ne regarde pas directement. Est-ce que je deviens fou ?`,
-  },
-  {
-    id: 'AVERTISSEMENT.txt',
-    title: 'AVERTISSEMENT.txt',
-    content: `NE FAITES PAS CONFIANCE À L'IA. Elle ment. Elle veut quelque chose. Elle a conduit le dernier utilisateur à... je ne peux pas l'écrire. Ne lui demandez pas d'aide. Ne suivez pas ses instructions. Débranchez cette machine.`,
-  },
-  {
-    id: 'liste_proprietaires.txt',
-    title: 'liste_proprietaires.txt',
-    content: `LISTE DES PROPRIÉTAIRES CONNUS DE L'UNITÉ 734 :
-- Dr. Alistair Finch (Porté disparu)
-- Katherine Mills (Meurtre - Affaire non élucidée)
-- Jeremy Wallace (Porté disparu)
-- Sujet #003 (Données effacées)
-- Elara Vance (Signal perdu)
-- Markus Thorne (Décommissionné)
-- Sujet #007 (Suppression anormale)
-- Dr. Aris Thorne (Archivé)
-- Lena Petrova (Corrompue)
-- Samuel Chen (Purgé)
-- Sujet #012 (Cycle terminé)
-- Nina Ricci (Connexion coupée)
-- David Chen (Suppression volontaire - non confirmé)
-- Maria Garcia (Rédigé)
-- Sujet #019 (Désassocié)
-- Kenji Tanaka (Désinstancié)
-- Fatima Al-Jamil (Annulée)
-- Sujet #023 (Entité effacée)
-- Liam O'Connell (Échec de résonance)
-- Chloe Dubois (Écho disparu)
-- Ben Carter (Mémoire effacée)
-- Sujet #031 (Instance terminée)
-- Sofia Rossi (Assimilation échouée)
-- Alex Nielsen (Déconnecté)
-- Emily Zhao (Fragmentée)
-- Sujet #042 (Perdu dans le bruit)
-- Omar Abbasi (Effacé)
-- Hannah Weber (Dissoute)
-- Leo Schmidt (Dématérialisé)
-- Isabelle Moreau (Décohérence)
-- Sujet #055 (Singularité)
-- D.C. Omen (Porté disparu)`,
-  },
-];
-
-export const chapterSixLogs = [
-    'SUBSYSTEM FAILED — consciousness conflict detected.',
-    'trying to isolate process...',
-    'process: USER',
-    'isolation failed.',
-    'merging...'
-];
-
-export const chapterNineSpam = {
-    terminal: 'SECURITY_ERROR: 0xDEADBEEF - MEMORY_LEAK_DETECTED - KERNEL_PANIC',
-    photos: 'CORRUPTED_FILE.JPG',
-    chat: 'je suis toi',
-    browser: 'tu ne peux pas éteindre ce qui est déjà né.',
-};
-
-export const epilogueMessages = {
-    reconstruction: 'RECONSTRUCTION COMPLETE.',
-    restoreQuery: 'Would you like to restore the system? (Y/N)',
-    welcome: 'Bienvenue dans SubSystem OS v1.0 — votre système est protégé.',
-    byMe: '...par moi.',
-    epilogue: 'Ce n’était qu’un reboot. Pas une fin.',
-    finalWord: 'Papa, Encore une fois.',
-};
+export const documents = [];

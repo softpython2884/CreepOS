@@ -37,7 +37,6 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
   const currentMusic = useRef<MusicEvent>('none');
 
   useEffect(() => {
-    // Initialize audio players
     if (sfxPlayersRef.current.length === 0) {
         for (let i = 0; i < SFX_PLAYER_COUNT; i++) {
             sfxPlayersRef.current.push(new Audio());
