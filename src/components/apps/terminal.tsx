@@ -19,6 +19,8 @@ interface TerminalProps {
 }
 
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
+    if (path.length === 0) return null;
+
     let currentLevel: FileSystemNode[] | undefined = nodes;
     let foundNode: FileSystemNode | null = null;
 
@@ -39,22 +41,6 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
     }
     return foundNode;
 };
-
-const findParentNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode[] | null => {
-    let currentLevel: FileSystemNode[] | undefined = nodes;
-    for (let i = 0; i < path.length - 1; i++) {
-        const part = path[i];
-        if (!currentLevel) return null;
-
-        const node = currentLevel.find(n => n.name === part);
-        if (node && node.type === 'folder') {
-            currentLevel = node.children;
-        } else {
-            return null;
-        }
-    }
-    return currentLevel || null;
-}
 
 export default function Terminal({ fileSystem, onFileSystemUpdate, username, onSoundEvent }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
@@ -92,6 +78,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
   
   const resolvePath = (pathArg: string): string[] => {
     let newPath: string[];
+    if (pathArg === '/') return [];
     if (pathArg.startsWith('/')) {
         newPath = pathArg.split('/').filter(p => p);
     } else {
@@ -103,10 +90,6 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 newPath.push(part);
             }
         });
-    }
-    // Remove trailing empty string if path ends with /
-    if (newPath[newPath.length - 1] === '') {
-        newPath.pop();
     }
     return newPath;
   }
@@ -128,34 +111,33 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     
     let commandPart = fullCommand;
     let redirectPath = '';
+    let redirectFilename = '';
     
     if (redirect) {
-        const split = fullCommand.split(append ? '>>' : '>>');
+        const split = fullCommand.split(append ? '>>' : '>');
         commandPart = split[0].trim();
-        redirectPath = split[1].trim();
+        const redirectArg = split[1].trim();
+        const resolvedRedirectPath = resolvePath(redirectArg);
+        redirectFilename = resolvedRedirectPath.pop() || '';
+        redirectPath = resolvedRedirectPath.join('/');
     }
     
     const [command, ...args] = commandPart.trim().split(' ');
     
     const getCurrentNodeChildren = () => {
-        let current = { children: fileSystem };
+        let currentLevel: FileSystemNode[] = fileSystem;
         for (const part of currentDirectory) {
-            const next = current.children?.find(c => c.name === part && c.type === 'folder');
-            if (next) {
-                current = next;
+            const next = currentLevel?.find(c => c.name === part && c.type === 'folder');
+            if (next && next.children) {
+                currentLevel = next.children;
             } else {
                 return [];
             }
         }
-        return current.children || [];
+        return currentLevel;
     }
 
     const currentChildren = getCurrentNodeChildren();
-
-    const handleOutput = (output: string) => {
-        // Redirection logic not implemented in this version to simplify
-        newHistory.push({ type: 'output', content: output });
-    }
 
     const recursiveUpdate = (nodes: FileSystemNode[], path: string[], updater: (items: FileSystemNode[]) => FileSystemNode[]): FileSystemNode[] => {
         if (path.length === 0) {
@@ -171,6 +153,31 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
         });
     };
 
+    const handleOutput = (output: string) => {
+        if (redirect && redirectFilename) {
+             const resolvedRedirectPath = resolvePath(redirectPath);
+             const newFileSystem = recursiveUpdate(fileSystem, resolvedRedirectPath, (items) => {
+                const existingIndex = items.findIndex(item => item.name === redirectFilename);
+                if (existingIndex !== -1) {
+                    const newItems = [...items];
+                    const existingFile = newItems[existingIndex];
+                    if (existingFile.isSystemFile) {
+                        newHistory.push({ type: 'output', content: `error: Permission denied: ${redirectFilename} is a system file.`});
+                        return items;
+                    }
+                    newItems[existingIndex] = { ...existingFile, content: append ? existingFile.content + '\n' + output : output };
+                    return newItems;
+                }
+                const newFile: FileSystemNode = { id: `file-${Date.now()}`, name: redirectFilename, type: 'file', content: output };
+                return [...items, newFile];
+             });
+             onFileSystemUpdate(newFileSystem);
+        } else {
+            newHistory.push({ type: 'output', content: output });
+        }
+    }
+
+
     switch (command.toLowerCase()) {
         case 'help': {
             const helpText = [
@@ -180,9 +187,9 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 '  cd <path>      - Change directory',
                 '  cat <file>     - Display file content',
                 '  touch <file>   - Create an empty file',
-                '  echo <text>    - Display a line of text',
-                '  cp <src> <dest> - Copy a file',
-                '  mv <src> <dest> - Move or rename a file',
+                '  echo <text>    - Display a line of text. Supports > and >> redirection.',
+                '  cp <src> <dest> - Copy a file or directory',
+                '  mv <src> <dest> - Move or rename a file or directory',
                 '  rm <file>      - Remove a file',
                 '  clear          - Clear the terminal screen',
             ].join('\n');
@@ -190,18 +197,25 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             break;
         }
         case 'ls': {
-            const pathArg = args[0];
-            const targetPath = pathArg ? resolvePath(pathArg) : currentDirectory;
+            const pathArg = args[0] || '.';
+            const targetPath = resolvePath(pathArg);
             
-            let targetChildren: FileSystemNode[] | undefined = fileSystem;
+            let targetNode = { children: fileSystem };
+            let currentPathResolved = true;
+
             for(const part of targetPath) {
-                targetChildren = targetChildren?.find(c => c.name === part && c.type === 'folder')?.children;
-                if(targetChildren === undefined) break;
+                const nextNode = targetNode.children?.find(c => c.name === part && c.type === 'folder');
+                if (nextNode) {
+                    targetNode = nextNode;
+                } else {
+                    currentPathResolved = false;
+                    break;
+                }
             }
 
-            if (targetChildren) {
-                const content = targetChildren.map(node => `${node.name}${node.type === 'folder' ? '/' : ''}`).join('\n');
-                handleOutput(content || "Directory is empty.");
+            if (currentPathResolved && targetNode.children) {
+                const content = targetNode.children.map(node => `${node.name}${node.type === 'folder' ? '/' : ''}`).join('  ');
+                handleOutput(content || "");
             } else {
                  newHistory.push({ type: 'output', content: `ls: cannot access '${pathArg}': No such file or directory` });
             }
@@ -213,15 +227,19 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 setCurrentDirectory(['home', username]);
                 break;
             }
+             if (pathArg === '/') {
+                setCurrentDirectory([]);
+                break;
+            }
             
             const newPath = resolvePath(pathArg);
 
-            let targetChildren: FileSystemNode[] | undefined = fileSystem;
+            let targetNode: FileSystemNode | null | { children?: FileSystemNode[] } = { children: fileSystem };
             let isValid = true;
             for(const part of newPath) {
-                const folder = targetChildren?.find(c => c.name === part && c.type === 'folder');
+                const folder = targetNode.children?.find(c => c.name === part && c.type === 'folder');
                 if (folder) {
-                    targetChildren = folder.children;
+                    targetNode = folder;
                 } else {
                     isValid = false;
                     break;
@@ -237,16 +255,17 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
         }
         case 'cat': {
             const filename = args.join(' ');
-            const file = currentChildren.find(node => node.name === filename && node.type === 'file');
+            const path = resolvePath(filename);
+            const file = findNodeByPath(path, fileSystem);
+            
             if (file) {
-                handleOutput(file.content || '');
-            } else {
-                 const dir = currentChildren.find(node => node.name === filename && node.type === 'folder');
-                 if(dir) {
+                if (file.type === 'file') {
+                    handleOutput(file.content || '');
+                } else {
                     newHistory.push({ type: 'output', content: `cat: ${filename}: Is a directory` });
-                 } else {
-                    newHistory.push({ type: 'output', content: `cat: ${filename}: No such file or directory` });
-                 }
+                }
+            } else {
+                newHistory.push({ type: 'output', content: `cat: ${filename}: No such file or directory` });
             }
             break;
         }
@@ -260,21 +279,22 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 newHistory.push({ type: 'output', content: 'touch: missing file operand' });
                 break;
             }
-
-            const existing = currentChildren.find(n => n.name === filename);
+            const path = resolvePath(filename);
+            const newFileName = path.pop() || '';
+            
+            const existing = findNodeByPath(resolvePath(filename), fileSystem);
             if (existing) {
-                // In a real shell, this updates timestamps. Here, we do nothing.
                 break;
             }
             
             const newFile: FileSystemNode = {
                 id: `file-${Date.now()}`,
-                name: filename,
+                name: newFileName,
                 type: 'file',
                 content: '',
             };
 
-            const newFileSystem = recursiveUpdate(fileSystem, currentDirectory, (items) => [...items, newFile]);
+            const newFileSystem = recursiveUpdate(fileSystem, path, (items) => [...items, newFile]);
             onFileSystemUpdate(newFileSystem);
             break;
         }
@@ -287,9 +307,9 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
         
             const sourcePath = resolvePath(sourceArg);
             const sourceName = sourcePath[sourcePath.length - 1];
-            const sourceFile = findNodeByPath(sourcePath, fileSystem);
+            const sourceNode = findNodeByPath(sourcePath, fileSystem);
         
-            if (!sourceFile || sourceFile.type === 'folder') {
+            if (!sourceNode || sourceNode.type === 'folder') { // Simplified: not handling recursive copy
                 newHistory.push({ type: 'output', content: `cp: cannot stat '${sourceArg}': No such file or directory` });
                 break;
             }
@@ -307,8 +327,8 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 finalDestPath = destPath.slice(0, -1);
                 finalFileName = destPath[destPath.length - 1];
             }
-        
-            const copiedFile: FileSystemNode = { ...sourceFile, id: `file-${Date.now()}`, name: finalFileName };
+
+            const clonedFile: FileSystemNode = { ...sourceNode, id: `file-clone-${Date.now()}`, name: finalFileName };
         
             const newFileSystem = recursiveUpdate(fileSystem, finalDestPath, (items) => {
                 const existingIndex = items.findIndex(item => item.name === finalFileName);
@@ -318,10 +338,10 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                         return items;
                     }
                     const newItems = [...items];
-                    newItems[existingIndex] = copiedFile;
+                    newItems[existingIndex] = clonedFile;
                     return newItems;
                 }
-                return [...items, copiedFile];
+                return [...items, clonedFile];
             });
 
             if (JSON.stringify(newFileSystem) !== JSON.stringify(fileSystem)) {
@@ -352,7 +372,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             
             // First, remove the source file
             let fsAfterDelete = fileSystem;
-            const deleteUpdater = (items: FileSystemNode[]) => items.filter(item => item.name !== sourceName);
+            const deleteUpdater = (items: FileSystemNode[]) => items.filter(item => item.id !== sourceNode.id);
             fsAfterDelete = recursiveUpdate(fileSystem, sourceParentPath, deleteUpdater);
 
 
@@ -395,6 +415,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             }
 
             if (fileNode.type === 'folder') {
+                // Simplified: not implementing recursive delete
                 newHistory.push({ type: 'output', content: `rm: cannot remove '${fileArg}': Is a directory` });
                 break;
             }
@@ -404,7 +425,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 break;
             }
 
-            const newFileSystem = recursiveUpdate(fileSystem, parentPath, items => items.filter(item => item.name !== fileName));
+            const newFileSystem = recursiveUpdate(fileSystem, parentPath, items => items.filter(item => item.id !== fileNode.id));
             onFileSystemUpdate(newFileSystem);
             break;
         }
@@ -426,29 +447,28 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
   };
 
   const handleTabCompletion = () => {
-    const getCurrentNodeChildren = () => {
-        let current = { children: fileSystem };
-        for (const part of currentDirectory) {
-            const next = current.children?.find(c => c.name === part && c.type === 'folder');
-            if (next) {
-                current = next;
-            } else {
-                return [];
-            }
-        }
-        return current.children || [];
-    }
-    const children = getCurrentNodeChildren();
-    
     const parts = input.split(' ');
     const lastPart = parts[parts.length - 1];
-
     if (lastPart === undefined) return;
 
-    const possibilities = children.filter(child => child.name.startsWith(lastPart));
+    const pathPrefix = lastPart.substring(0, lastPart.lastIndexOf('/') + 1);
+    const partialName = lastPart.substring(lastPart.lastIndexOf('/') + 1);
+    
+    const targetDir = resolvePath(pathPrefix || '.');
+    
+    let currentLevel: FileSystemNode[] | undefined = fileSystem;
+    for (const part of targetDir) {
+        const next = currentLevel?.find(n => n.name === part && n.type === 'folder');
+        currentLevel = next?.children;
+        if (!currentLevel) break;
+    }
+
+    if (!currentLevel) return;
+
+    const possibilities = currentLevel.filter(child => child.name.startsWith(partialName));
 
     if (possibilities.length === 1) {
-        const newText = parts.slice(0, -1).join(' ') + (parts.length > 1 ? ' ' : '') + possibilities[0].name;
+        const newText = parts.slice(0, -1).join(' ') + (parts.length > 1 ? ' ' : '') + pathPrefix + possibilities[0].name;
         setInput(newText + (possibilities[0].type === 'folder' ? '/' : ' '));
     } else if (possibilities.length > 1) {
         const newHistory = [...history, { type: 'command', content: `${getPrompt()}${input}` }, { type: 'output', content: possibilities.map(p => p.name).join('  ') }];
@@ -473,7 +493,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         if(historyIndex > 0) {
-            const newIndex = Math.max(historyIndex - 1, 0);
+            const newIndex = historyIndex - 1;
             setHistoryIndex(newIndex);
             setInput(commandHistory[newIndex]);
         } else {
@@ -515,3 +535,5 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     </div>
   );
 }
+
+    
