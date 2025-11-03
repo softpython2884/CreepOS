@@ -4,50 +4,98 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { User, Lock, Power } from 'lucide-react';
+import { User, Lock, Power, Monitor, Ratio } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Desktop from '@/components/desktop';
 import AudioManager, { MusicEvent, SoundEvent } from '@/components/audio-manager';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
 
 type MachineState = 'off' | 'booting' | 'login' | 'desktop';
 
 const bootLines = [
-    'SUBSYSTEM OS v1.0 -- STABLE',
-    'Initializing...',
+    'NEO-SYS KERNEL v2.1.0-beta',
+    'Checking system integrity...',
+    'Loading drivers [OK]',
+    'Mounting file systems [OK]',
+    'Initializing subsystem interface...',
     'Welcome, Operator.',
-    'Loading user profile...',
-    'All systems nominal.'
 ];
 
+const ratios = [
+    { name: '16:9 (Widescreen)', value: 16/9 },
+    { name: '16:10 (Widescreen)', value: 16/10 },
+    { name: '21:9 (Ultrawide)', value: 21/9 },
+    { name: '4:3 (Standard)', value: 4/3 },
+    { name: '3:2 (Photography)', value: 3/2 },
+    { name: '1:1 (Square)', value: 1/1 },
+    { name: '9:16 (Vertical)', value: 9/16 },
+];
+
+const OffScreen = ({ onStart, onRatioChange, currentRatio }: { onStart: () => void; onRatioChange: (ratio: number) => void; currentRatio: number }) => {
+    return (
+        <div className="w-full h-full flex flex-col justify-center items-center bg-black font-code">
+            <div className="w-[450px] border border-accent/20 bg-card/50 rounded-lg p-6 shadow-2xl shadow-primary/10 flex flex-col gap-4">
+                <h1 className="text-xl font-bold text-accent text-center tracking-widest">NEO-SYSTEM : BREACH</h1>
+                <div className="flex flex-col gap-4 mt-4">
+                    <div className='flex items-center gap-2'>
+                        <Ratio className="text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Display Ratio:</span>
+                        <Select onValueChange={(value) => onRatioChange(parseFloat(value))} defaultValue={currentRatio.toString()}>
+                            <SelectTrigger className="flex-1 bg-input/50">
+                                <SelectValue placeholder="Select ratio" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ratios.map(r => (
+                                    <SelectItem key={r.value} value={r.value.toString()}>{r.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <Button variant="outline" size="lg" className="gap-2 text-lg p-8 mt-4" onClick={onStart}>
+                    <Power /> INITIALIZE SYSTEM
+                </Button>
+            </div>
+        </div>
+    );
+};
 
 const BootScreen = ({ onBootComplete }: { onBootComplete: () => void }) => {
     const [lines, setLines] = useState<string[]>([]);
+    const [progress, setProgress] = useState(0);
     
     useEffect(() => {
-        const bootTimeout = setTimeout(() => {
-            let i = 0;
-            const intervalId = setInterval(() => {
-                if (i < bootLines.length) {
-                    setLines(prev => [...prev, bootLines[i]]);
-                } else {
-                    clearInterval(intervalId);
-                    setTimeout(onBootComplete, 1000);
-                }
-                i++;
-            }, 800);
-        }, 500);
+        let i = 0;
+        const intervalId = setInterval(() => {
+            if (i < bootLines.length) {
+                setLines(prev => [...prev, bootLines[i]]);
+                setProgress(p => p + (100 / bootLines.length));
+            } else {
+                clearInterval(intervalId);
+                setTimeout(onBootComplete, 1200);
+            }
+            i++;
+        }, 600);
 
-        return () => clearTimeout(bootTimeout);
+        return () => clearInterval(intervalId);
     }, [onBootComplete]);
 
     return (
-      <div className="bg-black p-4 w-full h-full flex flex-col justify-center text-green-400 font-code">
-        <div className="whitespace-pre-wrap">
+      <div className="bg-black p-8 w-full h-full flex flex-col justify-center text-green-400 font-code cursor-none">
+        <div className="whitespace-pre-wrap text-lg">
           {lines.map((line, i) => (
-            <p key={i} className="animate-typing">{line}</p>
+            <p key={i}>{line}</p>
           ))}
-          {lines.length === bootLines.length && <span className="animate-blink">_</span>}
         </div>
+        <div className="mt-8 flex items-center gap-4">
+            <Progress value={progress} className="h-2 bg-green-900/50 border border-green-700/50" indicatorClassName="bg-green-400" />
+            <span className='text-lg'>{Math.round(progress)}%</span>
+        </div>
+        {progress >= 100 && (
+            <p className='mt-4 text-xl animate-pulse'>Boot sequence complete. Handing over control...</p>
+        )}
       </div>
     );
 };
@@ -67,7 +115,7 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
     return (
         <div className="w-full h-full flex items-center justify-center bg-background">
             <form onSubmit={handleLogin} className="w-full max-w-xs text-center p-8 bg-card rounded-lg shadow-2xl shadow-primary/20 animate-in fade-in zoom-in-95">
-                <h1 className="text-2xl font-headline text-primary opacity-70 mb-2">SUBSYSTEM OS</h1>
+                <h1 className="text-2xl font-headline text-primary opacity-70 mb-2">NEO-SYSTEM</h1>
                 <p className="text-sm text-muted-foreground mb-6">Enter credentials to proceed</p>
                 <div className="relative mb-4">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -105,22 +153,27 @@ export default function Home() {
     const [username, setUsername] = useState('Operator');
     const [soundEvent, setSoundEvent] = useState<SoundEvent>(null);
     const [musicEvent, setMusicEvent] = useState<MusicEvent>('none');
+    const [aspectRatio, setAspectRatio] = useState(16/9);
 
     useEffect(() => {
         const updateScale = () => {
-            const viewportWidth = 1920;
-            const viewportHeight = 1080;
+            const viewportBaseWidth = 1920;
+            const viewportWidth = viewportBaseWidth;
+            const viewportHeight = viewportBaseWidth / aspectRatio;
+
             const { innerWidth: windowWidth, innerHeight: windowHeight } = window;
     
             const scaleX = windowWidth / viewportWidth;
             const scaleY = windowHeight / viewportHeight;
     
-            const scale = Math.max(scaleX, scaleY);
+            const scale = Math.min(scaleX, scaleY);
     
             const left = (windowWidth - viewportWidth * scale) / 2;
             const top = (windowHeight - viewportHeight * scale) / 2;
     
             const root = document.documentElement;
+            root.style.setProperty('--viewport-width', `${viewportWidth}px`);
+            root.style.setProperty('--viewport-height', `${viewportHeight}px`);
             root.style.setProperty('--viewport-scale', scale.toString());
             root.style.setProperty('--viewport-left', `${left}px`);
             root.style.setProperty('--viewport-top', `${top}px`);
@@ -132,14 +185,13 @@ export default function Home() {
         const handleContextMenu = (e: MouseEvent) => {
             e.preventDefault();
         };
-
         document.addEventListener('contextmenu', handleContextMenu);
 
         return () => {
             window.removeEventListener('resize', updateScale);
             document.removeEventListener('contextmenu', handleContextMenu);
         };
-    }, []);
+    }, [aspectRatio]);
     
     const handleStartSystem = () => {
         setSoundEvent('fan');
@@ -156,15 +208,11 @@ export default function Home() {
         switch (machineState) {
             case 'off':
                 return (
-                    <div className="w-full h-full flex flex-col justify-center items-center bg-black">
-                        <Button variant="outline" size="lg" className="gap-2 text-lg p-8 animate-pulse" onClick={handleStartSystem}>
-                            <Power /> Start System
-                        </Button>
-                    </div>
+                    <OffScreen onStart={handleStartSystem} onRatioChange={setAspectRatio} currentRatio={aspectRatio}/>
                 );
             case 'booting':
                 return (
-                    <div className="w-full h-full bg-black cursor-none">
+                    <div className="w-full h-full bg-black">
                         <BootScreen onBootComplete={() => setMachineState('login')} />
                     </div>
                 );
@@ -183,7 +231,14 @@ export default function Home() {
 
     return (
         <main className="h-screen w-screen flex justify-center items-center bg-black overflow-hidden">
-            <div id="viewport" className="absolute w-[1920px] h-[1080px] bg-background origin-top-left">
+            <div 
+                id="viewport" 
+                className="absolute bg-background origin-top-left"
+                style={{
+                    width: 'var(--viewport-width)',
+                    height: 'var(--viewport-height)',
+                }}
+            >
                 <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
                 {renderState()}
             </div>

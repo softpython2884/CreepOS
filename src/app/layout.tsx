@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
-  title: 'Cauchemar Virtuel',
+  title: 'NEO-SYSTEM : BREACH',
   description: 'Une expérience d\'horreur textuelle.',
 };
 

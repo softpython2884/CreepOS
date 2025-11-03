@@ -57,14 +57,18 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
     browser: { title: 'Hypnet Explorer', component: Browser, width: 800, height: 600, props: { onSoundEvent: onSoundEvent } },
   };
 
-  const openApp = useCallback((appId: AppId, options: { x?: number, y?: number } = {}) => {
+  const openApp = useCallback((appId: AppId) => {
     const instanceId = nextInstanceIdRef.current++;
     const config = appConfig[appId];
     
+    // Get viewport dimensions from CSS variables, with fallbacks
+    const viewportWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--viewport-width')) || 1920;
+    const viewportHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--viewport-height')) || 1080;
+
     const randomXOffset = (Math.random() - 0.5) * 200;
     const randomYOffset = (Math.random() - 0.5) * 200;
-    const x = options.x ?? (1920 / 2) - (config.width / 2) + randomXOffset;
-    const y = options.y ?? (1080 / 2) - (config.height / 2) + randomYOffset;
+    const x = (viewportWidth / 2) - (config.width / 2) + randomXOffset;
+    const y = (viewportHeight / 2) - (config.height / 2) + randomYOffset;
     
     const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, x, y, nodeRef: createRef<HTMLDivElement>() };
 
@@ -118,7 +122,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
       
         <>
-            <h1 className="absolute top-8 text-4xl font-headline text-primary opacity-50 select-none pointer-events-none">CAUCHEMAR VIRTUEL</h1>
             {openApps.map((app) => {
                 const currentAppConfig = appConfig[app.appId];
                 const AppComponent = currentAppConfig.component;

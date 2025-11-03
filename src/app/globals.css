@@ -6,6 +6,8 @@
   :root {
     --background: 0 0% 13%;
     --foreground: 0 0% 98%;
+    --viewport-width: 1920px;
+    --viewport-height: 1080px;
     --viewport-scale: 1;
     --viewport-left: 0px;
     --viewport-top: 0px;
@@ -98,5 +100,7 @@
     transform: scale(var(--viewport-scale));
     top: var(--viewport-top);
     left: var(--viewport-left);
+    width: var(--viewport-width);
+    height: var(--viewport-height);
   }
 }
