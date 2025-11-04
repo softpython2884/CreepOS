@@ -1,0 +1,43 @@
+
+{
+    "id": "holberton-gateway",
+    "name": "Holberton School Gateway",
+    "ip": "192.168.1.1",
+    "type": "Server",
+    "links": ["player-pc", "workstation-01"],
+    "auth": {
+        "user": "admin",
+        "pass": "holberton"
+    },
+    "firewall": {
+        "enabled": false,
+        "complexity": 0
+    },
+    "proxy": {
+        "enabled": false,
+        "level": 0
+    },
+    "traceTime": 0,
+    "requiredPorts": 0,
+    "ports": [
+        { "port": 80, "service": "HTTP", "isOpen": false },
+        { "port": 443, "service": "HTTP", "isOpen": false }
+    ],
+    "fileSystem": [
+        {
+            "id": "folder-log",
+            "name": "log",
+            "type": "folder",
+            "children": [
+                { "id": "file-syslog", "name": "system.log", "type": "file", "content": "Gateway boot sequence complete. All services nominal." },
+                { "id": "file-audit", "name": "audit.log", "type": "file", "content": "Firewall disabled by admin override. SECURITY RISK." }
+            ]
+        },
+        {
+            "id": "folder-bin",
+            "name": "bin",
+            "type": "folder",
+            "children": []
+        }
+    ]
+}

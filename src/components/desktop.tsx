@@ -9,9 +9,10 @@ import DocumentFolder from '@/components/apps/document-folder';
 import TextEditor from '@/components/apps/text-editor';
 import { cn } from '@/lib/utils';
 import { SoundEvent, MusicEvent } from './audio-manager';
-import { initialFileSystem, type FileSystemNode } from './apps/content';
+import { type FileSystemNode } from '@/lib/network/types';
 import Draggable from 'react-draggable';
-import { PC, network } from '@/lib/network';
+import { network } from '@/lib/network';
+import { type PC } from '@/lib/network/types';
 import NetworkMap from './apps/network-map';
 
 export type AppId = 'terminal' | 'documents' | 'network';
@@ -62,10 +63,13 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
   }
 
   useEffect(() => {
-    const personalizeFileSystem = (nodes: FileSystemNode[]): FileSystemNode[] => {
-      return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, username));
-    };
-    setFileSystem(personalizeFileSystem(initialFileSystem));
+      const playerPc = network.find(p => p.id === 'player-pc');
+      if (playerPc) {
+        const personalizeFileSystem = (nodes: FileSystemNode[]): FileSystemNode[] => {
+            return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, username));
+        };
+        setFileSystem(personalizeFileSystem(playerPc.fileSystem));
+      }
   }, [username]);
 
   const handleOpenFileEditor = (path: string[], content: string) => {
@@ -117,8 +121,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
         width: 700, 
         height: 450, 
         props: { 
-            fileSystem: fileSystem,
-            onFileSystemUpdate: setFileSystem,
             onSoundEvent: onSoundEvent,
             username: username,
             onOpenFileEditor: handleOpenFileEditor,
@@ -151,6 +153,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
   };
 
   const openApp = useCallback((appId: AppId) => {
+    // This check is now only for the DocumentFolder which depends on the local FS
     if (appId === 'documents' && fileSystem.length === 0) return;
 
     const instanceId = nextInstanceIdRef.current++;
@@ -223,7 +226,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
           if (!currentAppConfig) return null;
           const AppComponent = currentAppConfig.component;
           
-          const props = { ...currentAppConfig.props, fileSystem, onFileSystemUpdate: setFileSystem, hackedPcs };
+          let props = { ...currentAppConfig.props };
+          if (app.appId !== 'terminal') {
+            props = { ...props, fileSystem: fileSystem, onFileSystemUpdate: setFileSystem, hackedPcs };
+          }
           
           return (
               <Draggable
@@ -268,5 +274,3 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
     </main>
   );
 }
-
-    

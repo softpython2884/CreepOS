@@ -1,0 +1,64 @@
+
+{
+    "id": "player-pc",
+    "name": "Operator's Terminal",
+    "ip": "127.0.0.1",
+    "type": "Desktop",
+    "links": ["holberton-gateway"],
+    "auth": { "user": "root", "pass": "" },
+    "firewall": { "enabled": false, "complexity": 0 },
+    "proxy": { "enabled": false, "level": 0 },
+    "traceTime": 0,
+    "requiredPorts": 0,
+    "ports": [],
+    "fileSystem": [
+        {
+            "id": "folder-home",
+            "name": "home",
+            "type": "folder",
+            "children": [
+                {
+                    "id": "folder-user",
+                    "name": "<user>",
+                    "type": "folder",
+                    "children": [
+                        {
+                            "id": "folder-docs",
+                            "name": "docs",
+                            "type": "folder",
+                            "children": [
+                                { "id": "file-notes", "name": "notes.txt", "type": "file", "content": "My personal notes..." }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "folder-sys",
+            "name": "sys",
+            "type": "folder",
+            "children": [
+                { "id": "file-kernel", "name": "kernel.sim", "type": "file", "content": "SYSTEM KERNEL [ENCRYPTED]", "isSystemFile": true }
+            ]
+        },
+        {
+            "id": "folder-bin",
+            "name": "bin",
+            "type": "folder",
+            "children": [
+                { "id": "file-scan", "name": "scan.bin", "type": "file", "content": "Network scanning utility", "isSystemFile": true },
+                { "id": "file-porthack", "name": "porthack.bin", "type": "file", "content": "Port cracking utility", "isSystemFile": true },
+                { "id": "file-nano", "name": "nano.bin", "type": "file", "content": "Text editor executable", "isSystemFile": true }
+            ]
+        },
+        {
+            "id": "folder-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "file-accesslog", "name": "access.log", "type": "file", "content": "USER <user> logged in." }
+            ]
+        }
+    ]
+}

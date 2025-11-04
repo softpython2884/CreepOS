@@ -4,8 +4,8 @@
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileSystemNode } from './content';
-import { network, type PC } from '@/lib/network';
+import { network } from '@/lib/network';
+import { FileSystemNode, PC } from '@/lib/network/types';
 
 interface HistoryItem {
   type: 'command' | 'output';
@@ -13,8 +13,6 @@ interface HistoryItem {
 }
 
 interface TerminalProps {
-    fileSystem: FileSystemNode[];
-    onFileSystemUpdate: (newFileSystem: FileSystemNode[]) => void;
     username: string;
     onSoundEvent?: (event: 'click') => void;
     onOpenFileEditor: (path: string[], content: string) => void;
@@ -46,7 +44,7 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
     return foundNode;
 };
 
-export default function Terminal({ fileSystem, onFileSystemUpdate, username, onSoundEvent, onOpenFileEditor, onHack, hackedPcs }: TerminalProps) {
+export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onHack, hackedPcs }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
     { type: 'output', content: "Type 'help' for a list of commands." }
@@ -57,9 +55,20 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
   const [currentDirectory, setCurrentDirectory] = useState(['home', username]);
   const [connectedIp, setConnectedIp] = useState<string | null>('127.0.0.1');
   const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [fileSystem, setFileSystem] = useState<FileSystemNode[]>([]);
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const playerPc = network.find(p => p.id === 'player-pc');
+    if (playerPc) {
+        const personalizeFileSystem = (nodes: FileSystemNode[]): FileSystemNode[] => {
+            return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, username));
+        };
+        setFileSystem(personalizeFileSystem(playerPc.fileSystem));
+    }
+  }, [username]);
 
 
   useEffect(() => {
@@ -158,7 +167,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     };
 
     const handleOutput = (output: string) => {
-        if ((redirect || append) && redirectPathArg) {
+        if ((redirect || append) && redirectPathArg && connectedIp === '127.0.0.1') {
              const resolvedRedirectPath = resolvePath(redirectPathArg);
              const redirectFilename = resolvedRedirectPath.pop() || '';
              const parentPath = resolvedRedirectPath;
@@ -178,8 +187,11 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 const newFile: FileSystemNode = { id: `file-${Date.now()}`, name: redirectFilename, type: 'file', content: output };
                 return [...items, newFile];
              });
-             onFileSystemUpdate(newFileSystem);
-        } else {
+             setFileSystem(newFileSystem);
+        } else if (redirect || append) {
+            newHistory.push({ type: 'output', content: `error: Permission denied: Cannot write to remote file system.`});
+        }
+        else {
             newHistory.push({ type: 'output', content: output });
         }
     }
@@ -191,6 +203,10 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
         }
         return true;
     }
+
+    // --- Dynamic Command Execution ---
+    const localBinFolder = network.find(p => p.id === 'player-pc')?.fileSystem.find(node => node.name === 'bin' && node.type === 'folder');
+    const executable = localBinFolder?.children?.find(file => file.name === `${command}.bin`);
 
     if (command === 'porthack') {
         if (connectedIp === '127.0.0.1') {
@@ -214,16 +230,9 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
         return;
     }
 
-    // --- Dynamic Command Execution ---
-    const localBinFolder = fileSystem.find(node => node.name === 'bin' && node.type === 'folder');
-    const executable = localBinFolder?.children?.find(file => file.name === `${command}.bin`);
-
     if (executable) {
-        if (!checkAuth()) {
-            setHistory(newHistory); setInput(''); return;
-        }
-
         if (command === 'nano') {
+            if (!checkAuth()) { setHistory(newHistory); setInput(''); return; }
             const pathArg = args[0];
             if (!pathArg) {
                 newHistory.push({ type: 'output', content: `nano: missing file operand` });
@@ -241,6 +250,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 }
             }
         } else if (command === 'scan') {
+            if (!checkAuth()) { setHistory(newHistory); setInput(''); return; }
              const currentPc = getCurrentPc();
             if (currentPc && currentPc.links) {
                 const linkedPcs = currentPc.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
@@ -290,10 +300,6 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
         }
         case 'ls': {
             if(!checkAuth()) break;
-            if (connectedIp !== '127.0.0.1') {
-                 newHistory.push({ type: 'output', content: `(Simulated remote ls) \n/bin/ \n/log/` });
-                 break;
-            }
             const pathArg = args[0] || '.';
             const targetPath = resolvePath(pathArg);
             
@@ -330,13 +336,13 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
         }
         case 'cd': {
             if(!checkAuth()) break;
-            if (connectedIp !== '127.0.0.1') {
-                 newHistory.push({ type: 'output', content: `cd: Remote file system not yet browsable.` });
-                 break;
-            }
             const pathArg = args[0];
             if (!pathArg || pathArg === '~' || pathArg === '~/') {
-                setCurrentDirectory(['home', username]);
+                if (connectedIp === '127.0.0.1') {
+                    setCurrentDirectory(['home', username]);
+                } else {
+                    setCurrentDirectory([]); // Root for remote
+                }
                 break;
             }
              if (pathArg === '/') {
@@ -367,10 +373,6 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
         }
         case 'cat': {
             if(!checkAuth()) break;
-            if (connectedIp !== '127.0.0.1') {
-                 newHistory.push({ type: 'output', content: `cat: Remote file system not yet readable.` });
-                 break;
-            }
             const filename = args.join(' ');
             if (!filename) {
                 newHistory.push({ type: 'output', content: `cat: missing file operand` });
@@ -423,7 +425,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             };
 
             const newFileSystem = recursiveUpdate(fileSystem, parentPath, (items) => [...items, newFile]);
-            onFileSystemUpdate(newFileSystem);
+            setFileSystem(newFileSystem);
             break;
         }
         case 'rm': {
@@ -458,7 +460,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             
             const parentPath = filePath.slice(0, -1);
             const newFileSystem = recursiveUpdate(fileSystem, parentPath, items => items.filter(item => item.id !== fileNode.id));
-            onFileSystemUpdate(newFileSystem);
+            setFileSystem(newFileSystem);
             break;
         }
         case 'connect': {
@@ -487,7 +489,8 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             }
             
             setConnectedIp(targetIp);
-setIsAuthenticated(false);
+            setIsAuthenticated(false);
+            setFileSystem(targetPC.fileSystem);
             setCurrentDirectory([]);
             newHistory.push({ type: 'output', content: `Connection established to ${targetPC.name} (${targetPC.ip}).` });
             newHistory.push({ type: 'output', content: `Use 'login' to authenticate.` });
@@ -509,9 +512,9 @@ setIsAuthenticated(false);
             }
             
             const targetPC = getCurrentPc();
-            if (targetPC && hackedPcs.has(targetPC.id) && targetPC.auth.user === userArg && targetPC.auth.pass === passArg) {
+            if (targetPC && targetPC.auth.user === userArg && targetPC.auth.pass === passArg) {
                 setIsAuthenticated(true);
-                setCurrentDirectory([]); // Reset to root of remote machine
+                setCurrentDirectory([]);
                 newHistory.push({ type: 'output', content: 'Authentication successful.' });
             } else {
                 newHistory.push({ type: 'output', content: 'Authentication failed.' });
@@ -523,8 +526,10 @@ setIsAuthenticated(false);
                 newHistory.push({ type: 'output', content: 'Cannot disconnect from local machine.' });
             } else {
                 const previousHostName = getCurrentPc()?.name;
+                const playerPc = network.find(p => p.id === 'player-pc');
                 setConnectedIp('127.0.0.1');
                 setIsAuthenticated(true);
+                setFileSystem(playerPc ? playerPc.fileSystem : []);
                 setCurrentDirectory(['home', username]);
                 newHistory.push({ type: 'output', content: `Disconnected from ${previousHostName}.` });
             }
@@ -548,7 +553,7 @@ setIsAuthenticated(false);
   };
 
   const handleTabCompletion = () => {
-     if (!isAuthenticated || connectedIp !== '127.0.0.1') return;
+     if (!isAuthenticated) return;
 
     const parts = input.split(' ');
     const lastPart = parts[parts.length - 1];

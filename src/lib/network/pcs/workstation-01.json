@@ -1,0 +1,26 @@
+
+{
+    "id": "workstation-01",
+    "name": "Workstation-01",
+    "ip": "192.168.1.10",
+    "type": "Desktop",
+    "links": ["holberton-gateway"],
+    "auth": { "user": "admin", "pass": "password123" },
+    "firewall": { "enabled": true, "complexity": 2 },
+    "proxy": { "enabled": false, "level": 0 },
+    "traceTime": 60,
+    "requiredPorts": 1,
+    "ports": [
+        { "port": 22, "service": "SSH", "isOpen": false }
+    ],
+    "fileSystem": [
+        {
+            "id": "remote-docs",
+            "name": "Documents",
+            "type": "folder",
+            "children": [
+                { "id": "file-project", "name": "project_alpha.txt", "type": "file", "content": "Project Alpha is a go. Funding secured. More details to follow." }
+            ]
+        }
+    ]
+}
