@@ -210,36 +210,14 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
         return true;
     }
 
-    // --- Special cases for non-auth commands on remote systems ---
-    if (command.toLowerCase() === 'porthack') {
-        const targetPC = getCurrentPc();
-        if (connectedIp === '127.0.0.1') {
-            newHistory.push({ type: 'output', content: 'porthack: cannot run on local machine.' });
-        } else if (!targetPC) {
-            newHistory.push({ type: 'output', content: 'porthack: critical error, no target system.' });
-        } else if (hackedPcs.has(targetPC.id)) {
-            newHistory.push({ type: 'output', content: `porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}` });
-        } else if (targetPC.firewall.enabled) {
-            newHistory.push({ type: 'output', content: `ERROR: Active firewall detected. Connection terminated.`});
-        } else if (targetPC.proxy.enabled) {
-            newHistory.push({ type: 'output', content: `ERROR: Active proxy detected. Connection bounced.` });
-        } else if (targetPC.requiredPorts > 0) {
-             newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required. Cannot breach security.` });
-        } else {
-            newHistory.push({ type: 'output', content: `PortHack successful on ${targetPC.ip}. Firewall breached.` });
-            newHistory.push({ type: 'output', content: `  Password cracked: ${targetPC.auth.pass}` });
-            onHack(targetPC.id);
-        }
-        setHistory(newHistory);
-        setInput('');
-        return;
-    }
-
-
     const handlePortHack = (portNumber: number, portName: string) => {
         const targetPC = getCurrentPc();
         if (connectedIp === '127.0.0.1' || !targetPC) {
             newHistory.push({ type: 'output', content: `${portName}: Must be connected to a remote system.` });
+            return;
+        }
+        if (targetPC.firewall.enabled || targetPC.proxy.enabled) {
+            newHistory.push({ type: 'output', content: `${portName} failed: Active firewall or proxy detected.` });
             return;
         }
         const port = targetPC.ports.find(p => p.port === portNumber);
@@ -255,6 +233,35 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
         setNetworkState([...networkState]); // Force re-render
         newHistory.push({ type: 'output', content: `${port.service} port (${portNumber}) is now open.` });
     };
+
+    // --- Special cases for non-auth commands on remote systems ---
+    if (command.toLowerCase() === 'porthack') {
+        const targetPC = getCurrentPc();
+        if (connectedIp === '127.0.0.1') {
+            newHistory.push({ type: 'output', content: 'porthack: cannot run on local machine.' });
+        } else if (!targetPC) {
+            newHistory.push({ type: 'output', content: 'porthack: critical error, no target system.' });
+        } else if (hackedPcs.has(targetPC.id)) {
+            newHistory.push({ type: 'output', content: `porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}` });
+        } else if (targetPC.firewall.enabled) {
+            newHistory.push({ type: 'output', content: `ERROR: Active firewall detected. Connection terminated.`});
+        } else if (targetPC.proxy.enabled) {
+            newHistory.push({ type: 'output', content: `ERROR: Active proxy detected. Connection bounced.` });
+        } else {
+            const openPorts = targetPC.ports.filter(p => p.isOpen).length;
+            if (openPorts >= targetPC.requiredPorts) {
+                newHistory.push({ type: 'output', content: `PortHack successful on ${targetPC.ip}. Firewall breached.` });
+                newHistory.push({ type: 'output', content: `  Password cracked: ${targetPC.auth.pass}` });
+                onHack(targetPC.id);
+            } else {
+                newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open port(s) required. (${openPorts}/${targetPC.requiredPorts} open)` });
+            }
+        }
+        setHistory(newHistory);
+        setInput('');
+        return;
+    }
+
 
     // --- Dynamic Command Execution from local /bin ---
     const playerPcFs = network.find(p => p.id === 'player-pc')?.fileSystem;
@@ -322,7 +329,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                         secInfo.push(`    - ${p.port} (${p.service}): ${p.isOpen ? 'OPEN' : 'CLOSED'}`);
                     });
                 } else {
-                    secInfo.push('  No open ports detected.');
+                    secInfo.push('  No scannable ports detected.');
                 }
 
                 newHistory.push({ type: 'output', content: secInfo.join('\n') });
@@ -344,13 +351,13 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                     newHistory.push({ type: 'output', content: `Overload failed. Insufficient nodes. Required: ${requiredNodes}, Available: ${availableNodes}` });
                 }
             }
-        } else if (cmdName === 'ftpbounce') {
+        } else if (cmdName.toLowerCase() === 'ftpbounce') {
             handlePortHack(21, 'FTPBounce');
-        } else if (cmdName === 'sshbounce') {
+        } else if (cmdName.toLowerCase() === 'sshbounce') {
             handlePortHack(22, 'SSHBounce');
-        } else if (cmdName === 'smtpoverflow') {
+        } else if (cmdName.toLowerCase() === 'smtpoverflow') {
             handlePortHack(25, 'SMTPOverflow');
-        } else if (cmdName === 'webserverworm') {
+        } else if (cmdName.toLowerCase() === 'webserverworm') {
             handlePortHack(80, 'WebServerWorm');
         } else {
              newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
@@ -570,11 +577,6 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 newHistory.push({ type: 'output', content: 'connect: missing target IP address' });
                 break;
             }
-            
-            const currentPc = getCurrentPc();
-            if (currentPc && currentPc.links && !currentPc.links.includes(networkState.find(p => p.ip === targetIp)?.id || '')) {
-                 // We allow connection even if not directly linked, so we can remove this check or relax it
-            }
 
             const targetPC = networkState.find(pc => pc.ip === targetIp);
             
@@ -671,12 +673,37 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
   };
 
   const handleTabCompletion = () => {
-     if (!isAuthenticated) return;
-
     const parts = input.split(' ');
     const lastPart = parts[parts.length - 1];
+
     if (lastPart === undefined) return;
 
+    // Command completion
+    if (parts.length === 1) {
+        const playerPcFs = network.find(p => p.id === 'player-pc')?.fileSystem;
+        const localBinFolder = playerPcFs ? personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder') : undefined;
+        if (!localBinFolder?.children) return;
+        
+        const executables = localBinFolder.children
+            .filter(f => f.type === 'file' && (f.name.endsWith('.bin') || f.name.endsWith('.exe')))
+            .map(f => f.name.split('.')[0]);
+
+        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear'];
+        const allCommands = [...mainCommands, ...executables];
+        const possibilities = allCommands.filter(cmd => cmd.startsWith(lastPart));
+
+        if (possibilities.length === 1) {
+            setInput(possibilities[0] + ' ');
+        } else if (possibilities.length > 1) {
+            const newHistory = [...history, { type: 'command', content: `${getPrompt()}${input}` }, { type: 'output', content: possibilities.join('  ') }];
+            setHistory(newHistory);
+        }
+        return;
+    }
+     
+    // File/Path completion
+    if (!isAuthenticated) return;
+    
     const pathPrefix = lastPart.substring(0, lastPart.lastIndexOf('/') + 1);
     const partialName = lastPart.substring(lastPart.lastIndexOf('/') + 1);
     
@@ -694,8 +721,9 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
     const possibilities = currentLevel.filter(child => child.name.startsWith(partialName));
 
     if (possibilities.length === 1) {
-        const newText = parts.slice(0, -1).join(' ') + (parts.length > 1 ? ' ' : '') + pathPrefix + possibilities[0].name;
-        setInput(newText + (possibilities[0].type === 'folder' ? '/' : ' '));
+        const completion = possibilities[0];
+        const newText = parts.slice(0, -1).join(' ') + (parts.length > 1 ? ' ' : '') + pathPrefix + completion.name;
+        setInput(newText + (completion.type === 'folder' ? '/' : ' '));
     } else if (possibilities.length > 1) {
         const newHistory = [...history, { type: 'command', content: `${getPrompt()}${input}` }, { type: 'output', content: possibilities.map(p => p.name).join('  ') }];
         setHistory(newHistory);
