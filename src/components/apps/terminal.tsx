@@ -210,7 +210,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
         return true;
     }
 
-    // --- Special case for non-auth commands on remote systems ---
+    // --- Special cases for non-auth commands on remote systems ---
     if (command.toLowerCase() === 'porthack') {
         const targetPC = getCurrentPc();
         if (connectedIp === '127.0.0.1') {
@@ -221,6 +221,8 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             newHistory.push({ type: 'output', content: `porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}` });
         } else if (targetPC.firewall.enabled) {
             newHistory.push({ type: 'output', content: `ERROR: Active firewall detected. Connection terminated.`});
+        } else if (targetPC.proxy.enabled) {
+            newHistory.push({ type: 'output', content: `ERROR: Active proxy detected. Connection bounced.` });
         } else if (targetPC.requiredPorts > 0) {
              newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required. Cannot breach security.` });
         } else {
@@ -240,7 +242,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
     const executable = localBinFolder?.children?.find(file => file.name === `${command}.bin` || file.name === `${command}.exe`);
 
     if (executable) {
-        if (command === 'nano') {
+        if (command.toLowerCase() === 'nano') {
             if (!checkAuth()) { setHistory(newHistory); setInput(''); return; }
             const pathArg = args[0];
             if (!pathArg) {
@@ -304,6 +306,23 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
 
                 newHistory.push({ type: 'output', content: secInfo.join('\n') });
             }
+        } else if (command.toLowerCase() === 'overload') {
+            const targetPC = getCurrentPc();
+            if (connectedIp === '127.0.0.1' || !targetPC) {
+                newHistory.push({ type: 'output', content: 'overload: Must be connected to a remote system.' });
+            } else if (!targetPC.proxy.enabled) {
+                newHistory.push({ type: 'output', content: 'Proxy is not active.' });
+            } else {
+                const requiredNodes = targetPC.proxy.level;
+                const availableNodes = hackedPcs.size;
+                if (availableNodes >= requiredNodes) {
+                    targetPC.proxy.enabled = false;
+                    setNetworkState([...networkState]); // Force re-render
+                    newHistory.push({ type: 'output', content: `Proxy disabled on ${targetPC.ip}.` });
+                } else {
+                    newHistory.push({ type: 'output', content: `Overload failed. Insufficient nodes. Required: ${requiredNodes}, Available: ${availableNodes}` });
+                }
+            }
         } else {
              newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
         }
@@ -336,8 +355,9 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 'Hacking tools (run from your machine):',
                 '  scan           - Scan the network for linked devices (auth required)',
                 '  probe          - Scans security of a connected system',
-                '  analyze        - Analyzes an active firewall for its solution',
+                '  analyze        - Analyzes an active firewall for its solution key',
                 '  solve <solution> - Attempts to disable a firewall with a solution key',
+                '  overload       - Attempts to disable a proxy by overloading it',
                 '  porthack       - Attempts to crack the password of a connected system',
                 '',
                 '  clear          - Clear the terminal screen',
@@ -493,6 +513,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             if (!fileNode) {
                 newHistory.push({ type: 'output', content: `rm: cannot remove '${fileArg}': No such file or directory` });
                 break;
+witness
             }
 
             if (fileNode.type === 'folder') {
@@ -530,7 +551,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             }
             
             setConnectedIp(targetIp);
-            setIsAuthenticated(false);
+setIsAuthenticated(false);
             setFileSystem(personalizeFileSystem(targetPC.fileSystem, targetPC.auth.user));
             setCurrentDirectory([]);
             newHistory.push({ type: 'output', content: `Connection established to ${targetPC.name} (${targetPC.ip}).` });

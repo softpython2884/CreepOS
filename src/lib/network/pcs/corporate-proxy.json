@@ -18,7 +18,7 @@
         "level": 3
     },
     "traceTime": 30,
-    "requiredPorts": 2,
+    "requiredPorts": 0,
     "ports": [
         { "port": 8080, "service": "HTTP", "isOpen": false },
         { "port": 1080, "service": "UNKNOWN", "isOpen": false }

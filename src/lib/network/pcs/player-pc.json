@@ -51,7 +51,8 @@
                 { "id": "file-probe", "name": "probe.bin", "type": "file", "content": "System security probe utility", "isSystemFile": true },
                 { "id": "file-porthack", "name": "porthack.bin", "type": "file", "content": "Port cracking utility", "isSystemFile": true },
                 { "id": "file-nano", "name": "nano.bin", "type": "file", "content": "Text editor executable", "isSystemFile": true },
-                { "id": "file-fw-analyzer", "name": "analyze.bin", "type": "file", "content": "Firewall analysis tool", "isSystemFile": true }
+                { "id": "file-fw-analyzer", "name": "analyze.bin", "type": "file", "content": "Firewall analysis tool", "isSystemFile": true },
+                { "id": "file-overload", "name": "overload.bin", "type": "file", "content": "Proxy overload utility", "isSystemFile": true }
             ]
         },
         {
