@@ -19,6 +19,7 @@ interface TerminalProps {
     onSoundEvent?: (event: 'click') => void;
     onOpenFileEditor: (path: string[], content: string) => void;
     onHack: (pcId: string) => void;
+    hackedPcs: Set<string>;
 }
 
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
@@ -45,7 +46,7 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
     return foundNode;
 };
 
-export default function Terminal({ fileSystem, onFileSystemUpdate, username, onSoundEvent, onOpenFileEditor, onHack }: TerminalProps) {
+export default function Terminal({ fileSystem, onFileSystemUpdate, username, onSoundEvent, onOpenFileEditor, onHack, hackedPcs }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
     { type: 'output', content: "Type 'help' for a list of commands." }
@@ -71,16 +72,17 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
 
   const getPrompt = () => {
     const currentHost = network.find(pc => pc.ip === connectedIp)?.name || 'neo-system';
-    const currentUser = network.find(pc => pc.ip === connectedIp)?.auth.user || username;
+    const currentPcUser = network.find(pc => pc.ip === connectedIp)?.auth.user || username;
 
-    const homeDir = `home/${username}`;
+    const homeDir = ['home', username];
     let path = currentDirectory.join('/');
-    if (path.startsWith(homeDir)) {
-      path = '~' + path.substring(homeDir.length);
-    } else if (path === '') {
+    
+    if (connectedIp === '127.0.0.1' && currentDirectory.join('/').startsWith(homeDir.join('/'))) {
+        path = '~' + path.substring(homeDir.join('/').length);
+    } else if (currentDirectory.length === 0) {
         path = '/';
     }
-    return `${currentUser}@${currentHost}:${path}$ `;
+    return `${currentPcUser}@${currentHost}:${path}$ `;
   };
   
   const resolvePath = (pathArg: string): string[] => {
@@ -171,8 +173,10 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     }
 
     // --- Dynamic Command Execution ---
-    const binFolder = fileSystem.find(node => node.name === 'bin' && node.type === 'folder');
-    const executable = binFolder?.children?.find(file => file.name === `${command}.bin`);
+    // Only check /bin/ on the player's machine for now.
+    // A more complex implementation could check the remote machine's /bin
+    const localBinFolder = fileSystem.find(node => node.name === 'bin' && node.type === 'folder');
+    const executable = localBinFolder?.children?.find(file => file.name === `${command}.bin`);
 
     if (executable) {
         if (command === 'nano') {
@@ -181,21 +185,55 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 newHistory.push({ type: 'output', content: `nano: missing file operand` });
             } else {
                 const filePath = resolvePath(pathArg);
-                const file = findNodeByPath(filePath, fileSystem);
-                if (file && file.type === 'folder') {
-                    newHistory.push({ type: 'output', content: `nano: cannot edit directory '${pathArg}'` });
+                // For simplicity, nano only works on the local filesystem for now
+                if (connectedIp !== '127.0.0.1') {
+                    newHistory.push({ type: 'output', content: `nano: cannot edit files on remote systems yet.` });
                 } else {
-                    onOpenFileEditor(filePath, file?.content || '');
+                    const file = findNodeByPath(filePath, fileSystem);
+                    if (file && file.type === 'folder') {
+                        newHistory.push({ type: 'output', content: `nano: cannot edit directory '${pathArg}'` });
+                    } else {
+                        onOpenFileEditor(filePath, file?.content || '');
+                    }
                 }
             }
         } else if (executable.id === 'file-exploit') {
             newHistory.push({ type: 'output', content: 'Exploit successful. Sub-system vulnerabilities detected.' });
+        } else if (command === 'porthack') {
+            const targetIp = args[0];
+            if (!targetIp) {
+                newHistory.push({ type: 'output', content: 'porthack: missing target IP address' });
+            } else {
+                const targetPC = network.find(pc => pc.ip === targetIp);
+                if (!targetPC) {
+                    newHistory.push({ type: 'output', content: `porthack: unable to resolve host ${targetIp}` });
+                } else if (targetPC.requiredPorts > 0) { // In the future, check if ports are actually open
+                     newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required. Cannot breach security.` });
+                } else {
+                    newHistory.push({ type: 'output', content: `PortHack successful on ${targetIp}. Firewall breached. Password cracked.` });
+                    newHistory.push({ type: 'output', content: `  User: ${targetPC.auth.user}\n  Pass: ${targetPC.auth.pass}` });
+                    onHack(targetPC.id);
+                }
+            }
+        } else if (command === 'scan') {
+             const currentPc = network.find(pc => pc.ip === connectedIp);
+            if (currentPc && currentPc.links) {
+                const linkedPcs = currentPc.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
+                if (linkedPcs.length > 0) {
+                    const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
+                    handleOutput(output);
+                } else {
+                    handleOutput('No linked devices found.');
+                }
+            } else {
+                handleOutput('Scan failed: could not determine current network segment.');
+            }
         } else {
              newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
         }
 
         setHistory(newHistory);
-setInput('');
+        setInput('');
         return;
     }
     // --- End Dynamic Command Execution ---
@@ -225,6 +263,11 @@ setInput('');
             break;
         }
         case 'ls': {
+            // Logic only works for local FS for now
+            if (connectedIp !== '127.0.0.1') {
+                 newHistory.push({ type: 'output', content: `ls: Remote file system not yet browsable.` });
+                 break;
+            }
             const pathArg = args[0] || '.';
             const targetPath = resolvePath(pathArg);
             
@@ -260,6 +303,11 @@ setInput('');
             break;
         }
         case 'cd': {
+             // Logic only works for local FS for now
+            if (connectedIp !== '127.0.0.1') {
+                 newHistory.push({ type: 'output', content: `cd: Remote file system not yet browsable.` });
+                 break;
+            }
             const pathArg = args[0];
             if (!pathArg || pathArg === '~' || pathArg === '~/') {
                 setCurrentDirectory(['home', username]);
@@ -292,6 +340,11 @@ setInput('');
             break;
         }
         case 'cat': {
+             // Logic only works for local FS for now
+            if (connectedIp !== '127.0.0.1') {
+                 newHistory.push({ type: 'output', content: `cat: Remote file system not yet readable.` });
+                 break;
+            }
             const filename = args.join(' ');
             if (!filename) {
                 newHistory.push({ type: 'output', content: `cat: missing file operand` });
@@ -316,6 +369,10 @@ setInput('');
             break;
         }
         case 'touch': {
+            if (connectedIp !== '127.0.0.1') {
+                 newHistory.push({ type: 'output', content: `touch: cannot create files on remote systems.` });
+                 break;
+            }
             const filename = args[0];
             if (!filename) {
                 newHistory.push({ type: 'output', content: 'touch: missing file operand' });
@@ -343,6 +400,10 @@ setInput('');
             break;
         }
         case 'cp': {
+             if (connectedIp !== '127.0.0.1') {
+                 newHistory.push({ type: 'output', content: `cp: cannot copy files on remote systems.` });
+                 break;
+            }
             const [sourceArg, destArg] = args;
             if (!sourceArg || !destArg) {
                 newHistory.push({ type: 'output', content: 'cp: missing file operand' });
@@ -394,6 +455,10 @@ setInput('');
             break;
         }
         case 'mv': {
+             if (connectedIp !== '127.0.0.1') {
+                 newHistory.push({ type: 'output', content: `mv: cannot move files on remote systems.` });
+                 break;
+            }
             const [sourceArg, destArg] = args;
             if (!sourceArg || !destArg) {
                 newHistory.push({ type: 'output', content: 'mv: missing file operand' });
@@ -442,6 +507,10 @@ setInput('');
             break;
         }
         case 'rm': {
+             if (connectedIp !== '127.0.0.1') {
+                 newHistory.push({ type: 'output', content: `rm: cannot remove files on remote systems.` });
+                 break;
+            }
             const fileArg = args[0];
             if (!fileArg) {
                 newHistory.push({ type: 'output', content: 'rm: missing operand' });
@@ -473,39 +542,6 @@ setInput('');
             onFileSystemUpdate(newFileSystem);
             break;
         }
-        case 'porthack': {
-            const targetIp = args[0];
-            if (!targetIp) {
-                newHistory.push({ type: 'output', content: 'porthack: missing target IP address' });
-            } else {
-                const targetPC = network.find(pc => pc.ip === targetIp);
-                if (!targetPC) {
-                    newHistory.push({ type: 'output', content: `porthack: unable to resolve host ${targetIp}` });
-                } else if (targetPC.requiredPorts > 0) {
-                     newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required. Cannot breach security.` });
-                } else {
-                    newHistory.push({ type: 'output', content: `PortHack successful on ${targetIp}. Firewall breached. Password cracked.` });
-                    newHistory.push({ type: 'output', content: `  User: ${targetPC.auth.user}\n  Pass: ${targetPC.auth.pass}` });
-                    onHack(targetPC.id);
-                }
-            }
-            break;
-        }
-        case 'scan': {
-            const currentPc = network.find(pc => pc.ip === connectedIp);
-            if (currentPc && currentPc.links) {
-                const linkedPcs = currentPc.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
-                if (linkedPcs.length > 0) {
-                    const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
-                    handleOutput(output);
-                } else {
-                    handleOutput('No linked devices found.');
-                }
-            } else {
-                handleOutput('Scan failed: could not determine current network segment.');
-            }
-            break;
-        }
         case 'connect': {
             const targetIp = args[0];
             const password = args[1];
@@ -514,14 +550,26 @@ setInput('');
                 newHistory.push({ type: 'output', content: 'connect: missing target IP address' });
                 break;
             }
+            if (targetIp === connectedIp) {
+                newHistory.push({ type: 'output', content: `connect: already connected to ${targetIp}` });
+                break;
+            }
+
             const targetPC = network.find(pc => pc.ip === targetIp);
             if (!targetPC) {
                 newHistory.push({ type: 'output', content: `connect: unable to resolve host ${targetIp}` });
                 break;
             }
-            // For now, let's assume if it's been porthacked, we can connect.
-            // A more complex system would check the password.
-            onHack(targetPC.id); //This is a little cheat to make sure it's "hacked"
+
+            if (!hackedPcs.has(targetPC.id)) {
+                 newHistory.push({ type: 'output', content: 'Connection failed: access denied. (Have you tried porthack?)' });
+                 break;
+            }
+            
+            if (targetPC.auth.pass !== password) {
+                 newHistory.push({ type: 'output', 'content': 'Connection failed: incorrect password.' });
+                 break;
+            }
             
             setConnectedIp(targetIp);
             setCurrentDirectory([]); // Reset to root of new machine
@@ -532,9 +580,10 @@ setInput('');
             if (connectedIp === '127.0.0.1') {
                 newHistory.push({ type: 'output', content: 'Cannot disconnect from local machine.' });
             } else {
+                const previousHostName = network.find(pc => pc.ip === connectedIp)?.name;
                 setConnectedIp('127.0.0.1');
                 setCurrentDirectory(['home', username]);
-                newHistory.push({ type: 'output', content: 'Disconnected from remote host.' });
+                newHistory.push({ type: 'output', content: `Disconnected from ${previousHostName}.` });
             }
             break;
         }
@@ -556,6 +605,9 @@ setInput('');
   };
 
   const handleTabCompletion = () => {
+    // Tab completion should only work on local FS for now
+     if (connectedIp !== '127.0.0.1') return;
+
     const parts = input.split(' ');
     const lastPart = parts[parts.length - 1];
     if (lastPart === undefined) return;

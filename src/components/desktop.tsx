@@ -114,15 +114,16 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
     terminal: { 
         title: 'Terminal', 
         component: Terminal, 
-        width: 600, 
-        height: 400, 
+        width: 700, 
+        height: 450, 
         props: { 
             fileSystem: fileSystem,
             onFileSystemUpdate: setFileSystem,
             onSoundEvent: onSoundEvent,
             username: username,
-            onOpenFileEditor: handleOpenFileEditor, // Pass the handler
+            onOpenFileEditor: handleOpenFileEditor,
             onHack: handleHackedPc,
+            hackedPcs: hackedPcs,
         } 
     },
     documents: { 
