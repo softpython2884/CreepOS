@@ -1,0 +1,37 @@
+{
+    "id": "corporate-proxy",
+    "name": "Corporate Proxy",
+    "ip": "203.0.113.1",
+    "type": "Server",
+    "links": ["workstation-01", "holberton-gateway"],
+    "auth": {
+        "user": "admin",
+        "pass": "proxySecurePa$$"
+    },
+    "firewall": {
+        "enabled": true,
+        "complexity": 5,
+        "solution": "PASSKEY_ALPHA"
+    },
+    "proxy": {
+        "enabled": true,
+        "level": 3
+    },
+    "traceTime": 30,
+    "requiredPorts": 2,
+    "ports": [
+        { "port": 8080, "service": "HTTP", "isOpen": false },
+        { "port": 1080, "service": "UNKNOWN", "isOpen": false }
+    ],
+    "fileSystem": [
+        {
+            "id": "proxy-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "file-traffic", "name": "traffic.log", "type": "file", "content": "Traffic routed from 192.168.1.10 to external network." },
+                { "id": "file-security", "name": "security.log", "type": "file", "content": "ALERT: Unauthorized connection attempt detected from unknown source." }
+            ]
+        }
+    ]
+}

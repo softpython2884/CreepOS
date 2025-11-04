@@ -259,7 +259,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 }
             }
         } else if (command.toLowerCase() === 'scan') {
-            if (!checkAuth()) { setHistory(newHistory); setInput(''); return; }
+             if (!checkAuth()) { setHistory(newHistory); setInput(''); return; }
             const currentPc = getCurrentPc();
             if (currentPc && currentPc.links) {
                 const linkedPcs = currentPc.links.map(linkId => networkState.find(p => p.id === linkId)).filter(Boolean) as PC[];
@@ -272,14 +272,27 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             } else {
                 handleOutput('Scan failed: could not determine current network segment.');
             }
-        } else if (command.toLowerCase() === 'firewallanalyzer') {
+        } else if (command.toLowerCase() === 'analyze') {
             const targetPC = getCurrentPc();
             if (connectedIp === '127.0.0.1' || !targetPC) {
-                newHistory.push({ type: 'output', content: 'FirewallAnalyzer: Must be connected to a remote system.' });
+                newHistory.push({ type: 'output', content: 'analyze: Must be connected to a remote system.' });
             } else if (!targetPC.firewall.enabled) {
                 newHistory.push({ type: 'output', content: 'Firewall is not active.' });
             } else {
                  newHistory.push({ type: 'output', content: `Analyzing firewall... Solution found: ${targetPC.firewall.solution}` });
+            }
+        } else if (command.toLowerCase() === 'probe') {
+             const targetPC = getCurrentPc();
+            if (connectedIp === '127.0.0.1' || !targetPC) {
+                newHistory.push({ type: 'output', content: 'probe: Must be connected to a remote system.' });
+            } else {
+                const secInfo = [
+                    `Security Probe results for ${targetPC.ip}:`,
+                    `  Firewall: ${targetPC.firewall.enabled ? `ACTIVE (Complexity: ${targetPC.firewall.complexity})` : 'INACTIVE'}`,
+                    `  Proxy: ${targetPC.proxy.enabled ? `ACTIVE (Level: ${targetPC.proxy.level})` : 'INACTIVE'}`,
+                    `  Ports required for PortHack: ${targetPC.requiredPorts}`
+                ];
+                newHistory.push({ type: 'output', content: secInfo.join('\n') });
             }
         } else {
              newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
@@ -309,12 +322,13 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 '  connect <ip>   - Connect to a remote system',
                 '  disconnect / dc- Disconnect from the current remote system',
                 '  login <user> <pass> - Authenticate to a connected system',
-                '  scan           - Scan the network for linked devices (auth required)',
                 '',
-                'Hacking tools:',
-                '  porthack       - Attempts to crack the password of a connected system',
-                '  FirewallAnalyzer - Analyzes an active firewall for its solution',
+                'Hacking tools (run from your machine):',
+                '  scan           - Scan the network for linked devices (auth required)',
+                '  probe          - Scans security of a connected system',
+                '  analyze        - Analyzes an active firewall for its solution',
                 '  solve <solution> - Attempts to disable a firewall with a solution key',
+                '  porthack       - Attempts to crack the password of a connected system',
                 '',
                 '  clear          - Clear the terminal screen',
             ].join('\n');
@@ -351,7 +365,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
 
             if (currentPathResolved && targetNode && targetNode.children) {
                 const content = targetNode.children.map(node => `${node.name}${node.type === 'folder' ? '/' : ''}`).join('  ');
-                handleOutput(content || "");
+                handleOutput(content || "(empty)");
             } else if (!currentPathResolved) {
                  newHistory.push({ type: 'output', content: `ls: cannot access '${pathArg}': No such file or directory` });
             }
@@ -503,12 +517,6 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             if (!targetPC) {
                 newHistory.push({ type: 'output', content: `connect: unable to resolve host ${targetIp}` });
                 break;
-            }
-            
-            const currentPc = getCurrentPc();
-            if (!currentPc?.links?.includes(targetPC.id)) {
-                 newHistory.push({ type: 'output', content: `connect: unable to resolve host ${targetIp}` });
-                 break;
             }
             
             setConnectedIp(targetIp);
