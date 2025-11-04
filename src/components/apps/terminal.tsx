@@ -90,7 +90,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     let path = currentDirectory.join('/');
     if (connectedIp === '127.0.0.1' && currentDirectory.join('/').startsWith(`home/${username}`)) {
         path = '~' + path.substring(`home/${username}`.length);
-    } else if (currentDirectory.length === 0 || connectedIp !== '127.0.0.1') {
+    } else if (currentDirectory.length === 0 || (connectedIp !== '127.0.0.1' && !isAuthenticated)) {
         path = '/';
     }
     
@@ -192,6 +192,28 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
         return true;
     }
 
+    if (command === 'porthack') {
+        if (connectedIp === '127.0.0.1') {
+            newHistory.push({ type: 'output', content: 'porthack: cannot run on local machine.' });
+        } else {
+            const targetPC = getCurrentPc();
+            if (!targetPC) {
+                newHistory.push({ type: 'output', content: 'porthack: critical error, no target system.' });
+            } else if (hackedPcs.has(targetPC.id)) {
+                newHistory.push({ type: 'output', content: `porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}` });
+            } else if (targetPC.requiredPorts > 0) {
+                 newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required. Cannot breach security.` });
+            } else {
+                newHistory.push({ type: 'output', content: `PortHack successful on ${targetPC.ip}. Firewall breached.` });
+                newHistory.push({ type: 'output', content: `  Password cracked: ${targetPC.auth.pass}` });
+                onHack(targetPC.id);
+            }
+        }
+        setHistory(newHistory);
+        setInput('');
+        return;
+    }
+
     // --- Dynamic Command Execution ---
     const localBinFolder = fileSystem.find(node => node.name === 'bin' && node.type === 'folder');
     const executable = localBinFolder?.children?.find(file => file.name === `${command}.bin`);
@@ -231,21 +253,6 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             } else {
                 handleOutput('Scan failed: could not determine current network segment.');
             }
-        } else if (command === 'porthack') {
-            if (connectedIp === '127.0.0.1') {
-                newHistory.push({ type: 'output', content: 'porthack: cannot run on local machine.' });
-            } else {
-                const targetPC = getCurrentPc();
-                if (!targetPC) { // Should not happen if connected
-                    newHistory.push({ type: 'output', content: 'porthack: critical error, no target system.' });
-                } else if (targetPC.requiredPorts > 0) {
-                     newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required. Cannot breach security.` });
-                } else {
-                    newHistory.push({ type: 'output', content: `PortHack successful on ${targetPC.ip}. Firewall breached.` });
-                    newHistory.push({ type: 'output', content: `  Password cracked: ${targetPC.auth.pass}` });
-                    onHack(targetPC.id);
-                }
-            }
         } else {
              newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
         }
@@ -262,16 +269,16 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             const helpText = [
                 'Available commands:',
                 '  help           - Show this help message',
-                '  ls [path]      - List files and directories (local system only)',
-                '  cd <path>      - Change directory (local system only)',
-                '  cat <file>     - Display file content (local system only)',
+                '  ls [path]      - List files and directories',
+                '  cd <path>      - Change directory',
+                '  cat <file>     - Display file content',
                 '  echo <text>    - Display a line of text. Supports > and >> redirection.',
                 '  touch <file>   - Create an empty file (local system only)',
                 '  rm <file>      - Remove a file (local system only)',
                 '  nano <file>    - Open a simple text editor (local system only)',
                 '',
                 'Network commands:',
-                '  scan           - Scan the network for linked devices',
+                '  scan           - Scan the network for linked devices (requires auth)',
                 '  connect <ip>   - Connect to a remote system',
                 '  login <user> <pass> - Authenticate to a connected system',
                 '  porthack       - Attempts to crack the password of a connected system',
@@ -284,7 +291,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
         case 'ls': {
             if(!checkAuth()) break;
             if (connectedIp !== '127.0.0.1') {
-                 newHistory.push({ type: 'output', content: `ls: Remote file system not yet browsable.` });
+                 newHistory.push({ type: 'output', content: `(Simulated remote ls) \n/bin/ \n/log/` });
                  break;
             }
             const pathArg = args[0] || '.';
@@ -480,7 +487,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             }
             
             setConnectedIp(targetIp);
-            setIsAuthenticated(false);
+setIsAuthenticated(false);
             setCurrentDirectory([]);
             newHistory.push({ type: 'output', content: `Connection established to ${targetPC.name} (${targetPC.ip}).` });
             newHistory.push({ type: 'output', content: `Use 'login' to authenticate.` });
@@ -502,8 +509,9 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             }
             
             const targetPC = getCurrentPc();
-            if (targetPC && targetPC.auth.user === userArg && targetPC.auth.pass === passArg) {
+            if (targetPC && hackedPcs.has(targetPC.id) && targetPC.auth.user === userArg && targetPC.auth.pass === passArg) {
                 setIsAuthenticated(true);
+                setCurrentDirectory([]); // Reset to root of remote machine
                 newHistory.push({ type: 'output', content: 'Authentication successful.' });
             } else {
                 newHistory.push({ type: 'output', content: 'Authentication failed.' });
