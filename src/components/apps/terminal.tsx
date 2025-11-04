@@ -90,7 +90,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     let path = currentDirectory.join('/');
     if (connectedIp === '127.0.0.1' && currentDirectory.join('/').startsWith(`home/${username}`)) {
         path = '~' + path.substring(`home/${username}`.length);
-    } else if (currentDirectory.length === 0) {
+    } else if (currentDirectory.length === 0 || connectedIp !== '127.0.0.1') {
         path = '/';
     }
     
@@ -197,16 +197,16 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     const executable = localBinFolder?.children?.find(file => file.name === `${command}.bin`);
 
     if (executable) {
+        if (!checkAuth()) {
+            setHistory(newHistory); setInput(''); return;
+        }
+
         if (command === 'nano') {
-            if(!checkAuth()) {
-                setHistory(newHistory); setInput(''); return;
-            }
             const pathArg = args[0];
             if (!pathArg) {
                 newHistory.push({ type: 'output', content: `nano: missing file operand` });
             } else {
                 const filePath = resolvePath(pathArg);
-                // For simplicity, nano only works on the local filesystem for now
                 if (connectedIp !== '127.0.0.1') {
                     newHistory.push({ type: 'output', content: `nano: cannot edit files on remote systems yet.` });
                 } else {
@@ -231,6 +231,21 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             } else {
                 handleOutput('Scan failed: could not determine current network segment.');
             }
+        } else if (command === 'porthack') {
+            if (connectedIp === '127.0.0.1') {
+                newHistory.push({ type: 'output', content: 'porthack: cannot run on local machine.' });
+            } else {
+                const targetPC = getCurrentPc();
+                if (!targetPC) { // Should not happen if connected
+                    newHistory.push({ type: 'output', content: 'porthack: critical error, no target system.' });
+                } else if (targetPC.requiredPorts > 0) {
+                     newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required. Cannot breach security.` });
+                } else {
+                    newHistory.push({ type: 'output', content: `PortHack successful on ${targetPC.ip}. Firewall breached.` });
+                    newHistory.push({ type: 'output', content: `  Password cracked: ${targetPC.auth.pass}` });
+                    onHack(targetPC.id);
+                }
+            }
         } else {
              newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
         }
@@ -247,13 +262,15 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             const helpText = [
                 'Available commands:',
                 '  help           - Show this help message',
-                '  ls [path]      - List files and directories',
-                '  cd <path>      - Change directory',
-                '  cat <file>     - Display file content',
+                '  ls [path]      - List files and directories (local system only)',
+                '  cd <path>      - Change directory (local system only)',
+                '  cat <file>     - Display file content (local system only)',
                 '  echo <text>    - Display a line of text. Supports > and >> redirection.',
-                '  touch <file>   - Create an empty file',
-                '  rm <file>      - Remove a file',
-                '  nano <file>    - Open a simple text editor',
+                '  touch <file>   - Create an empty file (local system only)',
+                '  rm <file>      - Remove a file (local system only)',
+                '  nano <file>    - Open a simple text editor (local system only)',
+                '',
+                'Network commands:',
                 '  scan           - Scan the network for linked devices',
                 '  connect <ip>   - Connect to a remote system',
                 '  login <user> <pass> - Authenticate to a connected system',
@@ -266,8 +283,10 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
         }
         case 'ls': {
             if(!checkAuth()) break;
-            // For now, remote file system browsing shows local files.
-            // This can be expanded later.
+            if (connectedIp !== '127.0.0.1') {
+                 newHistory.push({ type: 'output', content: `ls: Remote file system not yet browsable.` });
+                 break;
+            }
             const pathArg = args[0] || '.';
             const targetPath = resolvePath(pathArg);
             
@@ -447,7 +466,6 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 break;
             }
 
-            const localPc = network.find(pc => pc.ip === '127.0.0.1');
             const targetPC = network.find(pc => pc.ip === targetIp);
             
             if (!targetPC) {
@@ -455,7 +473,6 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 break;
             }
             
-            // Check if target is linked to current PC
             const currentPc = getCurrentPc();
             if (!currentPc?.links?.includes(targetPC.id)) {
                  newHistory.push({ type: 'output', content: `connect: unable to resolve host ${targetIp}` });
@@ -464,7 +481,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             
             setConnectedIp(targetIp);
             setIsAuthenticated(false);
-            setCurrentDirectory([]); // Reset to root of new machine
+            setCurrentDirectory([]);
             newHistory.push({ type: 'output', content: `Connection established to ${targetPC.name} (${targetPC.ip}).` });
             newHistory.push({ type: 'output', content: `Use 'login' to authenticate.` });
             break;
@@ -490,25 +507,6 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 newHistory.push({ type: 'output', content: 'Authentication successful.' });
             } else {
                 newHistory.push({ type: 'output', content: 'Authentication failed.' });
-            }
-            break;
-        }
-        case 'porthack': {
-            if (connectedIp === '127.0.0.1') {
-                newHistory.push({ type: 'output', content: 'porthack: cannot run on local machine.' });
-                break;
-            }
-            const targetPC = getCurrentPc();
-            if (!targetPC) { // Should not happen if connected
-                newHistory.push({ type: 'output', content: 'porthack: critical error, no target system.' });
-                break;
-            }
-             if (targetPC.requiredPorts > 0) {
-                 newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required. Cannot breach security.` });
-            } else {
-                newHistory.push({ type: 'output', content: `PortHack successful on ${targetPC.ip}. Firewall breached.` });
-                newHistory.push({ type: 'output', content: `  Password cracked: ${targetPC.auth.pass}` });
-                onHack(targetPC.id);
             }
             break;
         }
@@ -632,5 +630,3 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     </div>
   );
 }
-
-    
