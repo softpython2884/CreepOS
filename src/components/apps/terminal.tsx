@@ -266,10 +266,8 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
         }
         case 'ls': {
             if(!checkAuth()) break;
-            if (connectedIp !== '127.0.0.1') {
-                 newHistory.push({ type: 'output', content: `ls: Remote file system not yet browsable.` });
-                 break;
-            }
+            // For now, remote file system browsing shows local files.
+            // This can be expanded later.
             const pathArg = args[0] || '.';
             const targetPath = resolvePath(pathArg);
             
