@@ -60,13 +60,14 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const personalizeFileSystem = (nodes: FileSystemNode[], user: string): FileSystemNode[] => {
+      return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, user));
+  };
+    
   useEffect(() => {
     const playerPc = network.find(p => p.id === 'player-pc');
     if (playerPc) {
-        const personalizeFileSystem = (nodes: FileSystemNode[]): FileSystemNode[] => {
-            return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, username));
-        };
-        setFileSystem(personalizeFileSystem(playerPc.fileSystem));
+        setFileSystem(personalizeFileSystem(playerPc.fileSystem, username));
     }
   }, [username]);
 
@@ -99,7 +100,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
     let path = currentDirectory.join('/');
     if (connectedIp === '127.0.0.1' && currentDirectory.join('/').startsWith(`home/${username}`)) {
         path = '~' + path.substring(`home/${username}`.length);
-    } else if (currentDirectory.length === 0 || (connectedIp !== '127.0.0.1' && !isAuthenticated)) {
+    } else if (path === '' || (connectedIp !== '127.0.0.1' && !isAuthenticated)) {
         path = '/';
     }
     
@@ -204,10 +205,6 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
         return true;
     }
 
-    // --- Dynamic Command Execution ---
-    const localBinFolder = network.find(p => p.id === 'player-pc')?.fileSystem.find(node => node.name === 'bin' && node.type === 'folder');
-    const executable = localBinFolder?.children?.find(file => file.name === `${command}.bin`);
-
     if (command === 'porthack') {
         if (connectedIp === '127.0.0.1') {
             newHistory.push({ type: 'output', content: 'porthack: cannot run on local machine.' });
@@ -229,6 +226,11 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
         setInput('');
         return;
     }
+
+    // --- Dynamic Command Execution ---
+    const playerPcFs = network.find(p => p.id === 'player-pc')?.fileSystem;
+    const localBinFolder = playerPcFs ? personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder') : undefined;
+    const executable = localBinFolder?.children?.find(file => file.name === `${command}.bin`);
 
     if (executable) {
         if (command === 'nano') {
@@ -292,7 +294,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 '  connect <ip>   - Connect to a remote system',
                 '  login <user> <pass> - Authenticate to a connected system',
                 '  porthack       - Attempts to crack the password of a connected system',
-                '  disconnect     - Disconnect from the current remote system',
+                '  disconnect / dc - Disconnect from the current remote system',
                 '  clear          - Clear the terminal screen',
             ].join('\n');
             newHistory.push({ type: 'output', content: helpText });
@@ -490,7 +492,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             
             setConnectedIp(targetIp);
             setIsAuthenticated(false);
-            setFileSystem(targetPC.fileSystem);
+            setFileSystem(personalizeFileSystem(targetPC.fileSystem, targetPC.auth.user));
             setCurrentDirectory([]);
             newHistory.push({ type: 'output', content: `Connection established to ${targetPC.name} (${targetPC.ip}).` });
             newHistory.push({ type: 'output', content: `Use 'login' to authenticate.` });
@@ -521,6 +523,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             }
             break;
         }
+        case 'dc':
         case 'disconnect': {
             if (connectedIp === '127.0.0.1') {
                 newHistory.push({ type: 'output', content: 'Cannot disconnect from local machine.' });
@@ -529,7 +532,9 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 const playerPc = network.find(p => p.id === 'player-pc');
                 setConnectedIp('127.0.0.1');
                 setIsAuthenticated(true);
-                setFileSystem(playerPc ? playerPc.fileSystem : []);
+                if (playerPc) {
+                    setFileSystem(personalizeFileSystem(playerPc.fileSystem, username));
+                }
                 setCurrentDirectory(['home', username]);
                 newHistory.push({ type: 'output', content: `Disconnected from ${previousHostName}.` });
             }
