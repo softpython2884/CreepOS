@@ -32,6 +32,7 @@ export interface PC {
     firewall: {
         enabled: boolean;
         complexity: number; // e.g., 1-10
+        solution?: string;
     };
     proxy: {
         enabled: boolean;

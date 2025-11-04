@@ -49,7 +49,8 @@
             "children": [
                 { "id": "file-scan", "name": "scan.bin", "type": "file", "content": "Network scanning utility", "isSystemFile": true },
                 { "id": "file-porthack", "name": "porthack.bin", "type": "file", "content": "Port cracking utility", "isSystemFile": true },
-                { "id": "file-nano", "name": "nano.bin", "type": "file", "content": "Text editor executable", "isSystemFile": true }
+                { "id": "file-nano", "name": "nano.bin", "type": "file", "content": "Text editor executable", "isSystemFile": true },
+                { "id": "file-fw-analyzer", "name": "FirewallAnalyzer.exe", "type": "file", "content": "Firewall analysis tool", "isSystemFile": true }
             ]
         },
         {

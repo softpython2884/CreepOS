@@ -6,7 +6,11 @@
     "type": "Desktop",
     "links": ["holberton-gateway"],
     "auth": { "user": "admin", "pass": "password123" },
-    "firewall": { "enabled": true, "complexity": 2 },
+    "firewall": { 
+        "enabled": true, 
+        "complexity": 2,
+        "solution": "PX55"
+    },
     "proxy": { "enabled": false, "level": 0 },
     "traceTime": 60,
     "requiredPorts": 1,

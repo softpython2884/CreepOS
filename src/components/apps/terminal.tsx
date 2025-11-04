@@ -52,10 +52,13 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
   const [input, setInput] = useState('');
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [currentDirectory, setCurrentDirectory] = useState(['home', username]);
-  const [connectedIp, setConnectedIp] = useState<string | null>('127.0.0.1');
+  
+  // Network and FS state
+  const [connectedIp, setConnectedIp] = useState<string>('127.0.0.1');
   const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [currentDirectory, setCurrentDirectory] = useState(['home', username]);
   const [fileSystem, setFileSystem] = useState<FileSystemNode[]>([]);
+  const [networkState, setNetworkState] = useState<PC[]>([]);
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -65,7 +68,9 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
   };
     
   useEffect(() => {
-    const playerPc = network.find(p => p.id === 'player-pc');
+    const initialNetworkState = JSON.parse(JSON.stringify(network)); // Deep copy
+    setNetworkState(initialNetworkState);
+    const playerPc = initialNetworkState.find((p: PC) => p.id === 'player-pc');
     if (playerPc) {
         setFileSystem(personalizeFileSystem(playerPc.fileSystem, username));
     }
@@ -83,7 +88,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
   }, []);
 
     const getCurrentPc = () => {
-        return network.find(pc => pc.ip === connectedIp);
+        return networkState.find(pc => pc.ip === connectedIp);
     }
 
   const getPrompt = () => {
@@ -100,7 +105,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
     let path = currentDirectory.join('/');
     if (connectedIp === '127.0.0.1' && currentDirectory.join('/').startsWith(`home/${username}`)) {
         path = '~' + path.substring(`home/${username}`.length);
-    } else if (path === '' || (connectedIp !== '127.0.0.1' && !isAuthenticated)) {
+    } else if (path === '' || !isAuthenticated) {
         path = '/';
     }
     
@@ -205,32 +210,34 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
         return true;
     }
 
-    if (command === 'porthack') {
+    // --- Special case for non-auth commands on remote systems ---
+    if (command.toLowerCase() === 'porthack') {
+        const targetPC = getCurrentPc();
         if (connectedIp === '127.0.0.1') {
             newHistory.push({ type: 'output', content: 'porthack: cannot run on local machine.' });
+        } else if (!targetPC) {
+            newHistory.push({ type: 'output', content: 'porthack: critical error, no target system.' });
+        } else if (hackedPcs.has(targetPC.id)) {
+            newHistory.push({ type: 'output', content: `porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}` });
+        } else if (targetPC.firewall.enabled) {
+            newHistory.push({ type: 'output', content: `ERROR: Active firewall detected. Connection terminated.`});
+        } else if (targetPC.requiredPorts > 0) {
+             newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required. Cannot breach security.` });
         } else {
-            const targetPC = getCurrentPc();
-            if (!targetPC) {
-                newHistory.push({ type: 'output', content: 'porthack: critical error, no target system.' });
-            } else if (hackedPcs.has(targetPC.id)) {
-                newHistory.push({ type: 'output', content: `porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}` });
-            } else if (targetPC.requiredPorts > 0) {
-                 newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required. Cannot breach security.` });
-            } else {
-                newHistory.push({ type: 'output', content: `PortHack successful on ${targetPC.ip}. Firewall breached.` });
-                newHistory.push({ type: 'output', content: `  Password cracked: ${targetPC.auth.pass}` });
-                onHack(targetPC.id);
-            }
+            newHistory.push({ type: 'output', content: `PortHack successful on ${targetPC.ip}. Firewall breached.` });
+            newHistory.push({ type: 'output', content: `  Password cracked: ${targetPC.auth.pass}` });
+            onHack(targetPC.id);
         }
         setHistory(newHistory);
         setInput('');
         return;
     }
 
-    // --- Dynamic Command Execution ---
-    const playerPcFs = network.find(p => p.id === 'player-pc')?.fileSystem;
+
+    // --- Dynamic Command Execution from local /bin ---
+    const playerPcFs = networkState.find(p => p.id === 'player-pc')?.fileSystem;
     const localBinFolder = playerPcFs ? personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder') : undefined;
-    const executable = localBinFolder?.children?.find(file => file.name === `${command}.bin`);
+    const executable = localBinFolder?.children?.find(file => file.name === `${command}.bin` || file.name === `${command}.exe`);
 
     if (executable) {
         if (command === 'nano') {
@@ -251,11 +258,11 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                     }
                 }
             }
-        } else if (command === 'scan') {
+        } else if (command.toLowerCase() === 'scan') {
             if (!checkAuth()) { setHistory(newHistory); setInput(''); return; }
-             const currentPc = getCurrentPc();
+            const currentPc = getCurrentPc();
             if (currentPc && currentPc.links) {
-                const linkedPcs = currentPc.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
+                const linkedPcs = currentPc.links.map(linkId => networkState.find(p => p.id === linkId)).filter(Boolean) as PC[];
                 if (linkedPcs.length > 0) {
                     const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
                     handleOutput(output);
@@ -264,6 +271,15 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 }
             } else {
                 handleOutput('Scan failed: could not determine current network segment.');
+            }
+        } else if (command.toLowerCase() === 'firewallanalyzer') {
+            const targetPC = getCurrentPc();
+            if (connectedIp === '127.0.0.1' || !targetPC) {
+                newHistory.push({ type: 'output', content: 'FirewallAnalyzer: Must be connected to a remote system.' });
+            } else if (!targetPC.firewall.enabled) {
+                newHistory.push({ type: 'output', content: 'Firewall is not active.' });
+            } else {
+                 newHistory.push({ type: 'output', content: `Analyzing firewall... Solution found: ${targetPC.firewall.solution}` });
             }
         } else {
              newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
@@ -281,20 +297,25 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             const helpText = [
                 'Available commands:',
                 '  help           - Show this help message',
-                '  ls [path]      - List files and directories',
-                '  cd <path>      - Change directory',
-                '  cat <file>     - Display file content',
+                '  ls [path]      - List files and directories (auth required)',
+                '  cd <path>      - Change directory (auth required)',
+                '  cat <file>     - Display file content (auth required)',
                 '  echo <text>    - Display a line of text. Supports > and >> redirection.',
                 '  touch <file>   - Create an empty file (local system only)',
                 '  rm <file>      - Remove a file (local system only)',
                 '  nano <file>    - Open a simple text editor (local system only)',
                 '',
                 'Network commands:',
-                '  scan           - Scan the network for linked devices (requires auth)',
                 '  connect <ip>   - Connect to a remote system',
+                '  disconnect / dc- Disconnect from the current remote system',
                 '  login <user> <pass> - Authenticate to a connected system',
+                '  scan           - Scan the network for linked devices (auth required)',
+                '',
+                'Hacking tools:',
                 '  porthack       - Attempts to crack the password of a connected system',
-                '  disconnect / dc - Disconnect from the current remote system',
+                '  FirewallAnalyzer - Analyzes an active firewall for its solution',
+                '  solve <solution> - Attempts to disable a firewall with a solution key',
+                '',
                 '  clear          - Clear the terminal screen',
             ].join('\n');
             newHistory.push({ type: 'output', content: helpText });
@@ -477,7 +498,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 break;
             }
 
-            const targetPC = network.find(pc => pc.ip === targetIp);
+            const targetPC = networkState.find(pc => pc.ip === targetIp);
             
             if (!targetPC) {
                 newHistory.push({ type: 'output', content: `connect: unable to resolve host ${targetIp}` });
@@ -529,7 +550,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 newHistory.push({ type: 'output', content: 'Cannot disconnect from local machine.' });
             } else {
                 const previousHostName = getCurrentPc()?.name;
-                const playerPc = network.find(p => p.id === 'player-pc');
+                const playerPc = networkState.find(p => p.id === 'player-pc');
                 setConnectedIp('127.0.0.1');
                 setIsAuthenticated(true);
                 if (playerPc) {
@@ -537,6 +558,22 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 }
                 setCurrentDirectory(['home', username]);
                 newHistory.push({ type: 'output', content: `Disconnected from ${previousHostName}.` });
+            }
+            break;
+        }
+        case 'solve': {
+            const solution = args[0];
+            const targetPC = getCurrentPc();
+            if (connectedIp === '127.0.0.1' || !targetPC) {
+                newHistory.push({ type: 'output', content: 'solve: Must be connected to a remote system.' });
+            } else if (!targetPC.firewall.enabled) {
+                newHistory.push({ type: 'output', content: 'Firewall is not active.' });
+            } else if (targetPC.firewall.solution === solution) {
+                targetPC.firewall.enabled = false;
+                setNetworkState([...networkState]); // Force re-render
+                newHistory.push({ type: 'output', content: 'Firewall disabled.' });
+            } else {
+                 newHistory.push({ type: 'output', content: 'Incorrect solution.' });
             }
             break;
         }
