@@ -282,7 +282,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                  newHistory.push({ type: 'output', content: `Analyzing firewall... Solution found: ${targetPC.firewall.solution}` });
             }
         } else if (command.toLowerCase() === 'probe') {
-             const targetPC = getCurrentPc();
+            const targetPC = getCurrentPc();
             if (connectedIp === '127.0.0.1' || !targetPC) {
                 newHistory.push({ type: 'output', content: 'probe: Must be connected to a remote system.' });
             } else {
@@ -292,6 +292,16 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                     `  Proxy: ${targetPC.proxy.enabled ? `ACTIVE (Level: ${targetPC.proxy.level})` : 'INACTIVE'}`,
                     `  Ports required for PortHack: ${targetPC.requiredPorts}`
                 ];
+
+                if (targetPC.ports.length > 0) {
+                    secInfo.push('\n  Available Ports:');
+                    targetPC.ports.forEach(p => {
+                        secInfo.push(`    - ${p.port} (${p.service}): ${p.isOpen ? 'OPEN' : 'CLOSED'}`);
+                    });
+                } else {
+                    secInfo.push('  No open ports detected.');
+                }
+
                 newHistory.push({ type: 'output', content: secInfo.join('\n') });
             }
         } else {
