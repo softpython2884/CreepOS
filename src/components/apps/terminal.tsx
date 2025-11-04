@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { network } from '@/lib/network';
-import { FileSystemNode, PC } from '@/lib/network/types';
+import { FileSystemNode, PC, Port } from '@/lib/network/types';
 
 interface HistoryItem {
   type: 'command' | 'output';
@@ -236,13 +236,34 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
     }
 
 
+    const handlePortHack = (portNumber: number, portName: string) => {
+        const targetPC = getCurrentPc();
+        if (connectedIp === '127.0.0.1' || !targetPC) {
+            newHistory.push({ type: 'output', content: `${portName}: Must be connected to a remote system.` });
+            return;
+        }
+        const port = targetPC.ports.find(p => p.port === portNumber);
+        if (!port) {
+            newHistory.push({ type: 'output', content: `${portName} failed: Port ${portNumber} not found on this system.` });
+            return;
+        }
+        if (port.isOpen) {
+            newHistory.push({ type: 'output', content: `Port ${portNumber} is already open.` });
+            return;
+        }
+        port.isOpen = true;
+        setNetworkState([...networkState]); // Force re-render
+        newHistory.push({ type: 'output', content: `${port.service} port (${portNumber}) is now open.` });
+    };
+
     // --- Dynamic Command Execution from local /bin ---
-    const playerPcFs = networkState.find(p => p.id === 'player-pc')?.fileSystem;
+    const playerPcFs = network.find(p => p.id === 'player-pc')?.fileSystem;
     const localBinFolder = playerPcFs ? personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder') : undefined;
     const executable = localBinFolder?.children?.find(file => file.name === `${command}.bin` || file.name === `${command}.exe`);
 
     if (executable) {
-        if (command.toLowerCase() === 'nano') {
+        const cmdName = command.toLowerCase();
+        if (cmdName === 'nano') {
             if (!checkAuth()) { setHistory(newHistory); setInput(''); return; }
             const pathArg = args[0];
             if (!pathArg) {
@@ -260,7 +281,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                     }
                 }
             }
-        } else if (command.toLowerCase() === 'scan') {
+        } else if (cmdName === 'scan') {
              if (!checkAuth()) { setHistory(newHistory); setInput(''); return; }
             const currentPc = getCurrentPc();
             if (currentPc && currentPc.links) {
@@ -274,7 +295,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             } else {
                 handleOutput('Scan failed: could not determine current network segment.');
             }
-        } else if (command.toLowerCase() === 'analyze') {
+        } else if (cmdName === 'analyze') {
             const targetPC = getCurrentPc();
             if (connectedIp === '127.0.0.1' || !targetPC) {
                 newHistory.push({ type: 'output', content: 'analyze: Must be connected to a remote system.' });
@@ -283,7 +304,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             } else {
                  newHistory.push({ type: 'output', content: `Analyzing firewall... Solution found: ${targetPC.firewall.solution}` });
             }
-        } else if (command.toLowerCase() === 'probe') {
+        } else if (cmdName === 'probe') {
             const targetPC = getCurrentPc();
             if (connectedIp === '127.0.0.1' || !targetPC) {
                 newHistory.push({ type: 'output', content: 'probe: Must be connected to a remote system.' });
@@ -306,7 +327,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
 
                 newHistory.push({ type: 'output', content: secInfo.join('\n') });
             }
-        } else if (command.toLowerCase() === 'overload') {
+        } else if (cmdName === 'overload') {
             const targetPC = getCurrentPc();
             if (connectedIp === '127.0.0.1' || !targetPC) {
                 newHistory.push({ type: 'output', content: 'overload: Must be connected to a remote system.' });
@@ -323,6 +344,14 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                     newHistory.push({ type: 'output', content: `Overload failed. Insufficient nodes. Required: ${requiredNodes}, Available: ${availableNodes}` });
                 }
             }
+        } else if (cmdName === 'ftpbounce') {
+            handlePortHack(21, 'FTPBounce');
+        } else if (cmdName === 'sshbounce') {
+            handlePortHack(22, 'SSHBounce');
+        } else if (cmdName === 'smtpoverflow') {
+            handlePortHack(25, 'SMTPOverflow');
+        } else if (cmdName === 'webserverworm') {
+            handlePortHack(80, 'WebServerWorm');
         } else {
              newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
         }
@@ -359,6 +388,10 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 '  solve <solution> - Attempts to disable a firewall with a solution key',
                 '  overload       - Attempts to disable a proxy by overloading it',
                 '  porthack       - Attempts to crack the password of a connected system',
+                '  FTPBounce      - Attempts to open port 21 (FTP)',
+                '  SSHBounce      - Attempts to open port 22 (SSH)',
+                '  SMTPOverflow   - Attempts to open port 25 (SMTP)',
+                '  WebServerWorm  - Attempts to open port 80 (HTTP)',
                 '',
                 '  clear          - Clear the terminal screen',
             ].join('\n');
@@ -513,7 +546,6 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             if (!fileNode) {
                 newHistory.push({ type: 'output', content: `rm: cannot remove '${fileArg}': No such file or directory` });
                 break;
-witness
             }
 
             if (fileNode.type === 'folder') {
@@ -538,9 +570,10 @@ witness
                 newHistory.push({ type: 'output', content: 'connect: missing target IP address' });
                 break;
             }
-            if (targetIp === connectedIp) {
-                newHistory.push({ type: 'output', content: `connect: already connected to ${targetIp}` });
-                break;
+            
+            const currentPc = getCurrentPc();
+            if (currentPc && currentPc.links && !currentPc.links.includes(networkState.find(p => p.ip === targetIp)?.id || '')) {
+                 // We allow connection even if not directly linked, so we can remove this check or relax it
             }
 
             const targetPC = networkState.find(pc => pc.ip === targetIp);
@@ -549,9 +582,13 @@ witness
                 newHistory.push({ type: 'output', content: `connect: unable to resolve host ${targetIp}` });
                 break;
             }
+             if (targetPC.ip === connectedIp) {
+                newHistory.push({ type: 'output', content: `connect: already connected to ${targetIp}` });
+                break;
+            }
             
             setConnectedIp(targetIp);
-setIsAuthenticated(false);
+            setIsAuthenticated(false);
             setFileSystem(personalizeFileSystem(targetPC.fileSystem, targetPC.auth.user));
             setCurrentDirectory([]);
             newHistory.push({ type: 'output', content: `Connection established to ${targetPC.name} (${targetPC.ip}).` });

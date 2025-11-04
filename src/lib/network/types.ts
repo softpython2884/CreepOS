@@ -1,6 +1,6 @@
 
 export type PC_Type = 'Desktop' | 'Laptop' | 'Server' | 'Mobile' | 'WebServer';
-export type PortType = 'HTTP' | 'FTP' | 'SSH' | 'SMTP' | 'UNKNOWN';
+export type PortType = 'HTTP' | 'FTP' | 'SSH' | 'SMTP' | 'UNKNOWN' | 'SQL';
 
 export interface Port {
     port: number;

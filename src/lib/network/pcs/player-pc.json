@@ -52,7 +52,11 @@
                 { "id": "file-porthack", "name": "porthack.bin", "type": "file", "content": "Port cracking utility", "isSystemFile": true },
                 { "id": "file-nano", "name": "nano.bin", "type": "file", "content": "Text editor executable", "isSystemFile": true },
                 { "id": "file-fw-analyzer", "name": "analyze.bin", "type": "file", "content": "Firewall analysis tool", "isSystemFile": true },
-                { "id": "file-overload", "name": "overload.bin", "type": "file", "content": "Proxy overload utility", "isSystemFile": true }
+                { "id": "file-overload", "name": "overload.bin", "type": "file", "content": "Proxy overload utility", "isSystemFile": true },
+                { "id": "file-ftpbounce", "name": "FTPBounce.bin", "type": "file", "content": "Port 21 (FTP) cracker.", "isSystemFile": true },
+                { "id": "file-sshbounce", "name": "SSHBounce.bin", "type": "file", "content": "Port 22 (SSH) cracker.", "isSystemFile": true },
+                { "id": "file-smtpoverflow", "name": "SMTPOverflow.bin", "type": "file", "content": "Port 25 (SMTP) cracker.", "isSystemFile": true },
+                { "id": "file-webserverworm", "name": "WebServerWorm.bin", "type": "file", "content": "Port 80 (HTTP) cracker.", "isSystemFile": true }
             ]
         },
         {
