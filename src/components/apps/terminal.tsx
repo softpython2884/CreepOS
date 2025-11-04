@@ -53,6 +53,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [currentDirectory, setCurrentDirectory] = useState(['home', username]);
+  const [connectedIp, setConnectedIp] = useState<string | null>('player-pc');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -68,6 +69,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
   }, []);
 
   const getPrompt = () => {
+    const currentHost = connectedIp ? (network.find(pc => pc.ip === connectedIp)?.name || connectedIp) : 'neo-system';
     const homeDir = `home/${username}`;
     let path = currentDirectory.join('/');
     if (path.startsWith(homeDir)) {
@@ -75,7 +77,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     } else if (path === '') {
         path = '/';
     }
-    return `${username}@neo-system:${path}$ `;
+    return `${username}@${currentHost}:${path}$ `;
   };
   
   const resolvePath = (pathArg: string): string[] => {
@@ -185,7 +187,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             }
         } else if (executable.id === 'file-exploit') {
             newHistory.push({ type: 'output', content: 'Exploit successful. Sub-system vulnerabilities detected.' });
-        } else if (executable.id === 'file-porthack') {
+        } else if (command === 'porthack') {
             const targetIp = args[0];
             if (!targetIp) {
                 newHistory.push({ type: 'output', content: 'porthack: missing target IP address' });
@@ -198,6 +200,19 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 } else {
                     newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required.` });
                 }
+            }
+        } else if (command === 'scan') {
+            const currentPc = network.find(pc => pc.ip === connectedIp || pc.id === connectedIp);
+            if (currentPc && currentPc.links) {
+                const linkedPcs = currentPc.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
+                if (linkedPcs.length > 0) {
+                    const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
+                    handleOutput(output);
+                } else {
+                    handleOutput('No linked devices found.');
+                }
+            } else {
+                handleOutput('Scan failed: could not determine current network segment.');
             }
         } else {
              newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
@@ -224,6 +239,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 '  mv <src> <dest> - Move or rename a file or directory',
                 '  rm <file>      - Remove a file',
                 '  nano <file>    - Open a simple text editor',
+                '  scan           - Scan the network for linked devices',
                 '  porthack <ip>  - Attempts to open all ports on a target system',
                 '  clear          - Clear the terminal screen',
             ].join('\n');
