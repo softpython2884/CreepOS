@@ -11,8 +11,10 @@ import { cn } from '@/lib/utils';
 import { SoundEvent, MusicEvent } from './audio-manager';
 import { initialFileSystem, type FileSystemNode } from './apps/content';
 import Draggable from 'react-draggable';
+import { PC, network } from '@/lib/network';
+import NetworkMap from './apps/network-map';
 
-export type AppId = 'terminal' | 'documents';
+export type AppId = 'terminal' | 'documents' | 'network';
 
 type AppConfig = {
   [key in AppId]: {
@@ -53,6 +55,11 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
   const [fileSystem, setFileSystem] = useState<FileSystemNode[]>([]);
   const [editingFile, setEditingFile] = useState<EditingFile>(null);
   const nanoRef = useRef(null);
+  const [hackedPcs, setHackedPcs] = useState<Set<string>>(new Set(['player-pc']));
+
+  const handleHackedPc = (pcId: string) => {
+    setHackedPcs(prev => new Set(prev).add(pcId));
+  }
 
   useEffect(() => {
     const personalizeFileSystem = (nodes: FileSystemNode[]): FileSystemNode[] => {
@@ -115,6 +122,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
             onSoundEvent: onSoundEvent,
             username: username,
             onOpenFileEditor: handleOpenFileEditor, // Pass the handler
+            onHack: handleHackedPc,
         } 
     },
     documents: { 
@@ -129,6 +137,16 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
             username: username,
         } 
     },
+    network: {
+        title: 'Network Map',
+        component: NetworkMap,
+        width: 800,
+        height: 600,
+        props: {
+            network: network,
+            hackedPcs: hackedPcs,
+        }
+    }
   };
 
   const openApp = useCallback((appId: AppId) => {
@@ -204,7 +222,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
           if (!currentAppConfig) return null;
           const AppComponent = currentAppConfig.component;
           
-          const props = { ...currentAppConfig.props, fileSystem, onFileSystemUpdate: setFileSystem };
+          const props = { ...currentAppConfig.props, fileSystem, onFileSystemUpdate: setFileSystem, hackedPcs };
           
           return (
               <Draggable
@@ -249,3 +267,5 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
     </main>
   );
 }
+
+    

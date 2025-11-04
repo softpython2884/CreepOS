@@ -18,6 +18,7 @@ interface TerminalProps {
     username: string;
     onSoundEvent?: (event: 'click') => void;
     onOpenFileEditor: (path: string[], content: string) => void;
+    onHack: (pcId: string) => void;
 }
 
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
@@ -44,7 +45,7 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
     return foundNode;
 };
 
-export default function Terminal({ fileSystem, onFileSystemUpdate, username, onSoundEvent, onOpenFileEditor }: TerminalProps) {
+export default function Terminal({ fileSystem, onFileSystemUpdate, username, onSoundEvent, onOpenFileEditor, onHack }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
     { type: 'output', content: "Type 'help' for a list of commands." }
@@ -53,7 +54,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [currentDirectory, setCurrentDirectory] = useState(['home', username]);
-  const [connectedIp, setConnectedIp] = useState<string | null>('player-pc');
+  const [connectedIp, setConnectedIp] = useState<string | null>('127.0.0.1');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -69,7 +70,9 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
   }, []);
 
   const getPrompt = () => {
-    const currentHost = connectedIp ? (network.find(pc => pc.ip === connectedIp)?.name || connectedIp) : 'neo-system';
+    const currentHost = network.find(pc => pc.ip === connectedIp)?.name || 'neo-system';
+    const currentUser = network.find(pc => pc.ip === connectedIp)?.auth.user || username;
+
     const homeDir = `home/${username}`;
     let path = currentDirectory.join('/');
     if (path.startsWith(homeDir)) {
@@ -77,7 +80,7 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     } else if (path === '') {
         path = '/';
     }
-    return `${username}@${currentHost}:${path}$ `;
+    return `${currentUser}@${currentHost}:${path}$ `;
   };
   
   const resolvePath = (pathArg: string): string[] => {
@@ -187,39 +190,12 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             }
         } else if (executable.id === 'file-exploit') {
             newHistory.push({ type: 'output', content: 'Exploit successful. Sub-system vulnerabilities detected.' });
-        } else if (command === 'porthack') {
-            const targetIp = args[0];
-            if (!targetIp) {
-                newHistory.push({ type: 'output', content: 'porthack: missing target IP address' });
-            } else {
-                const targetPC = network.find(pc => pc.ip === targetIp);
-                if (!targetPC) {
-                    newHistory.push({ type: 'output', content: `porthack: unable to resolve host ${targetIp}` });
-                } else if (targetPC.requiredPorts === 0) {
-                     newHistory.push({ type: 'output', content: `PortHack successful on ${targetIp}. All ports opened.` });
-                } else {
-                    newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required.` });
-                }
-            }
-        } else if (command === 'scan') {
-            const currentPc = network.find(pc => pc.ip === connectedIp || pc.id === connectedIp);
-            if (currentPc && currentPc.links) {
-                const linkedPcs = currentPc.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
-                if (linkedPcs.length > 0) {
-                    const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
-                    handleOutput(output);
-                } else {
-                    handleOutput('No linked devices found.');
-                }
-            } else {
-                handleOutput('Scan failed: could not determine current network segment.');
-            }
         } else {
              newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
         }
 
         setHistory(newHistory);
-        setInput('');
+setInput('');
         return;
     }
     // --- End Dynamic Command Execution ---
@@ -240,7 +216,9 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
                 '  rm <file>      - Remove a file',
                 '  nano <file>    - Open a simple text editor',
                 '  scan           - Scan the network for linked devices',
-                '  porthack <ip>  - Attempts to open all ports on a target system',
+                '  connect <ip> [password] - Connect to a remote system',
+                '  disconnect     - Disconnect from the current remote system',
+                '  porthack <ip>  - Attempts to crack the password of a target system',
                 '  clear          - Clear the terminal screen',
             ].join('\n');
             newHistory.push({ type: 'output', content: helpText });
@@ -495,6 +473,71 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
             onFileSystemUpdate(newFileSystem);
             break;
         }
+        case 'porthack': {
+            const targetIp = args[0];
+            if (!targetIp) {
+                newHistory.push({ type: 'output', content: 'porthack: missing target IP address' });
+            } else {
+                const targetPC = network.find(pc => pc.ip === targetIp);
+                if (!targetPC) {
+                    newHistory.push({ type: 'output', content: `porthack: unable to resolve host ${targetIp}` });
+                } else if (targetPC.requiredPorts > 0) {
+                     newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open ports required. Cannot breach security.` });
+                } else {
+                    newHistory.push({ type: 'output', content: `PortHack successful on ${targetIp}. Firewall breached. Password cracked.` });
+                    newHistory.push({ type: 'output', content: `  User: ${targetPC.auth.user}\n  Pass: ${targetPC.auth.pass}` });
+                    onHack(targetPC.id);
+                }
+            }
+            break;
+        }
+        case 'scan': {
+            const currentPc = network.find(pc => pc.ip === connectedIp);
+            if (currentPc && currentPc.links) {
+                const linkedPcs = currentPc.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
+                if (linkedPcs.length > 0) {
+                    const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
+                    handleOutput(output);
+                } else {
+                    handleOutput('No linked devices found.');
+                }
+            } else {
+                handleOutput('Scan failed: could not determine current network segment.');
+            }
+            break;
+        }
+        case 'connect': {
+            const targetIp = args[0];
+            const password = args[1];
+
+            if (!targetIp) {
+                newHistory.push({ type: 'output', content: 'connect: missing target IP address' });
+                break;
+            }
+            const targetPC = network.find(pc => pc.ip === targetIp);
+            if (!targetPC) {
+                newHistory.push({ type: 'output', content: `connect: unable to resolve host ${targetIp}` });
+                break;
+            }
+            // For now, let's assume if it's been porthacked, we can connect.
+            // A more complex system would check the password.
+            onHack(targetPC.id); //This is a little cheat to make sure it's "hacked"
+            
+            setConnectedIp(targetIp);
+            setCurrentDirectory([]); // Reset to root of new machine
+            newHistory.push({ type: 'output', content: `Connected to ${targetPC.name}.` });
+            break;
+        }
+        case 'disconnect': {
+            if (connectedIp === '127.0.0.1') {
+                newHistory.push({ type: 'output', content: 'Cannot disconnect from local machine.' });
+            } else {
+                setConnectedIp('127.0.0.1');
+                setCurrentDirectory(['home', username]);
+                newHistory.push({ type: 'output', content: 'Disconnected from remote host.' });
+            }
+            break;
+        }
         case 'clear': {
             setHistory([]);
             setInput('');
@@ -601,3 +644,5 @@ export default function Terminal({ fileSystem, onFileSystemUpdate, username, onS
     </div>
   );
 }
+
+    
