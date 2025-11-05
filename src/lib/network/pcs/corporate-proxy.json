@@ -19,6 +19,8 @@
     },
     "traceTime": 30,
     "requiredPorts": 0,
+    "traceability": 30,
+    "remoteLogs": [],
     "ports": [
         { "port": 8080, "service": "HTTP", "isOpen": false },
         { "port": 1080, "service": "UNKNOWN", "isOpen": false }
@@ -30,7 +32,8 @@
             "type": "folder",
             "children": [
                 { "id": "file-traffic", "name": "traffic.log", "type": "file", "content": "Traffic routed from 192.168.1.10 to external network." },
-                { "id": "file-security", "name": "security.log", "type": "file", "content": "ALERT: Unauthorized connection attempt detected from unknown source." }
+                { "id": "file-security", "name": "security.log", "type": "file", "content": "ALERT: Unauthorized connection attempt detected from unknown source." },
+                { "id": "file-access", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
             ]
         }
     ]

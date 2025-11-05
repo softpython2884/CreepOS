@@ -1,4 +1,5 @@
 
+
 {
     "id": "workstation-01",
     "name": "Workstation-01",
@@ -17,6 +18,8 @@
     "ports": [
         { "port": 22, "service": "SSH", "isOpen": false }
     ],
+    "traceability": 15,
+    "remoteLogs": [],
     "fileSystem": [
         {
             "id": "remote-docs",
@@ -24,6 +27,19 @@
             "type": "folder",
             "children": [
                 { "id": "file-project", "name": "project_alpha.txt", "type": "file", "content": "Project Alpha is a go. Funding secured. More details to follow." }
+            ]
+        },
+        {
+            "id": "remote-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+              {
+                "id": "remote-access-log",
+                "name": "access.log",
+                "type": "file",
+                "content": "Log initialized.\n"
+              }
             ]
         }
     ]

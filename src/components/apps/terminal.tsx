@@ -4,8 +4,8 @@
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { network } from '@/lib/network';
 import { FileSystemNode, PC, Port } from '@/lib/network/types';
+import { network as initialNetworkData } from '@/lib/network';
 
 interface HistoryItem {
   type: 'command' | 'output';
@@ -16,10 +16,13 @@ interface TerminalProps {
     username: string;
     onSoundEvent?: (event: 'click') => void;
     onOpenFileEditor: (path: string[], content: string) => void;
-    onHack: (pcId: string, ip: string) => void;
+    network: PC[];
+    setNetwork: (network: PC[]) => void;
     hackedPcs: Set<string>;
+    onHack: (pcId: string, ip: string) => void;
     onReboot: () => void;
     addLog: (message: string) => void;
+    onIncreaseDanger: (amount: number) => void;
 }
 
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
@@ -46,7 +49,7 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
     return foundNode;
 };
 
-export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onHack, hackedPcs, onReboot, addLog }: TerminalProps) {
+export default function Terminal({ username, onSoundEvent, onOpenFileEditor, network, setNetwork, hackedPcs, onHack, onReboot, addLog, onIncreaseDanger }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
     { type: 'output', content: "Type 'help' for a list of commands." }
@@ -60,7 +63,6 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [currentDirectory, setCurrentDirectory] = useState(['home', username]);
   const [fileSystem, setFileSystem] = useState<FileSystemNode[]>([]);
-  const [networkState, setNetworkState] = useState<PC[]>([]);
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -70,13 +72,11 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
   };
     
   useEffect(() => {
-    const initialNetworkState = JSON.parse(JSON.stringify(network)); // Deep copy
-    setNetworkState(initialNetworkState);
-    const playerPc = initialNetworkState.find((p: PC) => p.id === 'player-pc');
+    const playerPc = network.find((p: PC) => p.id === 'player-pc');
     if (playerPc) {
         setFileSystem(personalizeFileSystem(playerPc.fileSystem, username));
     }
-  }, [username]);
+  }, [username, network]);
 
 
   useEffect(() => {
@@ -90,7 +90,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
   }, []);
 
     const getCurrentPc = () => {
-        return networkState.find(pc => pc.ip === connectedIp);
+        return network.find(pc => pc.ip === connectedIp);
     }
 
   const getPrompt = () => {
@@ -134,6 +134,31 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
     return newPath;
   }
 
+  const addRemoteLog = (message: string) => {
+    if (connectedIp === '127.0.0.1') return; // Don't log on local machine this way
+
+    const timestamp = new Date().toUTCString();
+    const logEntry = `[${timestamp}] - ${message}`;
+
+    setNetwork(
+      network.map(pc => {
+        if (pc.ip === connectedIp) {
+          const newLogs = [...(pc.remoteLogs || []), logEntry];
+          
+          const newFileSystem = JSON.parse(JSON.stringify(pc.fileSystem));
+          const logFile = findNodeByPath(['logs', 'access.log'], newFileSystem);
+          if (logFile && logFile.type === 'file') {
+              logFile.content = (logFile.content || '') + logEntry + '\n';
+          }
+          
+          return { ...pc, remoteLogs: newLogs, fileSystem: newFileSystem };
+        }
+        return pc;
+      })
+    );
+  };
+
+
     const disconnect = (isCrash = false) => {
         const currentPc = getCurrentPc();
         if (!currentPc || connectedIp === '127.0.0.1') {
@@ -141,10 +166,14 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             return;
         }
 
+        if (currentPc.remoteLogs && currentPc.remoteLogs.length > 0 && currentPc.traceability) {
+          onIncreaseDanger(currentPc.traceability);
+        }
+
         const previousHostName = currentPc.name;
         const previousIp = currentPc.ip;
         
-        const playerPc = networkState.find(p => p.id === 'player-pc');
+        const playerPc = network.find(p => p.id === 'player-pc');
         setConnectedIp('127.0.0.1');
         setIsAuthenticated(true);
         if (playerPc) {
@@ -242,34 +271,41 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
     }
 
     const handlePortHack = (portNumber: number, portName: string) => {
-        const targetPC = getCurrentPc();
-        if (connectedIp === '127.0.0.1' || !targetPC) {
-            newHistory.push({ type: 'output', content: `${portName}: Must be connected to a remote system.` });
-            return;
+      const targetPC = getCurrentPc();
+      if (connectedIp === '127.0.0.1' || !targetPC) {
+        newHistory.push({ type: 'output', content: `${portName}: Must be connected to a remote system.` });
+        return;
+      }
+      if (targetPC.firewall.enabled) {
+        newHistory.push({ type: 'output', content: `${portName} failed: Active firewall detected.` });
+        addRemoteLog(`HACK: ${portName} failed. Reason: Firewall active.`);
+        return;
+      }
+      if (targetPC.proxy.enabled) {
+        newHistory.push({ type: 'output', content: `${portName} failed: Active proxy detected.` });
+        addRemoteLog(`HACK: ${portName} failed. Reason: Proxy active.`);
+        return;
+      }
+      const port = targetPC.ports.find(p => p.port === portNumber);
+      if (!port) {
+        newHistory.push({ type: 'output', content: `${portName} failed: Port ${portNumber} not found on this system.` });
+        return;
+      }
+      if (port.isOpen) {
+        newHistory.push({ type: 'output', content: `Port ${portNumber} is already open.` });
+        return;
+      }
+  
+      setNetwork(network.map(pc => {
+        if (pc.id === targetPC.id) {
+          const newPorts = pc.ports.map(p => p.port === portNumber ? { ...p, isOpen: true } : p);
+          return { ...pc, ports: newPorts };
         }
-        if (targetPC.firewall.enabled) {
-            newHistory.push({ type: 'output', content: `${portName} failed: Active firewall detected.` });
-            addLog(`HACK: ${portName} failed on ${targetPC.ip}. Reason: Firewall active.`);
-            return;
-        }
-        if (targetPC.proxy.enabled) {
-            newHistory.push({ type: 'output', content: `${portName} failed: Active proxy detected.` });
-            addLog(`HACK: ${portName} failed on ${targetPC.ip}. Reason: Proxy active.`);
-            return;
-        }
-        const port = targetPC.ports.find(p => p.port === portNumber);
-        if (!port) {
-            newHistory.push({ type: 'output', content: `${portName} failed: Port ${portNumber} not found on this system.` });
-            return;
-        }
-        if (port.isOpen) {
-            newHistory.push({ type: 'output', content: `Port ${portNumber} is already open.` });
-            return;
-        }
-        port.isOpen = true;
-        setNetworkState([...networkState]);
-        newHistory.push({ type: 'output', content: `${port.service} port (${portNumber}) is now open.` });
-        addLog(`HACK: Port ${portNumber} (${port.service}) opened on ${targetPC.ip}.`);
+        return pc;
+      }));
+  
+      newHistory.push({ type: 'output', content: `${port.service} port (${portNumber}) is now open.` });
+      addRemoteLog(`HACK: Port ${portNumber} (${port.service}) opened.`);
     };
 
     // --- Special cases for non-auth commands on remote systems ---
@@ -283,19 +319,20 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             newHistory.push({ type: 'output', content: `porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}` });
         } else if (targetPC.firewall.enabled) {
             newHistory.push({ type: 'output', content: `ERROR: Active firewall detected. Connection terminated.`});
-            addLog(`HACK: PortHack failed on ${targetPC.ip}. Reason: Firewall active.`);
+            addRemoteLog(`HACK: PortHack failed. Reason: Firewall active.`);
         } else if (targetPC.proxy.enabled) {
             newHistory.push({ type: 'output', content: `ERROR: Active proxy detected. Connection bounced.` });
-            addLog(`HACK: PortHack failed on ${targetPC.ip}. Reason: Proxy active.`);
+            addRemoteLog(`HACK: PortHack failed. Reason: Proxy active.`);
         } else {
             const openPorts = targetPC.ports.filter(p => p.isOpen).length;
             if (openPorts >= targetPC.requiredPorts) {
                 newHistory.push({ type: 'output', content: `PortHack successful on ${targetPC.ip}. Firewall breached.` });
                 newHistory.push({ type: 'output', content: `  Password cracked: ${targetPC.auth.pass}` });
+                addRemoteLog(`HACK: PortHack successful. Root access gained.`);
                 onHack(targetPC.id, targetPC.ip);
             } else {
                 newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open port(s) required. (${openPorts}/${targetPC.requiredPorts} open)` });
-                addLog(`HACK: PortHack failed on ${targetPC.ip}. Reason: Insufficient open ports.`);
+                addRemoteLog(`HACK: PortHack failed. Reason: Insufficient open ports.`);
             }
         }
         setHistory(newHistory);
@@ -305,13 +342,12 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
 
 
     // --- Dynamic Command Execution from local /bin ---
-    const playerPcFs = network.find(p => p.id === 'player-pc')?.fileSystem;
-    const localBinFolder = playerPcFs ? personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder') : undefined;
+    const localBinFolder = personalizeFileSystem(initialNetworkData.find(p => p.id === 'player-pc')!.fileSystem, username).find(node => node.name === 'bin' && node.type === 'folder');
     const allExecutables = localBinFolder?.children?.filter(f => f.type === 'file' && (f.name.endsWith('.bin') || f.name.endsWith('.exe'))) || [];
-    const executable = allExecutables.find(file => file.name === `${command}.bin` || file.name === `${command}.exe`);
+    const executable = allExecutables.find(file => file.name.startsWith(command.toLowerCase()) && (file.name.endsWith('.bin') || file.name.endsWith('.exe')));
 
     if (executable) {
-        const cmdName = command.toLowerCase();
+        const cmdName = executable.name.split('.')[0].toLowerCase();
         if (cmdName === 'nano') {
             if (!checkAuth()) { setHistory(newHistory); setInput(''); return; }
             const pathArg = args[0];
@@ -334,7 +370,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
              if (!checkAuth()) { setHistory(newHistory); setInput(''); return; }
             const currentPc = getCurrentPc();
             if (currentPc && currentPc.links) {
-                const linkedPcs = currentPc.links.map(linkId => networkState.find(p => p.id === linkId)).filter(Boolean) as PC[];
+                const linkedPcs = currentPc.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
                 if (linkedPcs.length > 0) {
                     const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
                     handleOutput(output);
@@ -352,7 +388,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 newHistory.push({ type: 'output', content: 'Firewall is not active.' });
             } else {
                  newHistory.push({ type: 'output', content: `Analyzing firewall... Solution found: ${targetPC.firewall.solution}` });
-                 addLog(`HACK: Firewall analysis on ${targetPC.ip} revealed solution: ${targetPC.firewall.solution}`);
+                 addRemoteLog(`HACK: Firewall analysis revealed solution: ${targetPC.firewall.solution}`);
             }
         } else if (cmdName === 'probe') {
             const targetPC = getCurrentPc();
@@ -387,13 +423,12 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 const requiredNodes = targetPC.proxy.level;
                 const availableNodes = hackedPcs.size;
                 if (availableNodes >= requiredNodes) {
-                    targetPC.proxy.enabled = false;
-                    setNetworkState([...networkState]); // Force re-render
+                    setNetwork(network.map(pc => pc.id === targetPC.id ? { ...pc, proxy: { ...pc.proxy, enabled: false } } : pc));
                     newHistory.push({ type: 'output', content: `Proxy disabled on ${targetPC.ip}.` });
-                    addLog(`HACK: Proxy on ${targetPC.ip} disabled via overload.`);
+                    addRemoteLog(`HACK: Proxy disabled via overload.`);
                 } else {
                     newHistory.push({ type: 'output', content: `Overload failed. Insufficient nodes. Required: ${requiredNodes}, Available: ${availableNodes}` });
-                    addLog(`HACK: Proxy overload failed on ${targetPC.ip}. Required ${requiredNodes} nodes, have ${availableNodes}.`);
+                    addRemoteLog(`HACK: Proxy overload failed. Required ${requiredNodes} nodes, have ${availableNodes}.`);
                 }
             }
         } else if (cmdName.toLowerCase() === 'ftpbounce') {
@@ -435,6 +470,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 '  touch <file>   - Create an empty file (local system only)',
                 '  rm <file>      - Remove a file (local system only)',
                 '  reboot         - Reboots the current system',
+                '  clearlogs      - Clears your activity logs on a remote system',
                 '',
                 'Network commands:',
                 '  connect <ip>   - Connect to a remote system',
@@ -631,7 +667,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 break;
             }
 
-            const targetPC = networkState.find(pc => pc.ip === targetIp);
+            const targetPC = network.find(pc => pc.ip === targetIp);
             
             if (!targetPC) {
                 newHistory.push({ type: 'output', content: `connect: unable to resolve host ${targetIp}` });
@@ -643,12 +679,12 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             }
             
             setConnectedIp(targetIp);
-setIsAuthenticated(false);
+            setIsAuthenticated(false);
             setFileSystem(personalizeFileSystem(targetPC.fileSystem, targetPC.auth.user));
             setCurrentDirectory([]);
             newHistory.push({ type: 'output', content: `Connection established to ${targetPC.name} (${targetPC.ip}).` });
             newHistory.push({ type: 'output', content: `Use 'login' to authenticate.` });
-            addLog(`NETWORK: Connection established to ${targetIp}.`);
+            addRemoteLog(`Connection established from unknown source.`);
             break;
         }
         case 'login': {
@@ -671,10 +707,10 @@ setIsAuthenticated(false);
                 setIsAuthenticated(true);
                 setCurrentDirectory([]);
                 newHistory.push({ type: 'output', content: 'Authentication successful.' });
-                addLog(`AUTH: Login successful on ${connectedIp} as user ${userArg}.`);
+                addRemoteLog(`AUTH: Login successful as user ${userArg}.`);
             } else {
                 newHistory.push({ type: 'output', content: 'Authentication failed.' });
-                addLog(`AUTH: Login failed on ${connectedIp} with user ${userArg}.`);
+                addRemoteLog(`AUTH: Failed login attempt with user ${userArg}.`);
             }
             break;
         }
@@ -690,7 +726,7 @@ setIsAuthenticated(false);
                  setTimeout(onReboot, 1000);
             } else {
                 newHistory.push({ type: 'output', content: `Rebooting remote system...` });
-                addLog(`COMMAND: Reboot initiated on remote system ${connectedIp}.`);
+                addRemoteLog(`COMMAND: Reboot initiated by user.`);
                 disconnect();
             }
             break;
@@ -703,14 +739,36 @@ setIsAuthenticated(false);
             } else if (!targetPC.firewall.enabled) {
                 newHistory.push({ type: 'output', content: 'Firewall is not active.' });
             } else if (targetPC.firewall.solution === solution) {
-                targetPC.firewall.enabled = false;
-                setNetworkState([...networkState]); // Force re-render
+                setNetwork(network.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
                 newHistory.push({ type: 'output', content: 'Firewall disabled.' });
-                addLog(`HACK: Firewall on ${targetPC.ip} disabled with solution: ${solution}.`);
+                addRemoteLog(`HACK: Firewall disabled with solution: ${solution}.`);
             } else {
                  newHistory.push({ type: 'output', content: 'Incorrect solution.' });
-                 addLog(`HACK: Incorrect firewall solution '${solution}' on ${targetPC.ip}.`);
+                 addRemoteLog(`HACK: Incorrect firewall solution '${solution}' attempt.`);
             }
+            break;
+        }
+        case 'clearlogs': {
+            if (connectedIp === '127.0.0.1') {
+                newHistory.push({ type: 'output', content: `clearlogs: cannot clear logs on local machine.` });
+                break;
+            }
+            if (!isAuthenticated) {
+                newHistory.push({ type: 'output', content: 'clearlogs: permission denied.' });
+                break;
+            }
+            setNetwork(network.map(pc => {
+                if (pc.ip === connectedIp) {
+                    const newFileSystem = JSON.parse(JSON.stringify(pc.fileSystem));
+                    const logFile = findNodeByPath(['logs', 'access.log'], newFileSystem);
+                    if (logFile && logFile.type === 'file') {
+                        logFile.content = `Log cleared by ${username} at ${new Date().toUTCString()}\n`;
+                    }
+                    return { ...pc, remoteLogs: [] };
+                }
+                return pc;
+            }));
+            newHistory.push({ type: 'output', content: 'Remote activity logs cleared.' });
             break;
         }
         case 'clear': {
@@ -738,7 +796,7 @@ setIsAuthenticated(false);
 
     // Command completion
     if (parts.length === 1) {
-        const playerPcFs = network.find(p => p.id === 'player-pc')?.fileSystem;
+        const playerPcFs = initialNetworkData.find(p => p.id === 'player-pc')?.fileSystem;
         const localBinFolder = playerPcFs ? personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder') : undefined;
         if (!localBinFolder?.children) return;
         
@@ -746,7 +804,7 @@ setIsAuthenticated(false);
             .filter(f => f.type === 'file' && (f.name.endsWith('.bin') || f.name.endsWith('.exe')))
             .map(f => f.name.split('.')[0]);
 
-        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot'];
+        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'clearlogs'];
         const allCommands = [...new Set([...mainCommands, ...executables])];
         const possibilities = allCommands.filter(cmd => cmd.startsWith(lastPart));
 
@@ -769,9 +827,9 @@ setIsAuthenticated(false);
     
     let currentLevel: FileSystemNode[] | undefined = fileSystem;
     for (const part of targetDir) {
-        const next = currentLevel?.find(n => n.name === part && n.type === 'folder');
-        currentLevel = next?.children;
         if (!currentLevel) break;
+        const next = currentLevel.find(n => n.name === part && n.type === 'folder');
+        currentLevel = next?.children;
     }
 
     if (!currentLevel) return;

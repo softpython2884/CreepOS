@@ -1,4 +1,5 @@
 
+
 export type PC_Type = 'Desktop' | 'Laptop' | 'Server' | 'Mobile' | 'WebServer';
 export type PortType = 'HTTP' | 'FTP' | 'SSH' | 'SMTP' | 'UNKNOWN' | 'SQL';
 
@@ -42,4 +43,7 @@ export interface PC {
     requiredPorts: number;
     ports: Port[];
     fileSystem: FileSystemNode[];
+    traceability?: number; // How much danger is added if logs are not cleared
+    remoteLogs?: string[]; // In-session logs left by the player
 }
+

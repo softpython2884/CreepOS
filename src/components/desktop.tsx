@@ -11,10 +11,12 @@ import { cn } from '@/lib/utils';
 import { SoundEvent, MusicEvent } from './audio-manager';
 import { type FileSystemNode } from '@/lib/network/types';
 import Draggable from 'react-draggable';
-import { network } from '@/lib/network';
+import { network as initialNetwork } from '@/lib/network';
 import { type PC } from '@/lib/network/types';
 import NetworkMap from './apps/network-map';
 import LiveLogs from './apps/live-logs';
+import { ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Progress } from './ui/progress';
 
 export type AppId = 'terminal' | 'documents' | 'network' | 'logs';
 
@@ -57,37 +59,18 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const [fileSystem, setFileSystem] = useState<FileSystemNode[]>([]);
   const [editingFile, setEditingFile] = useState<EditingFile>(null);
   const nanoRef = useRef(null);
+  const [network, setNetwork] = useState<PC[]>(() => JSON.parse(JSON.stringify(initialNetwork)));
   const [hackedPcs, setHackedPcs] = useState<Set<string>>(new Set(['player-pc']));
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
+  const [dangerLevel, setDangerLevel] = useState(0);
 
   const addLog = useCallback((message: string) => {
     const timestamp = new Date().toISOString();
     const formattedMessage = `${timestamp} - ${message}`;
     setLogs(prev => [...prev, formattedMessage]);
 
+    // This logic updates the local log file on the player's machine.
     setFileSystem(prevFs => {
-      const logFilePath = ['home', username, 'logs', 'activity.log'];
-      const updateFileSystem = (nodes: FileSystemNode[]): FileSystemNode[] => {
-          return nodes.map(node => {
-              if (node.type === 'folder' && node.children) {
-                  if (node.name === 'home' && node.children?.find(c => c.name === username)) {
-                     const userFolder = node.children.find(c => c.name === username);
-                     if (userFolder && userFolder.children) {
-                        const logsFolder = userFolder.children.find(c => c.name === 'logs');
-                        if (logsFolder && logsFolder.children) {
-                           const logFile = logsFolder.children.find(c => c.name === 'activity.log');
-                           if(logFile) {
-                            logFile.content = (logFile.content ? logFile.content + '\n' : '') + formattedMessage;
-                           }
-                        }
-                     }
-                  }
-                  return { ...node, children: updateFileSystem(node.children) };
-              }
-              return node;
-          });
-      };
-
       const recursiveUpdate = (nodes: FileSystemNode[], path: string[], newContent: string): FileSystemNode[] => {
         const [current, ...rest] = path;
         return nodes.map(node => {
@@ -112,6 +95,11 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setHackedPcs(prev => new Set(prev).add(pcId));
   }
 
+  const handleIncreaseDanger = (amount: number) => {
+    setDangerLevel(prev => Math.min(prev + amount, 100));
+    addLog(`DANGER: Trace level increased by ${amount}%`);
+  }
+
   useEffect(() => {
       const playerPc = network.find(p => p.id === 'player-pc');
       if (playerPc) {
@@ -120,7 +108,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         };
         setFileSystem(personalizeFileSystem(playerPc.fileSystem));
       }
-  }, [username]);
+  }, [username, network]);
 
   const handleOpenFileEditor = (path: string[], content: string) => {
     setEditingFile({ path, content });
@@ -131,9 +119,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         const parentPath = path.slice(0, -1);
         const fileName = path[path.length - 1];
 
-        const recursiveUpdate = (nodes: FileSystemNode[], currentPath: string[]): FileSystemNode[] => {
+        const recursiveUpdate = (nodes: FileSystemNode[], currentPath: string[]): FileSysteamNode[] => {
             if (currentPath.length === 0) {
-                // We are at the target directory
                 const fileExists = nodes.some(node => node.name === fileName);
                 if (fileExists) {
                     return nodes.map(node => 
@@ -175,10 +162,13 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             onSoundEvent: onSoundEvent,
             username: username,
             onOpenFileEditor: handleOpenFileEditor,
-            onHack: handleHackedPc,
+            network: network,
+            setNetwork: setNetwork,
             hackedPcs: hackedPcs,
+            onHack: handleHackedPc,
             onReboot: onReboot,
             addLog: addLog,
+            onIncreaseDanger: handleIncreaseDanger,
         } 
     },
     documents: { 
@@ -289,7 +279,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
           
           let props = { ...currentAppConfig.props };
           if (app.appId === 'terminal') {
-            props.addLog = addLog;
+            props.network = network;
+            props.setNetwork = setNetwork;
           }
           if (app.appId === 'logs') {
             props.logs = logs;
@@ -333,6 +324,16 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             </div>
         </Draggable>
       )}
+
+      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-64">
+        <div className='flex items-center gap-2 text-sm'>
+            {dangerLevel > 75 ? <ShieldAlert className="text-destructive" /> : <ShieldCheck className="text-muted-foreground" />} 
+            <span className={cn('text-muted-foreground', dangerLevel > 50 && 'text-amber-400', dangerLevel > 75 && 'text-destructive font-bold' )}>
+                Danger Level: {dangerLevel}%
+            </span>
+        </div>
+        <Progress value={dangerLevel} className="h-2 mt-1" indicatorClassName={cn(dangerLevel > 75 ? 'bg-destructive' : 'bg-accent')}/>
+      </div>
 
       <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} />
     </main>
