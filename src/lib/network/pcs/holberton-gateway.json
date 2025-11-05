@@ -34,6 +34,14 @@
             ]
         },
         {
+            "id": "folder-sys-holberton",
+            "name": "sys",
+            "type": "folder",
+            "children": [
+                { "id": "file-xserver-holberton", "name": "XserverOS.sys", "type": "file", "content": "SYSTEM KERNEL [ENCRYPTED]", "isSystemFile": true }
+            ]
+        },
+        {
             "id": "folder-bin",
             "name": "bin",
             "type": "folder",

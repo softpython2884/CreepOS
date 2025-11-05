@@ -197,7 +197,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
       }
 
       const logFile = findNodeByPath(['logs', 'access.log'], currentPc.fileSystem);
-      const hasLogs = logFile && logFile.content && logFile.content.includes(`[${new Date().getFullYear()}]`); // Simple check for logs
+      const hasLogs = logFile && logFile.content && (logFile.content.includes('successful') || logFile.content.includes('disabled') || logFile.content.includes('opened'));
 
       if (hasLogs && currentPc.traceability) {
         onIncreaseDanger(currentPc.traceability);
@@ -433,12 +433,17 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
         } else if (cmdName.toLowerCase() === 'webserverworm') {
             handlePortHack(80, 'WebServerWorm');
         } else if (cmdName.toLowerCase() === 'forkbomb') {
+            const targetPC = getCurrentPc();
             if (connectedIp === '127.0.0.1') {
                 newHistory.push({ type: 'output', content: 'SYSTEM CRASH IMMINENT. REBOOTING...' });
                 addLog(`CRITICAL: Forkbomb executed on local machine. System rebooting.`);
                 setTimeout(onReboot, 1000);
-            } else {
+            } else if (targetPC) {
                 addRemoteLog(`CRITICAL: Forkbomb executed by ${username}. System crashing.`);
+                
+                const newFileSystem = updateNodeByPath(targetPC.fileSystem, ['sys', 'XserverOS.sys'], (node) => ({ ...node, content: 'SYSTEM KERNEL CORRUPTED' }));
+                setNetwork(network.map(pc => pc.id === targetPC.id ? {...pc, fileSystem: newFileSystem} : pc));
+
                 disconnect(true);
             }
         }
@@ -614,20 +619,25 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
                 break;
             }
             
+            if (fileNode.name === 'XserverOS.sys') {
+                newHistory.push({ type: 'output', content: `rm: cannot remove '${fileArg}': Operation not permitted. This is a critical system file.` });
+                if (connectedIp !== '127.0.0.1') {
+                    addRemoteLog(`SECURITY: Denied attempt to remove critical system file XserverOS.sys by ${username}.`);
+                }
+                break;
+            }
+
             if (fileNode.isSystemFile) {
                 newHistory.push({ type: 'output', content: `rm: cannot remove '${fileArg}': Permission denied` });
                 break;
             }
             
             const isAccessLog = fileNode.name === 'access.log';
+            const updater = isAccessLog ? (node: FileSystemNode) => ({ ...node, content: `Log cleared by ${username} at ${new Date().toISOString()}\n` }) : () => null;
 
             setNetwork(prevNetwork => prevNetwork.map(pc => {
                 if (pc.ip === connectedIp) {
-                    const newFs = updateNodeByPath(pc.fileSystem, filePath, (node) => {
-                        // For access.log, we clear content. For others, we could delete.
-                        // For simplicity, let's just clear content for now.
-                        return { ...node, content: `Log cleared by ${username}` };
-                    });
+                    const newFs = updateNodeByPath(pc.fileSystem, filePath, updater);
                     return { ...pc, fileSystem: newFs };
                 }
                 return pc;
@@ -635,10 +645,12 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
 
             if(isAccessLog) {
                 newHistory.push({ type: 'output', content: `Cleared content of '${fileArg}'` });
-                addRemoteLog(`EVENT: Log file '${fileArg}' cleared by user ${username}.`);
+                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: Log file '${fileArg}' cleared by user ${username}.`);
+                addLog(`EVENT: Log file '${fileArg}' on ${connectedIp} cleared.`);
             } else {
                 newHistory.push({ type: 'output', content: `Removed '${fileArg}'` });
-                addRemoteLog(`EVENT: File removed by user ${username}: ${filePath.join('/')}`);
+                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: File removed by user ${username}: ${filePath.join('/')}`);
+                addLog(`EVENT: File '${fileArg}' on ${connectedIp} removed.`);
             }
 
             break;

@@ -48,7 +48,7 @@
             "name": "sys",
             "type": "folder",
             "children": [
-                { "id": "file-kernel", "name": "kernel.sim", "type": "file", "content": "SYSTEM KERNEL [ENCRYPTED]", "isSystemFile": true }
+                { "id": "file-xserver", "name": "XserverOS.sys", "type": "file", "content": "SYSTEM KERNEL [ENCRYPTED]", "isSystemFile": true }
             ]
         },
         {

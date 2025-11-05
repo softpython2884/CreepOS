@@ -30,6 +30,14 @@
             ]
         },
         {
+            "id": "remote-sys",
+            "name": "sys",
+            "type": "folder",
+            "children": [
+                { "id": "file-xserver-remote", "name": "XserverOS.sys", "type": "file", "content": "SYSTEM KERNEL [ENCRYPTED]", "isSystemFile": true }
+            ]
+        },
+        {
             "id": "remote-logs",
             "name": "logs",
             "type": "folder",
