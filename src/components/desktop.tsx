@@ -15,10 +15,11 @@ import { network as initialNetwork } from '@/lib/network';
 import { type PC } from '@/lib/network/types';
 import RemoteAccess from './apps/remote-access';
 import LiveLogs from './apps/live-logs';
+import NetworkMap from './apps/network-map';
 import { ShieldAlert, ShieldCheck } from 'lucide-react';
 import { Progress } from './ui/progress';
 
-export type AppId = 'terminal' | 'documents' | 'network' | 'logs';
+export type AppId = 'terminal' | 'documents' | 'network' | 'logs' | 'network-map';
 
 type AppConfig = {
   [key in AppId]: {
@@ -205,6 +206,16 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       props: {
         logs: logs,
       }
+    },
+    'network-map': {
+      title: 'Network Map',
+      component: NetworkMap,
+      width: 800,
+      height: 600,
+      props: {
+        network: network,
+        hackedPcs: hackedPcs
+      }
     }
   };
 
@@ -285,6 +296,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
           if (app.appId === 'terminal' || app.appId === 'network') {
             props.network = network;
             props.setNetwork = setNetwork;
+          }
+           if (app.appId === 'network-map') {
+            props.network = network;
           }
           if (app.appId === 'logs') {
             props.logs = logs;

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Terminal, Folder, Network, Share2 } from 'lucide-react';
+import { Terminal, Folder, Network, Share2, ShieldCheck } from 'lucide-react';
 import type { AppId } from '@/components/desktop';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -15,8 +15,9 @@ interface DockProps {
 const apps: { id: AppId; name: string; icon: JSX.Element }[] = [
   { id: 'terminal', name: 'Terminal', icon: <Terminal /> },
   { id: 'documents', name: 'Documents', icon: <Folder /> },
+  { id: 'network-map', name: 'Network Map', icon: <Network /> },
   { id: 'network', name: 'Remote Access', icon: <Share2 /> },
-  { id: 'logs', name: 'Live Logs', icon: <Network /> },
+  { id: 'logs', name: 'Live Logs', icon: <ShieldCheck /> },
 ];
 
 export default function Dock({ onAppClick, openApps, activeInstanceId }: DockProps) {
