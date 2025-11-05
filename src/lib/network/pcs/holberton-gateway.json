@@ -38,6 +38,19 @@
             "name": "bin",
             "type": "folder",
             "children": []
+        },
+        {
+            "id": "folder-backups",
+            "name": "backups",
+            "type": "folder",
+            "children": [
+                { 
+                    "id": "file-forum-log", 
+                    "name": "forum_musique_log.txt", 
+                    "type": "file", 
+                    "content": "=== Forum: #music-lovers - Sauvegarde du 18/07/2024 ===\n\n<user:Melomane_77> Salut tout le monde ! J'ai une idée pour un petit jeu. Je poste un extrait audio et vous devinez le morceau. Ça vous dit ?\n\n<user:GrooveMaster> Carrément partant ! J'suis imbattable à ça.\n\n<user:Lyric> Oh oui, bonne idée ! Ça va mettre de l'ambiance.\n\n<user:Melomane_77> Super ! Alors c'est parti, premier extrait. Facile pour commencer.\n<user:Melomane_77> LIEN: http://music.com/ISLJ25\n\n<user:GrooveMaster> C'est 'Comptine d'un autre été, l'après-midi' de Yann Tiersen. Classique.\n\n<user:Melomane_77> Exact ! Bien joué. On corse un peu les choses.\n<user:Melomane_77> LIEN: http://music.com/XK5Z90\n\n<user:Lyric> Hmm, plus dur... Les notes me disent quelque chose... C'est pas du Amélie Poulain ça encore ?\n\n<user:GrooveMaster> Non, rien à voir. C'est 'Time' de Hans Zimmer, la BO d'Inception. Indémodable.\n\n<user:Melomane_77> Bravo GrooveMaster, 2 sur 2 ! Allez, le dernier pour la route, pour les vrais connaisseurs.\n<user:Melomane_77> LIEN: http://music.com/QPOM33\n\n<user:Lyric> Alors là... aucune idée.\n\n<user:GrooveMaster> ...\n\n<user:GrooveMaster> C'est 'Gwyn, Lord of Cinder' de la BO de Dark Souls. Incroyable morceau.\n\n<user:Melomane_77> Impressionnant ! T'es vraiment trop fort. GG !"
+                }
+            ]
         }
     ]
 }
