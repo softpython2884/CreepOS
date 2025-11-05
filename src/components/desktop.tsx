@@ -13,13 +13,12 @@ import { type FileSystemNode } from '@/lib/network/types';
 import Draggable from 'react-draggable';
 import { network as initialNetwork } from '@/lib/network';
 import { type PC } from '@/lib/network/types';
-import RemoteAccess from './apps/remote-access';
 import LiveLogs from './apps/live-logs';
 import NetworkMap from './apps/network-map';
 import { ShieldAlert, ShieldCheck } from 'lucide-react';
 import { Progress } from './ui/progress';
 
-export type AppId = 'terminal' | 'documents' | 'network' | 'logs' | 'network-map';
+export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map';
 
 type AppConfig = {
   [key in AppId]: {
@@ -184,20 +183,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             username: username,
         } 
     },
-    network: {
-        title: 'Remote Access',
-        component: RemoteAccess,
-        width: 800,
-        height: 600,
-        props: {
-            network: network,
-            setNetwork: setNetwork,
-            hackedPcs: hackedPcs,
-            onHack: handleHackedPc,
-            addLog: addLog,
-            onSoundEvent,
-        }
-    },
     logs: {
       title: 'Live Logs',
       component: LiveLogs,
@@ -293,7 +278,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
           const AppComponent = currentAppConfig.component;
           
           let props = { ...currentAppConfig.props };
-          if (app.appId === 'terminal' || app.appId === 'network') {
+          if (app.appId === 'terminal') {
             props.network = network;
             props.setNetwork = setNetwork;
           }
@@ -357,3 +342,5 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     </main>
   );
 }
+
+    

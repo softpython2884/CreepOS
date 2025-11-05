@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, KeyboardEvent, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileSystemNode, PC, Port } from '@/lib/network/types';
@@ -97,16 +97,17 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const personalizeFileSystem = (nodes: FileSystemNode[], user: string): FileSystemNode[] => {
+  const personalizeFileSystem = useCallback((nodes: FileSystemNode[], user: string): FileSystemNode[] => {
       return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, user));
-  };
+  }, []);
     
   useEffect(() => {
     const playerPc = network.find((p: PC) => p.id === 'player-pc');
     if (playerPc) {
         setFileSystem(personalizeFileSystem(playerPc.fileSystem, username));
     }
-  }, [username, network]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
 
   useEffect(() => {
