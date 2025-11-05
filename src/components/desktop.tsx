@@ -14,8 +14,9 @@ import Draggable from 'react-draggable';
 import { network } from '@/lib/network';
 import { type PC } from '@/lib/network/types';
 import NetworkMap from './apps/network-map';
+import LiveLogs from './apps/live-logs';
 
-export type AppId = 'terminal' | 'documents' | 'network';
+export type AppId = 'terminal' | 'documents' | 'network' | 'logs';
 
 type AppConfig = {
   [key in AppId]: {
@@ -36,7 +37,6 @@ type OpenApp = {
   nodeRef: React.RefObject<HTMLDivElement>;
 };
 
-// New type for the file being edited
 type EditingFile = {
   path: string[];
   content: string;
@@ -58,8 +58,57 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const [editingFile, setEditingFile] = useState<EditingFile>(null);
   const nanoRef = useRef(null);
   const [hackedPcs, setHackedPcs] = useState<Set<string>>(new Set(['player-pc']));
+  const [logs, setLogs] = useState<string[]>(['System initialized.']);
 
-  const handleHackedPc = (pcId: string) => {
+  const addLog = useCallback((message: string) => {
+    const timestamp = new Date().toISOString();
+    const formattedMessage = `${timestamp} - ${message}`;
+    setLogs(prev => [...prev, formattedMessage]);
+
+    setFileSystem(prevFs => {
+      const logFilePath = ['home', username, 'logs', 'activity.log'];
+      const updateFileSystem = (nodes: FileSystemNode[]): FileSystemNode[] => {
+          return nodes.map(node => {
+              if (node.type === 'folder' && node.children) {
+                  if (node.name === 'home' && node.children?.find(c => c.name === username)) {
+                     const userFolder = node.children.find(c => c.name === username);
+                     if (userFolder && userFolder.children) {
+                        const logsFolder = userFolder.children.find(c => c.name === 'logs');
+                        if (logsFolder && logsFolder.children) {
+                           const logFile = logsFolder.children.find(c => c.name === 'activity.log');
+                           if(logFile) {
+                            logFile.content = (logFile.content ? logFile.content + '\n' : '') + formattedMessage;
+                           }
+                        }
+                     }
+                  }
+                  return { ...node, children: updateFileSystem(node.children) };
+              }
+              return node;
+          });
+      };
+
+      const recursiveUpdate = (nodes: FileSystemNode[], path: string[], newContent: string): FileSystemNode[] => {
+        const [current, ...rest] = path;
+        return nodes.map(node => {
+          if (node.name === current) {
+            if (rest.length === 0 && node.type === 'file') {
+              return { ...node, content: (node.content ? node.content + '\n' : '') + newContent };
+            }
+            if (node.type === 'folder' && node.children) {
+              return { ...node, children: recursiveUpdate(node.children, rest, newContent) };
+            }
+          }
+          return node;
+        });
+      };
+      const logPath = ['home', username, 'logs', 'activity.log'];
+      return recursiveUpdate(prevFs, logPath, formattedMessage);
+    });
+  }, [username]);
+
+  const handleHackedPc = (pcId: string, ip: string) => {
+    addLog(`SUCCESS: Root access gained on ${ip}`);
     setHackedPcs(prev => new Set(prev).add(pcId));
   }
 
@@ -78,6 +127,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   };
 
     const handleSaveFile = (path: string[], newContent: string) => {
+        addLog(`EVENT: File saved at /${path.join('/')}`);
         const parentPath = path.slice(0, -1);
         const fileName = path[path.length - 1];
 
@@ -128,6 +178,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             onHack: handleHackedPc,
             hackedPcs: hackedPcs,
             onReboot: onReboot,
+            addLog: addLog,
         } 
     },
     documents: { 
@@ -151,11 +202,19 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             network: network,
             hackedPcs: hackedPcs,
         }
+    },
+    logs: {
+      title: 'Live Logs',
+      component: LiveLogs,
+      width: 600,
+      height: 400,
+      props: {
+        logs: logs,
+      }
     }
   };
 
   const openApp = useCallback((appId: AppId) => {
-    // This check is now only for the DocumentFolder which depends on the local FS
     if (appId === 'documents' && fileSystem.length === 0) return;
 
     const instanceId = nextInstanceIdRef.current++;
@@ -229,8 +288,11 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
           const AppComponent = currentAppConfig.component;
           
           let props = { ...currentAppConfig.props };
-          if (app.appId !== 'terminal') {
-            props = { ...props, fileSystem: fileSystem, onFileSystemUpdate: setFileSystem, hackedPcs };
+          if (app.appId === 'terminal') {
+            props.addLog = addLog;
+          }
+          if (app.appId === 'logs') {
+            props.logs = logs;
           }
           
           return (

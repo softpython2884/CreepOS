@@ -16,9 +16,10 @@ interface TerminalProps {
     username: string;
     onSoundEvent?: (event: 'click') => void;
     onOpenFileEditor: (path: string[], content: string) => void;
-    onHack: (pcId: string) => void;
+    onHack: (pcId: string, ip: string) => void;
     hackedPcs: Set<string>;
     onReboot: () => void;
+    addLog: (message: string) => void;
 }
 
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
@@ -45,7 +46,7 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
     return foundNode;
 };
 
-export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onHack, hackedPcs, onReboot }: TerminalProps) {
+export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onHack, hackedPcs, onReboot, addLog }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
     { type: 'output', content: "Type 'help' for a list of commands." }
@@ -134,12 +135,15 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
   }
 
     const disconnect = (isCrash = false) => {
-        if (connectedIp === '127.0.0.1') {
+        const currentPc = getCurrentPc();
+        if (!currentPc || connectedIp === '127.0.0.1') {
             setHistory(prev => [...prev, { type: 'output', content: 'Cannot disconnect from local machine.' }]);
             return;
         }
 
-        const previousHostName = getCurrentPc()?.name;
+        const previousHostName = currentPc.name;
+        const previousIp = currentPc.ip;
+        
         const playerPc = networkState.find(p => p.id === 'player-pc');
         setConnectedIp('127.0.0.1');
         setIsAuthenticated(true);
@@ -147,10 +151,13 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             setFileSystem(personalizeFileSystem(playerPc.fileSystem, username));
         }
         setCurrentDirectory(['home', username]);
+
         if (isCrash) {
              setHistory(prev => [...prev, { type: 'output', content: `Connection to ${previousHostName} lost. Remote host crashed.` }]);
+             addLog(`EVENT: Connection to ${previousIp} lost due to remote crash.`);
         } else {
             setHistory(prev => [...prev, { type: 'output', content: `Disconnected from ${previousHostName}.` }]);
+            addLog(`EVENT: Disconnected from ${previousIp}.`);
         }
     }
 
@@ -162,6 +169,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
         return;
     };
 
+    addLog(`COMMAND: Executed '${fullCommand}' on ${connectedIp}`);
     setCommandHistory(prev => [fullCommand, ...prev]);
     setHistoryIndex(-1);
 
@@ -241,10 +249,12 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
         }
         if (targetPC.firewall.enabled) {
             newHistory.push({ type: 'output', content: `${portName} failed: Active firewall detected.` });
+            addLog(`HACK: ${portName} failed on ${targetPC.ip}. Reason: Firewall active.`);
             return;
         }
         if (targetPC.proxy.enabled) {
             newHistory.push({ type: 'output', content: `${portName} failed: Active proxy detected.` });
+            addLog(`HACK: ${portName} failed on ${targetPC.ip}. Reason: Proxy active.`);
             return;
         }
         const port = targetPC.ports.find(p => p.port === portNumber);
@@ -257,8 +267,9 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             return;
         }
         port.isOpen = true;
-        setNetworkState([...networkState]); // Force re-render
+        setNetworkState([...networkState]);
         newHistory.push({ type: 'output', content: `${port.service} port (${portNumber}) is now open.` });
+        addLog(`HACK: Port ${portNumber} (${port.service}) opened on ${targetPC.ip}.`);
     };
 
     // --- Special cases for non-auth commands on remote systems ---
@@ -272,16 +283,19 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             newHistory.push({ type: 'output', content: `porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}` });
         } else if (targetPC.firewall.enabled) {
             newHistory.push({ type: 'output', content: `ERROR: Active firewall detected. Connection terminated.`});
+            addLog(`HACK: PortHack failed on ${targetPC.ip}. Reason: Firewall active.`);
         } else if (targetPC.proxy.enabled) {
             newHistory.push({ type: 'output', content: `ERROR: Active proxy detected. Connection bounced.` });
+            addLog(`HACK: PortHack failed on ${targetPC.ip}. Reason: Proxy active.`);
         } else {
             const openPorts = targetPC.ports.filter(p => p.isOpen).length;
             if (openPorts >= targetPC.requiredPorts) {
                 newHistory.push({ type: 'output', content: `PortHack successful on ${targetPC.ip}. Firewall breached.` });
                 newHistory.push({ type: 'output', content: `  Password cracked: ${targetPC.auth.pass}` });
-                onHack(targetPC.id);
+                onHack(targetPC.id, targetPC.ip);
             } else {
                 newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open port(s) required. (${openPorts}/${targetPC.requiredPorts} open)` });
+                addLog(`HACK: PortHack failed on ${targetPC.ip}. Reason: Insufficient open ports.`);
             }
         }
         setHistory(newHistory);
@@ -338,6 +352,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 newHistory.push({ type: 'output', content: 'Firewall is not active.' });
             } else {
                  newHistory.push({ type: 'output', content: `Analyzing firewall... Solution found: ${targetPC.firewall.solution}` });
+                 addLog(`HACK: Firewall analysis on ${targetPC.ip} revealed solution: ${targetPC.firewall.solution}`);
             }
         } else if (cmdName === 'probe') {
             const targetPC = getCurrentPc();
@@ -359,7 +374,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 } else {
                     secInfo.push('  No scannable ports detected.');
                 }
-
+                addLog(`INFO: Probed system ${targetPC.ip}`);
                 newHistory.push({ type: 'output', content: secInfo.join('\n') });
             }
         } else if (cmdName === 'overload') {
@@ -375,8 +390,10 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                     targetPC.proxy.enabled = false;
                     setNetworkState([...networkState]); // Force re-render
                     newHistory.push({ type: 'output', content: `Proxy disabled on ${targetPC.ip}.` });
+                    addLog(`HACK: Proxy on ${targetPC.ip} disabled via overload.`);
                 } else {
                     newHistory.push({ type: 'output', content: `Overload failed. Insufficient nodes. Required: ${requiredNodes}, Available: ${availableNodes}` });
+                    addLog(`HACK: Proxy overload failed on ${targetPC.ip}. Required ${requiredNodes} nodes, have ${availableNodes}.`);
                 }
             }
         } else if (cmdName.toLowerCase() === 'ftpbounce') {
@@ -390,6 +407,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
         } else if (cmdName.toLowerCase() === 'forkbomb') {
             if (connectedIp === '127.0.0.1') {
                 newHistory.push({ type: 'output', content: 'SYSTEM CRASH IMMINENT. REBOOTING...' });
+                addLog(`CRITICAL: Forkbomb executed on local machine. System rebooting.`);
                 setTimeout(onReboot, 1000);
             } else {
                 disconnect(true);
@@ -566,6 +584,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
 
             const newFileSystem = recursiveUpdate(fileSystem, parentPath, (items) => [...items, newFile]);
             setFileSystem(newFileSystem);
+            addLog(`EVENT: File created at /${path.join('/')}/${newFileName}`);
             break;
         }
         case 'rm': {
@@ -601,6 +620,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             const parentPath = filePath.slice(0, -1);
             const newFileSystem = recursiveUpdate(fileSystem, parentPath, items => items.filter(item => item.id !== fileNode.id));
             setFileSystem(newFileSystem);
+            addLog(`EVENT: File removed: /${filePath.join('/')}`);
             break;
         }
         case 'connect': {
@@ -623,11 +643,12 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             }
             
             setConnectedIp(targetIp);
-            setIsAuthenticated(false);
+setIsAuthenticated(false);
             setFileSystem(personalizeFileSystem(targetPC.fileSystem, targetPC.auth.user));
             setCurrentDirectory([]);
             newHistory.push({ type: 'output', content: `Connection established to ${targetPC.name} (${targetPC.ip}).` });
             newHistory.push({ type: 'output', content: `Use 'login' to authenticate.` });
+            addLog(`NETWORK: Connection established to ${targetIp}.`);
             break;
         }
         case 'login': {
@@ -650,8 +671,10 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 setIsAuthenticated(true);
                 setCurrentDirectory([]);
                 newHistory.push({ type: 'output', content: 'Authentication successful.' });
+                addLog(`AUTH: Login successful on ${connectedIp} as user ${userArg}.`);
             } else {
                 newHistory.push({ type: 'output', content: 'Authentication failed.' });
+                addLog(`AUTH: Login failed on ${connectedIp} with user ${userArg}.`);
             }
             break;
         }
@@ -663,9 +686,11 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
         case 'reboot': {
             if (connectedIp === '127.0.0.1') {
                  newHistory.push({ type: 'output', content: 'System is going down for reboot NOW!' });
+                 addLog(`CRITICAL: Local system reboot initiated.`);
                  setTimeout(onReboot, 1000);
             } else {
                 newHistory.push({ type: 'output', content: `Rebooting remote system...` });
+                addLog(`COMMAND: Reboot initiated on remote system ${connectedIp}.`);
                 disconnect();
             }
             break;
@@ -681,8 +706,10 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 targetPC.firewall.enabled = false;
                 setNetworkState([...networkState]); // Force re-render
                 newHistory.push({ type: 'output', content: 'Firewall disabled.' });
+                addLog(`HACK: Firewall on ${targetPC.ip} disabled with solution: ${solution}.`);
             } else {
                  newHistory.push({ type: 'output', content: 'Incorrect solution.' });
+                 addLog(`HACK: Incorrect firewall solution '${solution}' on ${targetPC.ip}.`);
             }
             break;
         }

@@ -29,6 +29,14 @@
                             "children": [
                                 { "id": "file-notes", "name": "notes.txt", "type": "file", "content": "My personal notes..." }
                             ]
+                        },
+                        {
+                            "id": "folder-logs-user",
+                            "name": "logs",
+                            "type": "folder",
+                            "children": [
+                                { "id": "file-activity-log", "name": "activity.log", "type": "file", "content": "" }
+                            ]
                         }
                     ]
                 }
@@ -61,7 +69,7 @@
             ]
         },
         {
-            "id": "folder-logs",
+            "id": "folder-logs-root",
             "name": "logs",
             "type": "folder",
             "children": [
