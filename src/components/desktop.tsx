@@ -6,7 +6,7 @@ import Dock from '@/components/dock';
 import Window from '@/components/window';
 import Terminal from '@/components/apps/terminal';
 import DocumentFolder from '@/components/apps/document-folder';
-import TextEditor from '@/components/apps/text-editor';
+import TextEditor from '@/components/ui/text-editor';
 import { cn } from '@/lib/utils';
 import { SoundEvent, MusicEvent } from './audio-manager';
 import { type FileSystemNode } from '@/lib/network/types';
@@ -108,7 +108,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         };
         setFileSystem(personalizeFileSystem(playerPc.fileSystem));
       }
-  }, [username, network]);
+  }, [username]);
 
   const handleOpenFileEditor = (path: string[], content: string) => {
     setEditingFile({ path, content });
@@ -129,6 +129,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
                             : node
                     );
                 } else {
+                    addLog(`EVENT: File created at /${path.join('/')}`);
                     const newFile: FileSystemNode = {
                         id: `file-${Date.now()}`,
                         name: fileName,
@@ -143,6 +144,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             return nodes.map(node => 
                 (node.name === next && node.type === 'folder')
                     ? { ...node, children: recursiveUpdate(node.children || [], rest) }
+                    // @ts-ignore
                     : node
             );
         };
