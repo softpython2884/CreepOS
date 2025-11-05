@@ -251,6 +251,11 @@ export default function Home() {
         setMusicEvent('calm');
         setMachineState('desktop');
     }
+    
+    const handleReboot = () => {
+        setMusicEvent('none');
+        setMachineState('off');
+    }
 
     const renderState = () => {
         switch (machineState) {
@@ -277,7 +282,7 @@ export default function Home() {
                     </div>
                 );
             case 'desktop':
-                return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} username={username} />;
+                return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} username={username} onReboot={handleReboot} />;
             default:
                 return null;
         }

@@ -46,9 +46,10 @@ interface DesktopProps {
   onSoundEvent: (event: SoundEvent) => void;
   onMusicEvent: (event: MusicEvent) => void;
   username: string;
+  onReboot: () => void;
 }
 
-export default function Desktop({ onSoundEvent, onMusicEvent, username }: DesktopProps) {
+export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [nextZIndex, setNextZIndex] = useState(10);
@@ -126,6 +127,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username }: Deskto
             onOpenFileEditor: handleOpenFileEditor,
             onHack: handleHackedPc,
             hackedPcs: hackedPcs,
+            onReboot: onReboot,
         } 
     },
     documents: { 

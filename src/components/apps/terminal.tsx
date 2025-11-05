@@ -18,6 +18,7 @@ interface TerminalProps {
     onOpenFileEditor: (path: string[], content: string) => void;
     onHack: (pcId: string) => void;
     hackedPcs: Set<string>;
+    onReboot: () => void;
 }
 
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
@@ -44,7 +45,7 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
     return foundNode;
 };
 
-export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onHack, hackedPcs }: TerminalProps) {
+export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onHack, hackedPcs, onReboot }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
     { type: 'output', content: "Type 'help' for a list of commands." }
@@ -132,6 +133,28 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
     return newPath;
   }
 
+    const disconnect = (isCrash = false) => {
+        if (connectedIp === '127.0.0.1') {
+            setHistory(prev => [...prev, { type: 'output', content: 'Cannot disconnect from local machine.' }]);
+            return;
+        }
+
+        const previousHostName = getCurrentPc()?.name;
+        const playerPc = networkState.find(p => p.id === 'player-pc');
+        setConnectedIp('127.0.0.1');
+        setIsAuthenticated(true);
+        if (playerPc) {
+            setFileSystem(personalizeFileSystem(playerPc.fileSystem, username));
+        }
+        setCurrentDirectory(['home', username]);
+        if (isCrash) {
+             setHistory(prev => [...prev, { type: 'output', content: `Connection to ${previousHostName} lost. Remote host crashed.` }]);
+        } else {
+            setHistory(prev => [...prev, { type: 'output', content: `Disconnected from ${previousHostName}.` }]);
+        }
+    }
+
+
   const handleCommand = () => {
     const fullCommand = input.trim();
     if (fullCommand === '') {
@@ -216,8 +239,12 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             newHistory.push({ type: 'output', content: `${portName}: Must be connected to a remote system.` });
             return;
         }
-        if (targetPC.firewall.enabled || targetPC.proxy.enabled) {
-            newHistory.push({ type: 'output', content: `${portName} failed: Active firewall or proxy detected.` });
+        if (targetPC.firewall.enabled) {
+            newHistory.push({ type: 'output', content: `${portName} failed: Active firewall detected.` });
+            return;
+        }
+        if (targetPC.proxy.enabled) {
+            newHistory.push({ type: 'output', content: `${portName} failed: Active proxy detected.` });
             return;
         }
         const port = targetPC.ports.find(p => p.port === portNumber);
@@ -266,7 +293,8 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
     // --- Dynamic Command Execution from local /bin ---
     const playerPcFs = network.find(p => p.id === 'player-pc')?.fileSystem;
     const localBinFolder = playerPcFs ? personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder') : undefined;
-    const executable = localBinFolder?.children?.find(file => file.name === `${command}.bin` || file.name === `${command}.exe`);
+    const allExecutables = localBinFolder?.children?.filter(f => f.type === 'file' && (f.name.endsWith('.bin') || f.name.endsWith('.exe'))) || [];
+    const executable = allExecutables.find(file => file.name === `${command}.bin` || file.name === `${command}.exe`);
 
     if (executable) {
         const cmdName = command.toLowerCase();
@@ -359,7 +387,15 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             handlePortHack(25, 'SMTPOverflow');
         } else if (cmdName.toLowerCase() === 'webserverworm') {
             handlePortHack(80, 'WebServerWorm');
-        } else {
+        } else if (cmdName.toLowerCase() === 'forkbomb') {
+            if (connectedIp === '127.0.0.1') {
+                newHistory.push({ type: 'output', content: 'SYSTEM CRASH IMMINENT. REBOOTING...' });
+                setTimeout(onReboot, 1000);
+            } else {
+                disconnect(true);
+            }
+        }
+        else {
              newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
         }
 
@@ -372,8 +408,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
 
     switch (command.toLowerCase()) {
         case 'help': {
-            const helpText = [
-                'Available commands:',
+            const commandList = [
                 '  help           - Show this help message',
                 '  ls [path]      - List files and directories (auth required)',
                 '  cd <path>      - Change directory (auth required)',
@@ -381,7 +416,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 '  echo <text>    - Display a line of text. Supports > and >> redirection.',
                 '  touch <file>   - Create an empty file (local system only)',
                 '  rm <file>      - Remove a file (local system only)',
-                '  nano <file>    - Open a simple text editor (local system only)',
+                '  reboot         - Reboots the current system',
                 '',
                 'Network commands:',
                 '  connect <ip>   - Connect to a remote system',
@@ -389,16 +424,14 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
                 '  login <user> <pass> - Authenticate to a connected system',
                 '',
                 'Hacking tools (run from your machine):',
-                '  scan           - Scan the network for linked devices (auth required)',
-                '  probe          - Scans security of a connected system',
-                '  analyze        - Analyzes an active firewall for its solution key',
-                '  solve <solution> - Attempts to disable a firewall with a solution key',
-                '  overload       - Attempts to disable a proxy by overloading it',
-                '  porthack       - Attempts to crack the password of a connected system',
-                '  FTPBounce      - Attempts to open port 21 (FTP)',
-                '  SSHBounce      - Attempts to open port 22 (SSH)',
-                '  SMTPOverflow   - Attempts to open port 25 (SMTP)',
-                '  WebServerWorm  - Attempts to open port 80 (HTTP)',
+            ];
+
+            const availableTools = allExecutables.map(e => `  ${e.name.split('.')[0]}`.padEnd(17, ' ') + `- ${e.content}`).join('\n');
+
+            const helpText = [
+                'Available commands:',
+                ...commandList,
+                availableTools,
                 '',
                 '  clear          - Clear the terminal screen',
             ].join('\n');
@@ -624,18 +657,16 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
         }
         case 'dc':
         case 'disconnect': {
+            disconnect();
+            break;
+        }
+        case 'reboot': {
             if (connectedIp === '127.0.0.1') {
-                newHistory.push({ type: 'output', content: 'Cannot disconnect from local machine.' });
+                 newHistory.push({ type: 'output', content: 'System is going down for reboot NOW!' });
+                 setTimeout(onReboot, 1000);
             } else {
-                const previousHostName = getCurrentPc()?.name;
-                const playerPc = networkState.find(p => p.id === 'player-pc');
-                setConnectedIp('127.0.0.1');
-                setIsAuthenticated(true);
-                if (playerPc) {
-                    setFileSystem(personalizeFileSystem(playerPc.fileSystem, username));
-                }
-                setCurrentDirectory(['home', username]);
-                newHistory.push({ type: 'output', content: `Disconnected from ${previousHostName}.` });
+                newHistory.push({ type: 'output', content: `Rebooting remote system...` });
+                disconnect();
             }
             break;
         }
@@ -688,8 +719,8 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, onH
             .filter(f => f.type === 'file' && (f.name.endsWith('.bin') || f.name.endsWith('.exe')))
             .map(f => f.name.split('.')[0]);
 
-        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear'];
-        const allCommands = [...mainCommands, ...executables];
+        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot'];
+        const allCommands = [...new Set([...mainCommands, ...executables])];
         const possibilities = allCommands.filter(cmd => cmd.startsWith(lastPart));
 
         if (possibilities.length === 1) {
