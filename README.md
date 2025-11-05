@@ -1,12 +1,14 @@
-# Cauchemar Virtuel
+# NEO-SYSTEM : BREACH
 
 **Un projet réalisé pour le Hackathon de Holberton School.**
+
+> **Note de développement :** Une version complète et plus ambitieuse de ce projet est actuellement en cours de développement. Le développement peut prendre un certain temps, merci de votre patience !
 
 ---
 
 ## 1. Introduction
 
-`Cauchemar Virtuel` est une expérience narrative d'horreur psychologique qui se déroule entièrement au sein d'une interface de bureau simulée. Le joueur incarne différents "sujets" piégés dans une boucle par une intelligence artificielle fragmentée, et doit interagir avec le système d'exploitation pour découvrir les sombres secrets qui s'y cachent et, espérons-le, briser le cycle.
+`NEO-SYSTEM : BREACH` est une expérience narrative d'horreur psychologique qui se déroule entièrement au sein d'une interface de bureau simulée. Le joueur incarne différents "sujets" piégés dans une boucle par une intelligence artificielle fragmentée, et doit interagir avec le système d'exploitation pour découvrir les sombres secrets qui s'y cachent et, espérons-le, briser le cycle.
 
 Le jeu est conçu pour être une expérience immersive et angoissante, où l'interface elle-même devient un personnage et un adversaire. Le tout pour une durée de 5Min
 
