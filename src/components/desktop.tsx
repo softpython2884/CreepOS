@@ -13,7 +13,7 @@ import { type FileSystemNode } from '@/lib/network/types';
 import Draggable from 'react-draggable';
 import { network as initialNetwork } from '@/lib/network';
 import { type PC } from '@/lib/network/types';
-import NetworkMap from './apps/network-map';
+import RemoteAccess from './apps/remote-access';
 import LiveLogs from './apps/live-logs';
 import { ShieldAlert, ShieldCheck } from 'lucide-react';
 import { Progress } from './ui/progress';
@@ -119,7 +119,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         const parentPath = path.slice(0, -1);
         const fileName = path[path.length - 1];
 
-        const recursiveUpdate = (nodes: FileSystemNode[], currentPath: string[]): FileSysteamNode[] => {
+        const recursiveUpdate = (nodes: FileSystemNode[], currentPath: string[]): FileSystemNode[] => {
             if (currentPath.length === 0) {
                 const fileExists = nodes.some(node => node.name === fileName);
                 if (fileExists) {
@@ -184,13 +184,17 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         } 
     },
     network: {
-        title: 'Network Map',
-        component: NetworkMap,
+        title: 'Remote Access',
+        component: RemoteAccess,
         width: 800,
         height: 600,
         props: {
             network: network,
+            setNetwork: setNetwork,
             hackedPcs: hackedPcs,
+            onHack: handleHackedPc,
+            addLog: addLog,
+            onSoundEvent,
         }
     },
     logs: {
@@ -278,7 +282,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
           const AppComponent = currentAppConfig.component;
           
           let props = { ...currentAppConfig.props };
-          if (app.appId === 'terminal') {
+          if (app.appId === 'terminal' || app.appId === 'network') {
             props.network = network;
             props.setNetwork = setNetwork;
           }
