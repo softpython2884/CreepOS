@@ -49,6 +49,36 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
     return foundNode;
 };
 
+const updateNodeByPath = (nodes: FileSystemNode[], path: string[], updater: (node: FileSystemNode) => FileSystemNode | null): FileSystemNode[] => {
+    const parentPath = path.slice(0, -1);
+    const nodeName = path[path.length - 1];
+
+    if (parentPath.length === 0) {
+        const nodeIndex = nodes.findIndex(n => n.name === nodeName);
+        if (nodeIndex !== -1) {
+            const updatedNode = updater(nodes[nodeIndex]);
+            if (updatedNode === null) {
+                return nodes.filter((_, index) => index !== nodeIndex);
+            }
+            const newNodes = [...nodes];
+            newNodes[nodeIndex] = updatedNode;
+            return newNodes;
+        }
+        return nodes;
+    }
+    
+    return nodes.map(node => {
+        if (node.name === parentPath[0] && node.type === 'folder' && node.children) {
+            return {
+                ...node,
+                children: updateNodeByPath(node.children, path.slice(1), updater),
+            };
+        }
+        return node;
+    });
+};
+
+
 export default function Terminal({ username, onSoundEvent, onOpenFileEditor, network, setNetwork, hackedPcs, onHack, onReboot, addLog, onIncreaseDanger }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
@@ -143,15 +173,13 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
     setNetwork(
       network.map(pc => {
         if (pc.ip === connectedIp) {
-          const newLogs = [...(pc.remoteLogs || []), logEntry];
-          
           const newFileSystem = JSON.parse(JSON.stringify(pc.fileSystem));
           const logFile = findNodeByPath(['logs', 'access.log'], newFileSystem);
           if (logFile && logFile.type === 'file') {
               logFile.content = (logFile.content || '') + logEntry + '\n';
           }
           
-          return { ...pc, remoteLogs: newLogs, fileSystem: newFileSystem };
+          return { ...pc, fileSystem: newFileSystem, remoteLogs: [...(pc.remoteLogs || []), logEntry] };
         }
         return pc;
       })
@@ -166,7 +194,10 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             return;
         }
 
-        if (currentPc.remoteLogs && currentPc.remoteLogs.length > 0 && currentPc.traceability) {
+        const logFile = findNodeByPath(['logs', 'access.log'], currentPc.fileSystem);
+        const hasLogs = logFile && logFile.content && !logFile.content.includes("Log cleared");
+
+        if (hasLogs && currentPc.traceability) {
           onIncreaseDanger(currentPc.traceability);
         }
 
@@ -468,9 +499,8 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
                 '  cat <file>     - Display file content (auth required)',
                 '  echo <text>    - Display a line of text. Supports > and >> redirection.',
                 '  touch <file>   - Create an empty file (local system only)',
-                '  rm <file>      - Remove a file (local system only)',
+                '  rm <file>      - Remove a file (auth required)',
                 '  reboot         - Reboots the current system',
-                '  clearlogs      - Clears your activity logs on a remote system',
                 '',
                 'Network commands:',
                 '  connect <ip>   - Connect to a remote system',
@@ -625,10 +655,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
         }
         case 'rm': {
             if(!checkAuth()) break;
-            if (connectedIp !== '127.0.0.1') {
-                 newHistory.push({ type: 'output', content: `rm: cannot remove files on remote systems.` });
-                 break;
-            }
+            
             const fileArg = args[0];
             if (!fileArg) {
                 newHistory.push({ type: 'output', content: 'rm: missing operand' });
@@ -652,11 +679,28 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
                 newHistory.push({ type: 'output', content: `rm: cannot remove '${fileArg}': Permission denied` });
                 break;
             }
-            
-            const parentPath = filePath.slice(0, -1);
-            const newFileSystem = recursiveUpdate(fileSystem, parentPath, items => items.filter(item => item.id !== fileNode.id));
-            setFileSystem(newFileSystem);
-            addLog(`EVENT: File removed: /${filePath.join('/')}`);
+
+            if (connectedIp === '127.0.0.1') {
+                const parentPath = filePath.slice(0, -1);
+                const newFileSystem = recursiveUpdate(fileSystem, parentPath, items => items.filter(item => item.id !== fileNode.id));
+                setFileSystem(newFileSystem);
+                addLog(`EVENT: File removed: /${filePath.join('/')}`);
+            } else {
+                 setNetwork(network.map(pc => {
+                    if (pc.ip === connectedIp) {
+                        const newFs = updateNodeByPath(pc.fileSystem, filePath, () => null);
+                        return { ...pc, fileSystem: newFs };
+                    }
+                    return pc;
+                }));
+                // Also update local view
+                const parentPath = filePath.slice(0, -1);
+                const newLocalFileSystem = recursiveUpdate(fileSystem, parentPath, items => items.filter(item => item.id !== fileNode.id));
+                setFileSystem(newLocalFileSystem);
+                
+                newHistory.push({ type: 'output', content: `Removed '${fileArg}'` });
+                addRemoteLog(`EVENT: File removed by user ${username}: ${filePath.join('/')}`);
+            }
             break;
         }
         case 'connect': {
@@ -748,29 +792,6 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             }
             break;
         }
-        case 'clearlogs': {
-            if (connectedIp === '127.0.0.1') {
-                newHistory.push({ type: 'output', content: `clearlogs: cannot clear logs on local machine.` });
-                break;
-            }
-            if (!isAuthenticated) {
-                newHistory.push({ type: 'output', content: 'clearlogs: permission denied.' });
-                break;
-            }
-            setNetwork(network.map(pc => {
-                if (pc.ip === connectedIp) {
-                    const newFileSystem = JSON.parse(JSON.stringify(pc.fileSystem));
-                    const logFile = findNodeByPath(['logs', 'access.log'], newFileSystem);
-                    if (logFile && logFile.type === 'file') {
-                        logFile.content = `Log cleared by ${username} at ${new Date().toUTCString()}\n`;
-                    }
-                    return { ...pc, remoteLogs: [] };
-                }
-                return pc;
-            }));
-            newHistory.push({ type: 'output', content: 'Remote activity logs cleared.' });
-            break;
-        }
         case 'clear': {
             setHistory([]);
             setInput('');
@@ -804,7 +825,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             .filter(f => f.type === 'file' && (f.name.endsWith('.bin') || f.name.endsWith('.exe')))
             .map(f => f.name.split('.')[0]);
 
-        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'clearlogs'];
+        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot'];
         const allCommands = [...new Set([...mainCommands, ...executables])];
         const possibilities = allCommands.filter(cmd => cmd.startsWith(lastPart));
 
@@ -905,3 +926,5 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
     </div>
   );
 }
+
+    
