@@ -57,7 +57,7 @@ export default function RemoteAccess({ network, setNetwork, hackedPcs, onHack, a
         }
     };
 
-    const handleAction = (action: 'disableFirewall' | 'disableProxy' | 'clearLogs') => {
+    const handleAction = (action: 'clearLogs') => {
         onSoundEvent('click');
         if (!selectedPc || !isAuthenticated) return;
 
@@ -65,13 +65,7 @@ export default function RemoteAccess({ network, setNetwork, hackedPcs, onHack, a
         const newNetwork = network.map(pc => {
             if (pc.id === selectedPc.id) {
                 const updatedPc = { ...pc };
-                if (action === 'disableFirewall') {
-                    updatedPc.firewall.enabled = false;
-                    logMessage = `SECURITY: Firewall disabled on ${pc.ip}`;
-                } else if (action === 'disableProxy') {
-                    updatedPc.proxy.enabled = false;
-                    logMessage = `SECURITY: Proxy disabled on ${pc.ip}`;
-                } else if (action === 'clearLogs') {
+                if (action === 'clearLogs') {
                     const logFile = findNodeByPath(['logs', 'access.log'], updatedPc.fileSystem);
                     if(logFile && logFile.type === 'file'){
                         logFile.content = 'Log cleared by remote admin.\n';
@@ -229,12 +223,6 @@ export default function RemoteAccess({ network, setNetwork, hackedPcs, onHack, a
                             </div>
                         </CardContent>
                         <CardFooter className="flex-col items-stretch gap-2">
-                             <Button onClick={() => handleAction('disableFirewall')} disabled={!selectedPc.firewall.enabled} variant="destructive">
-                                <ShieldOff className="mr-2"/>Disable Firewall
-                            </Button>
-                             <Button onClick={() => handleAction('disableProxy')} disabled={!selectedPc.proxy.enabled} variant="destructive">
-                                <ShieldOff className="mr-2"/>Disable Proxy
-                            </Button>
                              <Button onClick={() => handleAction('clearLogs')} variant="outline">
                                 <Trash2 className="mr-2"/>Clear Access Logs
                             </Button>

@@ -300,7 +300,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
                 onStart={() => bringToFront(app.instanceId)}
               >
                 <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                    <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppCofig.height}>
+                    <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height}>
                         <AppComponent {...props}/>
                     </Window>
                 </div>
