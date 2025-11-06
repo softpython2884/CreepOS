@@ -101,7 +101,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
 
   const [network, setNetwork] = useState<PC[]>(() => loadGameState(username).network);
   const [hackedPcs, setHackedPcs] = useState<Set<string>>(() => loadGameState(username).hackedPcs);
-  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => new Set(loadGameState(username).network.map(p => p.id)));
+  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => new Set(['player-pc']));
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
   const [dangerLevel, setDangerLevel] = useState(0);
 
