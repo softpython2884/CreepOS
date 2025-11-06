@@ -192,7 +192,7 @@ const BootScreen = ({ onBootComplete, onRecovery, username }: { onBootComplete: 
     return (
       <div className="bg-black p-8 w-full h-full flex flex-col justify-center text-green-400 font-code cursor-none">
         <div className="whitespace-pre-wrap text-lg">
-          {lines.map((line, i) => (
+          {lines.filter(line => typeof line === 'string').map((line, i) => (
             <p key={i} className={cn(line.startsWith('CRITICAL') ? 'text-red-500' : '')}>{line}</p>
           ))}
         </div>
@@ -447,9 +447,8 @@ export default function Home() {
                 id="viewport" 
                 className="absolute bg-background origin-top-left"
             >
-                <div className={cn("absolute inset-0 bg-red-600/80 pointer-events-none z-[9998]", machineState === 'desktop' ? 'animate-scream' : 'hidden')} style={{ animationIterationCount: 'infinite', animationDuration: '1s' }} />
-                <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
                 {renderState()}
+                <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
             </div>
         </main>
     );
