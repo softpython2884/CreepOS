@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { FileText, Folder, CornerUpLeft, X, Lock } from 'lucide-react';
-import { type FileSystemNode } from './content';
+import { type FileSystemNode } from '@/lib/network/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -131,7 +132,7 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
         <>
             <ScrollArea className="h-full bg-card">
                 <div className="p-2 flex items-center border-b">
-                    <Button variant="ghost" size="icon" onClick={goBack} disabled={currentPath.length === 1}>
+                    <Button variant="ghost" size="icon" onClick={goBack} disabled={currentPath.length <= 1 && currentPath[0] === '/'}>
                         <CornerUpLeft size={16} />
                     </Button>
                     <span className="ml-2 text-sm text-muted-foreground font-code">

@@ -25,12 +25,13 @@
     ],
     "fileSystem": [
         {
-            "id": "folder-log",
-            "name": "log",
+            "id": "folder-logs",
+            "name": "logs",
             "type": "folder",
             "children": [
                 { "id": "file-syslog", "name": "system.log", "type": "file", "content": "Gateway boot sequence complete. All services nominal." },
-                { "id": "file-audit", "name": "audit.log", "type": "file", "content": "Firewall disabled by admin override. SECURITY RISK." }
+                { "id": "file-audit", "name": "audit.log", "type": "file", "content": "Firewall disabled by admin override. SECURITY RISK." },
+                { "id": "file-access-log-holberton", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
             ]
         },
         {
