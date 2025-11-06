@@ -7,9 +7,11 @@ import { FileSystemNode, PC } from '@/lib/network/types';
 import { network as initialNetworkData } from '@/lib/network';
 
 interface HistoryItem {
-  type: 'command' | 'output';
+  type: 'command' | 'output' | 'confirmation';
   content: string;
+  onConfirm?: (confirmed: boolean) => void;
 }
+
 
 interface TerminalProps {
     username: string;
@@ -61,7 +63,7 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
 const updateNodeByPath = (
   nodes: FileSystemNode[],
   path: string[],
-  updater: (node: FileSystemNode) => FileSystemNode | null
+  updater: (node: FileSystemNode) => FileSystemNode | null | 'NO_CHANGE'
 ): FileSystemNode[] => {
   if (path.length === 0) return nodes;
   const nodeName = path[0];
@@ -70,6 +72,8 @@ const updateNodeByPath = (
       const nodeIndex = nodes.findIndex(n => n.name === nodeName);
       if (nodeIndex !== -1) {
           const updatedNode = updater(nodes[nodeIndex]);
+          if (updatedNode === 'NO_CHANGE') return nodes;
+
           const newNodes = [...nodes];
           if (updatedNode === null) {
               newNodes.splice(nodeIndex, 1);
@@ -90,6 +94,27 @@ const updateNodeByPath = (
       return node;
   });
 };
+
+const addNodeByPath = (nodes: FileSystemNode[], path: string[], newNode: FileSystemNode): FileSystemNode[] => {
+    if (path.length === 0) {
+        if (nodes.find(n => n.name === newNode.name)) {
+            // Overwrite existing file
+            return nodes.map(n => n.name === newNode.name ? newNode : n);
+        }
+        return [...nodes, newNode];
+    }
+    const folderName = path[0];
+    return nodes.map(node => {
+        if (node.name === folderName && node.type === 'folder' && node.children) {
+            return {
+                ...node,
+                children: addNodeByPath(node.children, path.slice(1), newNode)
+            };
+        }
+        return node;
+    });
+};
+
 
 const personalizeFileSystem = (nodes: FileSystemNode[], user: string): FileSystemNode[] => {
     return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, user));
@@ -125,6 +150,7 @@ export default function Terminal({
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAwaitingConfirmation, setIsAwaitingConfirmation] = useState(false);
   
   // Network and FS state
   const [connectedIp, setConnectedIp] = useState<string>('127.0.0.1');
@@ -167,6 +193,9 @@ export default function Terminal({
   }, [isProcessing]);
 
   const getPrompt = () => {
+    if (isAwaitingConfirmation) {
+        return '';
+    }
     if (machineState === 'survival') {
         return `[DEFENSE_MODE] Operator@${getCurrentPc()?.name}$ `;
     }
@@ -191,23 +220,39 @@ export default function Terminal({
   };
   
   const resolvePath = (pathArg: string): string[] => {
-    if (!pathArg) return [...currentDirectory];
-    
     let newPath: string[];
     
-    if (pathArg.startsWith('/')) {
-        newPath = pathArg.split('/').filter(p => p);
-    } else {
-        newPath = [...currentDirectory];
-        pathArg.split('/').forEach(part => {
-            if (part === '..') {
-                if (newPath.length > 0) newPath.pop();
-            } else if (part && part !== '.') {
-                newPath.push(part);
-            }
-        });
-    }
+    const baseDir = (pathArg && pathArg.startsWith('/')) ? [] : [...currentDirectory];
+    
+    const parts = (pathArg || '').split('/').filter(p => p);
+    
+    newPath = baseDir;
+
+    parts.forEach(part => {
+        if (part === '..') {
+            if (newPath.length > 0) newPath.pop();
+        } else if (part && part !== '.') {
+            newPath.push(part);
+        }
+    });
+
     return newPath;
+  }
+
+  const findParentDirectory = (path: string[], fs: FileSystemNode[]): FileSystemNode[] | null => {
+      if (path.length <= 1) return fs;
+      
+      let currentLevel: FileSystemNode[] | undefined = fs;
+      for (let i = 0; i < path.length - 1; i++) {
+          if (!currentLevel) return null;
+          const folder = currentLevel.find(n => n.name === path[i] && n.type === 'folder');
+          if (folder) {
+              currentLevel = folder.children;
+          } else {
+              return null;
+          }
+      }
+      return currentLevel || null;
   }
 
   const addRemoteLog = (message: string) => {
@@ -223,7 +268,7 @@ export default function Terminal({
                     if (node.type === 'file') {
                         return { ...node, content: (node.content || '') + logEntry + '\n' };
                     }
-                    return node;
+                    return 'NO_CHANGE';
                 });
                 return { ...pc, fileSystem: newFileSystem };
             }
@@ -342,6 +387,16 @@ export default function Terminal({
 
   const handleCommand = async () => {
     const fullCommand = input.trim();
+    if (isAwaitingConfirmation) {
+        const lastHistoryItem = history[history.length-1];
+        if (lastHistoryItem.type === 'confirmation' && lastHistoryItem.onConfirm) {
+            lastHistoryItem.onConfirm(fullCommand.toLowerCase() === 'y');
+        }
+        setIsAwaitingConfirmation(false);
+        setInput('');
+        return;
+    }
+    
     if (fullCommand === '') {
         setHistory([...history, { type: 'command', content: getPrompt() }]);
         return;
@@ -402,7 +457,7 @@ export default function Terminal({
         const [cmd, ...cmdArgs] = command.toLowerCase().split(' ');
         switch(cmd) {
             case 'help':
-                handleOutput('Available defense commands:\n  firewall --reboot\n  ports --open &lt;port_number>');
+                handleOutput('Available defense commands:\n  firewall --reboot\n  ports --open <port_number>');
                 break;
             case 'firewall':
                 if (cmdArgs[0] === '--reboot') {
@@ -432,7 +487,7 @@ export default function Terminal({
                         handleOutput(`Port ${portToOpen} is now open.`);
                     }
                 } else {
-                    handleOutput('Usage: ports --open &lt;port_number>');
+                    handleOutput('Usage: ports --open <port_number>');
                 }
                 break;
             default:
@@ -648,21 +703,23 @@ export default function Terminal({
             const commandList = [
                 '  help           - Show this help message',
                 '  ls [path]      - List files and directories (auth required)',
-                '  cd &lt;path>      - Change directory (auth required)',
-                '  cat &lt;file>     - Display file content (auth required)',
-                '  echo &lt;text>    - Display a line of text. Supports > and >> redirection.',
-                '  touch &lt;file>   - Create an empty file (local system only)',
-                '  rm &lt;file>      - Remove a file or clear its content (auth required)',
+                '  cd <path>      - Change directory (auth required)',
+                '  cat <file>     - Display file content (auth required)',
+                '  echo <text>    - Display a line of text. Supports > and >> redirection.',
+                '  touch <file>   - Create an empty file (local system only)',
+                '  rm <file>      - Remove a file or clear its content (auth required)',
+                '  cp <src> <dest> - Copy a file (local system only)',
+                '  mv <src> <dest> - Move or rename a file (local system only)',
                 '  reboot         - Reboots the current system',
                 '  save           - Save current game state (local only)',
                 '  reset-game --confirm - Deletes save data and reboots (local only)',
                 '  danger         - Shows current trace danger level',
                 '',
                 'Network commands:',
-                '  connect &lt;ip>   - Connect to a remote system',
+                '  connect <ip>   - Connect to a remote system',
                 '  disconnect / dc- Disconnect from the current remote system',
-                '  login &lt;user> &lt;pass> - Authenticate to a connected system',
-                '  solve &lt;solution> - Attempt to disable a firewall with a solution.',
+                '  login <user> <pass> - Authenticate to a connected system',
+                '  solve <solution> - Attempt to disable a firewall with a solution.',
                 '',
                 'Hacking tools (run from your machine):',
             ];
@@ -837,6 +894,47 @@ export default function Terminal({
                 handleOutput('rm: missing operand');
                 break;
             }
+
+            if (fileArg === '*') {
+                setIsProcessing(false);
+                setIsAwaitingConfirmation(true);
+                setHistory(prev => [...prev, {
+                    type: 'confirmation',
+                    content: 'Are you sure you want to delete all files in this directory? (y/n)',
+                    onConfirm: (confirmed) => {
+                        setIsProcessing(true);
+                        setHistory(prevHist => [...prevHist, {type: 'command', content: confirmed ? 'y' : 'n'}]);
+                        if(confirmed) {
+                             setNetwork(currentNetwork => currentNetwork.map(pc => {
+                                if (pc.ip === connectedIp) {
+                                    let fs = pc.fileSystem;
+                                    let targetDirChildren = findParentDirectory(resolvePath("."), fs);
+                                    
+                                    const filesToRemove = targetDirChildren?.filter(f => f.type === 'file' && !f.isSystemFile) || [];
+                                    if(filesToRemove.length === 0) {
+                                        handleOutput("rm: no files to remove");
+                                        return pc;
+                                    }
+
+                                    for(const file of filesToRemove) {
+                                        fs = updateNodeByPath(fs, [...currentDirectory, file.name], () => null);
+                                    }
+                                    handleOutput(`Removed ${filesToRemove.length} files.`);
+                                    addLog(`EVENT: Removed ${filesToRemove.length} files from ${connectedIp}:${currentDirectory.join('/')}`);
+
+                                    return { ...pc, fileSystem: fs };
+                                }
+                                return pc;
+                            }));
+                        } else {
+                            handleOutput('Operation cancelled.');
+                        }
+                        setIsProcessing(false);
+                    }
+                }]);
+                return;
+            }
+
             const filePath = resolvePath(fileArg);
             const fileNode = findNodeByPath(filePath, fileSystem);
 
@@ -845,7 +943,7 @@ export default function Terminal({
                 break;
             }
             if (fileNode.type === 'folder') {
-                handleOutput(`rm: cannot remove '${fileArg}': Is a directory`);
+                handleOutput(`rm: cannot remove '${fileArg}': Is a directory. Use rmdir (not implemented).`);
                 break;
             }
             
@@ -855,20 +953,19 @@ export default function Terminal({
                 
                 if (connectedIp === '127.0.0.1') {
                      setNetwork(currentNetwork => {
-                        const newNetwork = currentNetwork.map(pc => {
+                        return currentNetwork.map(pc => {
                             if (pc.ip === connectedIp) {
                                 const newFs = updateNodeByPath(pc.fileSystem, filePath, () => null);
                                 return { ...pc, fileSystem: newFs };
                             }
                             return pc;
                         });
-                        setTimeout(() => {
-                           saveGameState();
-                           addLog(`CRITICAL: XserverOS.sys deleted from local machine. Next reboot will fail.`);
-                           handleOutput('Deletion of XserverOS.sys complete.');
-                        }, 100);
-                        return newNetwork;
                     });
+                    setTimeout(() => {
+                       saveGameState();
+                       addLog(`CRITICAL: XserverOS.sys deleted from local machine. Next reboot will fail.`);
+                       handleOutput('Deletion of XserverOS.sys complete.');
+                    }, 100);
                 } else {
                     addRemoteLog(`CRITICAL: XserverOS.sys deleted by ${username}. System crashing.`);
                     setNetwork(currentNetwork => currentNetwork.map(pc => {
@@ -912,6 +1009,67 @@ export default function Terminal({
                 addLog(`EVENT: File '${fileArg}' on ${connectedIp} removed.`);
             }
 
+            break;
+        }
+        case 'cp':
+        case 'mv': {
+            if(!checkAuth() || connectedIp !== '127.0.0.1') {
+                handleOutput(`${command}: can only be used on the local file system.`);
+                break;
+            }
+
+            const [sourceArg, destArg] = args;
+            if(!sourceArg || !destArg) {
+                handleOutput(`${command}: missing file operand`);
+                break;
+            }
+
+            const sourcePath = resolvePath(sourceArg);
+            const sourceNode = findNodeByPath(sourcePath, fileSystem);
+
+            if(!sourceNode) {
+                handleOutput(`${command}: cannot stat '${sourceArg}': No such file or directory`);
+                break;
+            }
+            if(sourceNode.type === 'folder') {
+                handleOutput(`${command}: cannot copy directories yet.`);
+                break;
+            }
+
+            let destPath = resolvePath(destArg);
+            let destNode = findNodeByPath(destPath, fileSystem);
+            let finalDestPath = [...destPath];
+            let newFileName = sourceNode.name;
+
+            if (destNode && destNode.type === 'folder') {
+                // Destination is a directory, copy file inside it
+                finalDestPath.push(sourceNode.name);
+            } else {
+                // Destination is a file path
+                newFileName = destPath[destPath.length - 1];
+                finalDestPath = destPath.slice(0, -1);
+            }
+
+            const copiedNode = {
+                ...JSON.parse(JSON.stringify(sourceNode)), // deep copy
+                id: `${sourceNode.id}-copy-${Date.now()}`,
+                name: newFileName
+            };
+            
+            setNetwork(currentNetwork => currentNetwork.map(pc => {
+                if (pc.id === 'player-pc') {
+                    let newFs = pc.fileSystem;
+
+                    if (command === 'mv') {
+                         newFs = updateNodeByPath(newFs, sourcePath, () => null);
+                    }
+                    
+                    newFs = addNodeByPath(newFs, finalDestPath, copiedNode);
+                    return {...pc, fileSystem: newFs};
+                }
+                return pc;
+            }));
+            
             break;
         }
         case 'connect': {
@@ -1056,7 +1214,7 @@ export default function Terminal({
     // Command completion
     if (parts.length === 1) {
         const executables = allExecutables.map(f => f.name.split('.')[0].toLowerCase());
-        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan'];
+        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'mv', 'cp', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan'];
         const allCommands = [...new Set([...mainCommands, ...executables])];
         const possibilities = allCommands.filter(cmd => cmd.startsWith(lastPart));
 
@@ -1137,8 +1295,12 @@ export default function Terminal({
             <div key={index} className="whitespace-pre-wrap break-words">
               {item.type === 'command' ? (
                 <span className="text-muted-foreground">{item.content}</span>
+              ) : item.type === 'confirmation' ? (
+                 <div className="text-yellow-400">
+                    <span>{item.content}</span>
+                 </div>
               ) : (
-                <span className={item.type === 'output' ? '' : ''}>{item.content}</span>
+                <span>{item.content}</span>
               )}
             </div>
           ))}

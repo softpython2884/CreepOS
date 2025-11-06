@@ -24,7 +24,7 @@ L'objectif est de reconstituer le puzzle d'une histoire tragique tout en gérant
 
 Le gameplay est entièrement basé sur l'interaction avec le bureau simulé et ses applications.
 
-*   **Exploration via le Terminal :** Le terminal est l'outil principal. Il permet de naviguer dans les systèmes de fichiers (local et distant), de lire des fichiers (`cat`), d'en modifier (`nano`), et surtout, d'exécuter des outils de piratage.
+*   **Exploration via le Terminal :** Le terminal est l'outil principal. Il permet de naviguer (`cd`), lister des fichiers (`ls`), lire (`cat`), copier (`cp`), déplacer (`mv`), et supprimer (`rm`, `rm *`). Il est surtout utilisé pour exécuter des outils de piratage.
 *   **Piratage de Réseau Dynamique :**
     *   **Découverte :** Utilisez `scan` pour découvrir des machines connectées, qui apparaissent dynamiquement sur la `Network Map`.
     *   **Analyse :** La commande `probe` révèle les défenses d'une cible (pare-feu, proxy, ports ouverts/fermés).
