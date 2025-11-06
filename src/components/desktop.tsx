@@ -331,13 +331,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     onSoundEvent('click');
   }, [nextZIndex, onSoundEvent, appConfig, network]);
 
-  useEffect(() => {
-    // Open terminal and web browser on startup
-    openApp('terminal');
-    openApp('web-browser');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const closeApp = useCallback((instanceId: number) => {
     onSoundEvent('close');
     setOpenApps(prev => {
