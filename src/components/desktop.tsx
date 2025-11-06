@@ -15,10 +15,11 @@ import { network as initialNetwork } from '@/lib/network';
 import { type PC } from '@/lib/network/types';
 import LiveLogs from './apps/live-logs';
 import NetworkMap from './apps/network-map';
-import { ShieldAlert, ShieldCheck } from 'lucide-react';
+import EmailClient, { type Email } from './apps/email-client';
+import { ShieldAlert, ShieldCheck, Mail } from 'lucide-react';
 import { Progress } from './ui/progress';
 
-export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map';
+export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email';
 
 type AppConfig = {
   [key in AppId]: {
@@ -96,6 +97,19 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const [hackedPcs, setHackedPcs] = useState<Set<string>>(new Set(['player-pc']));
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
   const [dangerLevel, setDangerLevel] = useState(0);
+  const [emails, setEmails] = useState<Email[]>([
+      {
+        id: 'welcome-email',
+        sender: 'NEO-SYSTEM',
+        recipient: username,
+        subject: 'Welcome, Operator',
+        body: 'Welcome to the SubSystem OS, Operator. Your terminal is now active. All system communications will be directed here. Await your first directive.\n\n- Néo',
+        timestamp: new Date().toISOString(),
+        read: false,
+        folder: 'inbox',
+      },
+  ]);
+
 
   const addLog = useCallback((message: string) => {
     const timestamp = new Date().toISOString();
@@ -137,53 +151,66 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setEditingFile({ path, content });
   };
 
-    const handleSaveFile = (path: string[], newContent: string) => {
-        addLog(`EVENT: File saved at /${path.join('/')}`);
-        
-        setNetwork(prevNetwork => {
-            return prevNetwork.map(pc => {
-                if (pc.id !== 'player-pc') return pc;
-                
-                const parentPath = path.slice(0, -1);
-                const fileName = path[path.length - 1];
+  const handleSaveFile = (path: string[], newContent: string) => {
+      addLog(`EVENT: File saved at /${path.join('/')}`);
+      
+      setNetwork(prevNetwork => {
+          return prevNetwork.map(pc => {
+              if (pc.id !== 'player-pc') return pc;
+              
+              const parentPath = path.slice(0, -1);
+              const fileName = path[path.length - 1];
 
-                const recursiveUpdate = (nodes: FileSystemNode[], currentPath: string[]): FileSystemNode[] => {
-                    if (currentPath.length === 0) {
-                        const fileExists = nodes.some(node => node.name === fileName);
-                        if (fileExists) {
-                            return nodes.map(node => 
-                                node.name === fileName && node.type === 'file' 
-                                    ? { ...node, content: newContent } 
-                                    : node
-                            );
-                        } else {
-                            addLog(`EVENT: File created at /${path.join('/')}`);
-                            const newFile: FileSystemNode = {
-                                id: `file-${Date.now()}`,
-                                name: fileName,
-                                type: 'file',
-                                content: newContent,
-                            };
-                            return [...nodes, newFile];
-                        }
-                    }
+              const recursiveUpdate = (nodes: FileSystemNode[], currentPath: string[]): FileSystemNode[] => {
+                  if (currentPath.length === 0) {
+                      const fileExists = nodes.some(node => node.name === fileName);
+                      if (fileExists) {
+                          return nodes.map(node => 
+                              node.name === fileName && node.type === 'file' 
+                                  ? { ...node, content: newContent } 
+                                  : node
+                          );
+                      } else {
+                          addLog(`EVENT: File created at /${path.join('/')}`);
+                          const newFile: FileSystemNode = {
+                              id: `file-${Date.now()}`,
+                              name: fileName,
+                              type: 'file',
+                              content: newContent,
+                          };
+                          return [...nodes, newFile];
+                      }
+                  }
 
-                    const [next, ...rest] = currentPath;
-                    return nodes.map(node => 
-                        (node.name === next && node.type === 'folder' && node.children)
-                            ? { ...node, children: recursiveUpdate(node.children, rest) }
-                            : node
-                    );
-                };
-                
-                const newFileSystem = recursiveUpdate(pc.fileSystem, parentPath);
-                return { ...pc, fileSystem: newFileSystem };
-            });
-        });
+                  const [next, ...rest] = currentPath;
+                  return nodes.map(node => 
+                      (node.name === next && node.type === 'folder' && node.children)
+                          ? { ...node, children: recursiveUpdate(node.children, rest) }
+                          : node
+                  );
+              };
+              
+              const newFileSystem = recursiveUpdate(pc.fileSystem, parentPath);
+              return { ...pc, fileSystem: newFileSystem };
+          });
+      });
 
-        setEditingFile(null); // Close editor
-        onSoundEvent('click');
+      setEditingFile(null); // Close editor
+      onSoundEvent('click');
+  };
+
+  const handleSendEmail = (email: Omit<Email, 'id' | 'timestamp' | 'read' | 'folder'>) => {
+    const newEmail: Email = {
+      ...email,
+      id: `email-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      read: true,
+      folder: 'sent',
     };
+    setEmails(prev => [...prev, newEmail]);
+    addLog(`EMAIL: Sent email to ${email.recipient} with subject "${email.subject}"`);
+    // Here you can add logic to trigger story events based on the sent email
+  };
 
   const getPlayerFileSystem = () => {
     const playerPc = network.find(p => p.id === 'player-pc');
@@ -253,6 +280,18 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       props: {
         network: network,
         hackedPcs: hackedPcs
+      }
+    },
+    email: {
+      title: 'Email Client',
+      component: EmailClient,
+      width: 900,
+      height: 600,
+      props: {
+        emails: emails,
+        setEmails: setEmails,
+        onSend: handleSendEmail,
+        currentUser: username,
       }
     }
   };
@@ -350,6 +389,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             props.fileSystem = getPlayerFileSystem();
             props.onFileSystemUpdate = setPlayerFileSystem;
           }
+          if (app.appId === 'email') {
+            props.emails = emails;
+            props.setEmails = setEmails;
+          }
           
           return (
               <Draggable
@@ -404,7 +447,3 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     </main>
   );
 }
-
-    
-
-    
