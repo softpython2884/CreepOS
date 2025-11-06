@@ -17,7 +17,7 @@ import LiveLogs from './apps/live-logs';
 import NetworkMap from './apps/network-map';
 import EmailClient, { type Email } from './apps/email-client';
 import WebBrowser from './apps/web-browser';
-import { ShieldAlert, ShieldCheck, Mail, AlertTriangle } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Mail, AlertTriangle, Skull } from 'lucide-react';
 import { Progress } from './ui/progress';
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser';
@@ -262,10 +262,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     addLog(`EMAIL: Sent email to ${email.recipient} with subject "${email.subject}"`);
   };
 
-  const getPlayerFileSystem = () => {
+  const getPlayerFileSystem = useCallback(() => {
     const playerPc = network.find(p => p.id === 'player-pc');
     return playerPc ? playerPc.fileSystem : [];
-  };
+  }, [network]);
 
   const setPlayerFileSystem = (newFileSystem: FileSystemNode[] | ((fs: FileSystemNode[]) => FileSystemNode[])) => {
     setNetwork(prevNetwork => {
@@ -440,9 +440,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       )}
       style={{ backgroundImage: `linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)`, backgroundSize: `2rem 2rem` }}
     >
-        {isTraced && (
-            <div className="absolute inset-0 bg-destructive/80 animate-blink pointer-events-none z-[9998]" />
-        )}
+      {isTraced && (
+          <div className="absolute inset-0 bg-destructive/80 animate-scream pointer-events-none z-[9998]" />
+      )}
       <div className={cn("absolute inset-0 bg-gradient-to-b from-transparent to-background/80 transition-opacity", isTraced && "bg-destructive/30 animate-pulse-slow")} />
       
       {isTraced && (

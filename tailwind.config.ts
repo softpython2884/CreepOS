@@ -151,7 +151,7 @@ export default {
             '50%': { opacity: '0' }
         },
         scream: {
-            '0%, 100%': { transform: 'scale(1)', opacity: 0.8 },
+            '0%, 100%': { transform: 'scale(1)', opacity: 0 },
             '5%': { transform: 'scale(1.1) translate(-5px, 5px)', opacity: 1 },
             '10%': { transform: 'scale(1)', opacity: 0.9 },
             '80%': { transform: 'scale(1.5)', opacity: 0.2 },
