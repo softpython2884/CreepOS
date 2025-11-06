@@ -389,7 +389,6 @@ export default function Terminal({
         }
     
         let currentTargetPC: PC | undefined;
-        // Use a functional update to get the latest state of network
         setNetwork(currentNetwork => {
             currentTargetPC = currentNetwork.find(p => p.ip === connectedIp);
             return currentNetwork;
@@ -571,6 +570,7 @@ export default function Terminal({
                 break;
             case 'ftpbounce': await handlePortHack(21, 'FTPBounce'); break;
             case 'sshbounce': await handlePortHack(22, 'SSHBounce'); break;
+
             case 'smtpoverflow': await handlePortHack(25, 'SMTPOverflow'); break;
             case 'webserverworm': await handlePortHack(80, 'WebServerWorm'); break;
             // Commands that require auth check on remote system are handled below
@@ -803,7 +803,7 @@ export default function Terminal({
                         }
                         return pc;
                     }));
-                    saveGameState(); // Save right before rebooting
+                    saveGameState();
                     setTimeout(onReboot, 2000);
                 } else {
                     addRemoteLog(`CRITICAL: XserverOS.sys deleted by ${username}. System crashing.`);

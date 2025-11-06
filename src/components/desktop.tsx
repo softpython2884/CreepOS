@@ -201,10 +201,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       return;
     }
 
-    if (isScreaming) {
-        onSoundEvent('scream');
-    }
-
     const timer = setInterval(() => {
         setTraceTimeLeft(prevTime => {
             const newTime = prevTime - 1;
@@ -213,6 +209,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
                 addLog(`CRITICAL: Trace completed. System integrity compromised. Rebooting...`);
                 onReboot();
                 return 0;
+            }
+            if (newTime > 0 && isScreaming) {
+                onSoundEvent('scream');
             }
             return newTime;
         });
