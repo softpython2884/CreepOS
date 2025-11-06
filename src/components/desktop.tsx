@@ -19,6 +19,7 @@ import EmailClient, { type Email } from './apps/email-client';
 import WebBrowser from './apps/web-browser';
 import { ShieldAlert, ShieldCheck, Mail, AlertTriangle, Skull } from 'lucide-react';
 import { Progress } from './ui/progress';
+import TracerTerminal from './tracer-terminal';
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser';
 
@@ -140,7 +141,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         });
 
         const newPlayerPc = { ...playerPc, fileSystem: newFileSystem };
-        const newNetwork = [...prevNetwork];
+        const newNetwork = [...newNetwork];
         newNetwork[playerPcIndex] = newPlayerPc;
         return newNetwork;
     });
@@ -447,15 +448,23 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       <div className={cn("absolute inset-0 bg-gradient-to-b from-transparent to-background/80 transition-opacity", isTraced && "bg-destructive/30 animate-pulse-slow")} />
       
       {isTraced && (
-        <div className="absolute top-4 left-4 z-[9999] text-destructive font-code animate-pulse-slow">
-            <div className="flex items-center gap-4 p-4 bg-destructive/20 border-2 border-destructive rounded-lg shadow-2xl shadow-destructive/20">
-                <AlertTriangle className="h-16 w-16" />
-                <div>
-                    <h2 className="text-2xl font-bold tracking-widest">TRACE DETECTED</h2>
-                    <p className="text-5xl font-bold text-center mt-1">{formatTime(traceTimeLeft)}</p>
-                </div>
-            </div>
-        </div>
+        <>
+          <div className="absolute top-4 left-4 z-[9999] text-destructive-foreground font-code animate-pulse-slow">
+              <div className="flex items-center gap-4 p-4 bg-destructive/80 border-2 border-destructive-foreground rounded-lg shadow-2xl shadow-destructive/20">
+                  <AlertTriangle className="h-16 w-16" />
+                  <div>
+                      <h2 className="text-2xl font-bold tracking-widest">TRACE DETECTED</h2>
+                      <p className="text-5xl font-bold text-center mt-1">{formatTime(traceTimeLeft)}</p>
+                  </div>
+              </div>
+          </div>
+
+          <div className='absolute top-32 left-4 z-50 flex flex-col gap-2'>
+            <TracerTerminal title="INCOMING_TRACE::ID_77_A" startDelay={0} />
+            <TracerTerminal title="ROUTE_ANALYSIS::ID_34_B" startDelay={1000} />
+            <TracerTerminal title="NODE_ISOLATION::ID_99_C" startDelay={2000} />
+          </div>
+        </>
       )}
 
       {openApps.map((app) => {
