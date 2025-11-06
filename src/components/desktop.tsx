@@ -184,26 +184,25 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         setIsScreaming(false);
       }
       return;
-    };
+    }
 
     const timer = setInterval(() => {
       setTraceTimeLeft(prevTime => {
-        if (prevTime <= 1) {
+        const newTime = prevTime - 1;
+        if (newTime <= 0) {
           clearInterval(timer);
-          onSoundEvent('stopScream');
-          setIsScreaming(false);
           addLog(`CRITICAL: Trace completed. System integrity compromised. Rebooting...`);
           onReboot();
           return 0;
         }
-        // Re-trigger scream sound every second
-        onSoundEvent('scream'); 
-        return prevTime - 1;
+        onSoundEvent('scream');
+        return newTime;
       });
     }, 1000);
 
     return () => clearInterval(timer);
   }, [isTraced, traceTimeLeft, onReboot, addLog, onSoundEvent, isScreaming]);
+
 
   const handleHackedPc = (pcId: string, ip: string) => {
     addLog(`SUCCESS: Root access gained on ${ip}`);
@@ -529,5 +528,3 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     </main>
   );
 }
-
-    

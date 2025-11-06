@@ -379,13 +379,14 @@ export default function Terminal({
     }
 
     const handlePortHack = async (portNumber: number, portName: string) => {
-      let targetPC = getCurrentPc();
+      let targetPC = getCurrentPc(); // Initial fetch
       if (connectedIp === '127.0.0.1' || !targetPC) {
         setHistory(prev => [...prev, { type: 'output', content: `${portName}: Must be connected to a remote system.` }]);
         return;
       }
       
       // Re-fetch the PC to ensure we have the latest state before checks
+      // This is crucial to get updates from previous commands in the same session.
       targetPC = network.find(pc => pc.ip === connectedIp);
       if (!targetPC) {
           setHistory(prev => [...prev, { type: 'output', content: 'Critical error: Target system disconnected.' }]);
@@ -417,13 +418,16 @@ export default function Terminal({
       setHistory(prev => [...prev, { type: 'output', content: `Running ${portName} exploit...` }]);
       await runProgressBar(3000);
   
-      setNetwork(network.map(pc => {
-        if (pc.id === targetPC.id) {
-          const newPorts = pc.ports.map(p => p.port === portNumber ? { ...p, isOpen: true } : p);
-          return { ...pc, ports: newPorts };
-        }
-        return pc;
-      }));
+      // Use the functional update form of setNetwork to ensure we're modifying the latest state
+      setNetwork(currentNetwork => 
+        currentNetwork.map(pc => {
+          if (pc.id === targetPC!.id) {
+            const newPorts = pc.ports.map(p => p.port === portNumber ? { ...p, isOpen: true } : p);
+            return { ...pc, ports: newPorts };
+          }
+          return pc;
+        })
+      );
   
       setHistory(prev => [...prev, { type: 'output', content: `${port.service} port (${portNumber}) is now open.` }]);
       addRemoteLog(`HACK: Port ${portNumber} (${port.service}) opened by ${username}.`);
