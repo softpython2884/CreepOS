@@ -206,16 +206,18 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
                 onReboot();
                 return 0;
             }
-            if (isScreaming) {
-                onSoundEvent('scream');
-            }
             return newTime;
         });
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, onReboot, addLog, onSoundEvent, isScreaming]);
+}, [isTraced, onReboot, addLog]);
 
+useEffect(() => {
+    if (isTraced && isScreaming) {
+        onSoundEvent('scream');
+    }
+}, [traceTimeLeft, isScreaming, isTraced, onSoundEvent]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
@@ -289,7 +291,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     };
     onSoundEvent('email');
     setEmailNotification(true);
-    setTimeout(() => setEmailNotification(false), 1000);
+    setTimeout(() => setEmailNotification(false), 2000); // Show notification for 2s
     
     setEmails(prev => [...prev, newEmail]);
     addLog(`EMAIL: Sent email to ${email.recipient} with subject "${email.subject}"`);
