@@ -6,7 +6,7 @@
     "ip": "104.22.8.15",
     "type": "Desktop",
     "links": ["corporate-proxy"],
-    "auth": { "user": "a.smith", "pass": "password123" },
+    "auth": { "user": "a.smith", "pass": "root" },
     "firewall": { 
         "enabled": true, 
         "complexity": 2,

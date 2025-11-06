@@ -7,7 +7,7 @@
     "links": ["player-pc", "workstation-01"],
     "auth": {
         "user": "admin",
-        "pass": "holberton"
+        "pass": "admin"
     },
     "firewall": {
         "enabled": false,
