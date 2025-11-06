@@ -441,19 +441,14 @@ export default function Terminal({
     };
 
     // --- Special cases for non-auth commands on remote systems ---
-    const isHackingTool = allExecutables.some(file => file.name.toLowerCase().startsWith(command.toLowerCase()));
+    const isHackingTool = allExecutables.some(file => file.name.toLowerCase().startsWith(command.toLowerCase())) || command.toLowerCase() === 'solve';
 
-    if (isHackingTool) {
+    if (isHackingTool && connectedIp !== '127.0.0.1') {
         const executable = allExecutables.find(file => file.name.toLowerCase().startsWith(command.toLowerCase()));
-        const cmdName = executable!.name.split('.')[0].toLowerCase();
+        const cmdName = command.toLowerCase() === 'solve' ? 'solve' : executable!.name.split('.')[0].toLowerCase();
         
-        let targetPC: PC | undefined;
-        setNetwork(currentNetwork => {
-            targetPC = currentNetwork.find(p => p.ip === connectedIp);
-            return currentNetwork;
-        });
-        await new Promise(r => setTimeout(r,0));
-
+        let targetPC: PC | undefined = getCurrentPc();
+       
         switch(cmdName) {
             case 'scan':
                 if (targetPC && targetPC.links) {
@@ -469,7 +464,7 @@ export default function Terminal({
                 }
                 break;
             case 'probe':
-                if (connectedIp === '127.0.0.1' || !targetPC) {
+                if (!targetPC) {
                     handleOutput('probe: Must be connected to a remote system.');
                 } else {
                     checkAndTriggerTrace();
@@ -496,9 +491,7 @@ export default function Terminal({
                 }
                 break;
             case 'porthack':
-                 if (connectedIp === '127.0.0.1') {
-                    handleOutput('porthack: cannot run on local machine.');
-                } else if (!targetPC) {
+                 if (!targetPC) {
                     handleOutput('porthack: critical error, no target system.');
                 } else if (hackedPcs.has(targetPC.id)) {
                     handleOutput(`porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}`);
@@ -524,7 +517,7 @@ export default function Terminal({
                 }
                 break;
             case 'analyze':
-                if (connectedIp === '127.0.0.1' || !targetPC) {
+                if (!targetPC) {
                     handleOutput('analyze: Must be connected to a remote system.');
                 } else if (!targetPC.firewall.enabled) {
                     handleOutput('Firewall is not active.');
@@ -535,28 +528,8 @@ export default function Terminal({
                     addRemoteLog(`HACK: Firewall analysis by ${username} revealed solution: ${targetPC.firewall.solution}`);
                 }
                 break;
-            case 'nano':
-                 if (!checkAuth()) { setIsProcessing(false); return; }
-                const pathArg = args[0];
-                if (!pathArg) {
-                    handleOutput(`nano: missing file operand`);
-                } else {
-                    const filePath = resolvePath(pathArg);
-                    if (connectedIp !== '127.0.0.1') {
-                        handleOutput(`nano: cannot edit files on remote systems yet.`);
-                    } else {
-                        const file = findNodeByPath(filePath, fileSystem);
-                        if (file && file.type === 'folder') {
-                            handleOutput(`nano: cannot edit directory '${pathArg}'`);
-                        } else {
-                            onOpenFileEditor(filePath, file?.content || '');
-                        }
-                    }
-                }
-                break;
             case 'overload':
-                if (!checkAuth()) { setIsProcessing(false); return; }
-                if (connectedIp === '127.0.0.1' || !targetPC) {
+                if (!targetPC) {
                     handleOutput('overload: Must be connected to a remote system.');
                 } else if (!targetPC.proxy.enabled) {
                     handleOutput('Proxy is not active.');
@@ -578,34 +551,32 @@ export default function Terminal({
                     }
                 }
                 break;
+            case 'solve':
+                const solution = args[0];
+                if (!targetPC) {
+                    handleOutput('solve: Must be connected to a remote system.');
+                } else if (!targetPC.firewall.enabled) {
+                    handleOutput('Firewall is not active.');
+                } else {
+                    checkAndTriggerTrace();
+                    if (targetPC.firewall.solution === solution) {
+                        setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC!.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
+                        handleOutput('Firewall disabled.');
+                        addRemoteLog(`HACK: Firewall disabled by ${username} with solution: ${solution}.`);
+                    } else {
+                         handleOutput('Incorrect solution.');
+                         addRemoteLog(`HACK: Incorrect firewall solution '${solution}' attempt by ${username}.`);
+                    }
+                }
+                break;
             case 'ftpbounce': await handlePortHack(21, 'FTPBounce'); break;
             case 'sshbounce': await handlePortHack(22, 'SSHBounce'); break;
             case 'smtpoverflow': await handlePortHack(25, 'SMTPOverflow'); break;
             case 'webserverworm': await handlePortHack(80, 'WebServerWorm'); break;
-            case 'forkbomb':
-                if (!checkAuth()) { setIsProcessing(false); return; }
-                if (connectedIp === '127.0.0.1') {
-                    handleOutput('SYSTEM CRASH IMMINENT. REBOOTING...');
-                    addLog(`CRITICAL: Forkbomb executed on local machine. System rebooting.`);
-                    setTimeout(onReboot, 1000);
-                } else if (targetPC) {
-                    addRemoteLog(`CRITICAL: Forkbomb executed by ${username}. System crashing.`);
-                    
-                    setNetwork(currentNetwork => currentNetwork.map(pc => {
-                        if (pc.id === targetPC!.id) {
-                            const newFileSystem = updateNodeByPath(pc.fileSystem, ['sys', 'XserverOS.sys'], (node) => ({ ...node, content: 'SYSTEM KERNEL CORRUPTED' }));
-                            return { ...pc, fileSystem: newFileSystem };
-                        }
-                        return pc;
-                    }));
-
-                    disconnect(true);
-                }
-                break;
+            // Commands that require auth check on remote system are handled below
             default:
-                 handleOutput(`Execution of ${command} is not yet implemented.`);
+                 handleOutput(`Execution of ${command} is not implemented as a hacking tool.`);
         }
-        
         setIsProcessing(false);
         return;
     }
@@ -629,6 +600,7 @@ export default function Terminal({
                 '  connect <ip>   - Connect to a remote system',
                 '  disconnect / dc- Disconnect from the current remote system',
                 '  login <user> <pass> - Authenticate to a connected system',
+                '  solve <solution> - Attempt to disable a firewall with a solution.',
                 '',
                 'Hacking tools (run from your machine):',
             ];
@@ -753,6 +725,48 @@ export default function Terminal({
             handleOutput(`touch: This command is not fully implemented. Use 'nano' to create and edit files.`);
             break;
         }
+        case 'nano':
+            if (!checkAuth()) { setIsProcessing(false); return; }
+            const pathArg = args[0];
+            if (!pathArg) {
+                handleOutput(`nano: missing file operand`);
+            } else {
+                const filePath = resolvePath(pathArg);
+                if (connectedIp !== '127.0.0.1') {
+                    handleOutput(`nano: cannot edit files on remote systems yet.`);
+                } else {
+                    const file = findNodeByPath(filePath, fileSystem);
+                    if (file && file.type === 'folder') {
+                        handleOutput(`nano: cannot edit directory '${pathArg}'`);
+                    } else {
+                        onOpenFileEditor(filePath, file?.content || '');
+                    }
+                }
+            }
+            break;
+        case 'forkbomb':
+            if (!checkAuth()) { setIsProcessing(false); return; }
+            if (connectedIp === '127.0.0.1') {
+                handleOutput('SYSTEM CRASH IMMINENT. REBOOTING...');
+                addLog(`CRITICAL: Forkbomb executed on local machine. System rebooting.`);
+                setTimeout(onReboot, 1000);
+            } else {
+                let targetPC = getCurrentPc();
+                if (targetPC) {
+                    addRemoteLog(`CRITICAL: Forkbomb executed by ${username}. System crashing.`);
+                    
+                    setNetwork(currentNetwork => currentNetwork.map(pc => {
+                        if (pc.id === targetPC!.id) {
+                            const newFileSystem = updateNodeByPath(pc.fileSystem, ['sys', 'XserverOS.sys'], (node) => ({ ...node, content: 'SYSTEM KERNEL CORRUPTED' }));
+                            return { ...pc, fileSystem: newFileSystem };
+                        }
+                        return pc;
+                    }));
+
+                    disconnect(true);
+                }
+            }
+            break;
         case 'rm': {
             if (!checkAuth()) break;
 
@@ -865,8 +879,6 @@ export default function Terminal({
             break;
         }
         case 'login': {
-            if (!checkAuth()) break;
-            const [userArg, passArg] = args;
             if (connectedIp === '127.0.0.1') {
                 handleOutput('login: cannot login to local machine.');
                 break;
@@ -875,6 +887,8 @@ export default function Terminal({
                 handleOutput('login: already authenticated.');
                 break;
             }
+
+            const [userArg, passArg] = args;
             if (!userArg || !passArg) {
                 handleOutput('login: missing user or password operand.');
                 break;
@@ -911,30 +925,12 @@ export default function Terminal({
             break;
         }
         case 'solve': {
-            if (!checkAuth()) break;
-            const solution = args[0];
-            let targetPC: PC | undefined;
-            setNetwork(currentNetwork => {
-                targetPC = currentNetwork.find(p => p.ip === connectedIp);
-                return currentNetwork;
-            });
-            await new Promise(r => setTimeout(r,0));
-
-            if (connectedIp === '127.0.0.1' || !targetPC) {
-                handleOutput('solve: Must be connected to a remote system.');
-            } else if (!targetPC.firewall.enabled) {
-                handleOutput('Firewall is not active.');
-            } else {
-                checkAndTriggerTrace();
-                if (targetPC.firewall.solution === solution) {
-                    setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC!.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
-                    handleOutput('Firewall disabled.');
-                    addRemoteLog(`HACK: Firewall disabled by ${username} with solution: ${solution}.`);
-                } else {
-                     handleOutput('Incorrect solution.');
-                     addRemoteLog(`HACK: Incorrect firewall solution '${solution}' attempt by ${username}.`);
-                }
+            if (connectedIp === '127.0.0.1') {
+                 handleOutput('solve: can only be run on remote machines.');
+                 break;
             }
+            // This is handled above in the `isHackingTool` block
+            handleOutput(`command not found: ${command}`);
             break;
         }
         case 'save': {

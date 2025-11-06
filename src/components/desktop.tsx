@@ -134,26 +134,30 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   }, [network, hackedPcs, username]);
 
   const addLog = useCallback((message: string) => {
-    const timestamp = new Date().toISOString();
-    const formattedMessage = `${timestamp} - ${message}`;
-    setLogs(prev => [...prev, formattedMessage]);
+    setLogs(prev => {
+        const timestamp = new Date().toISOString();
+        const formattedMessage = `${timestamp} - ${message}`;
+        return [...prev, formattedMessage];
+    });
     
-    setNetwork(prevNetwork => {
-        const playerPcIndex = prevNetwork.findIndex(p => p.id === 'player-pc');
-        if (playerPcIndex === -1) return prevNetwork;
+    setNetwork(currentNetwork => {
+        const playerPcIndex = currentNetwork.findIndex(p => p.id === 'player-pc');
+        if (playerPcIndex === -1) return currentNetwork;
 
-        const playerPc = prevNetwork[playerPcIndex];
+        const playerPc = currentNetwork[playerPcIndex];
         const logPath = ['home', username, 'logs', 'activity.log'];
 
         const newFileSystem = updateNodeByPath(playerPc.fileSystem, logPath, (node) => {
             if (node.type === 'file') {
+                const timestamp = new Date().toISOString();
+                const formattedMessage = `${timestamp} - ${message}`;
                 return { ...node, content: (node.content || '') + formattedMessage + '\n' };
             }
             return node;
         });
 
         const newPlayerPc = { ...playerPc, fileSystem: newFileSystem };
-        const newNetwork = [...prevNetwork];
+        const newNetwork = [...currentNetwork];
         newNetwork[playerPcIndex] = newPlayerPc;
         return newNetwork;
     });
@@ -197,6 +201,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       return;
     }
 
+    if (isScreaming) {
+        onSoundEvent('scream');
+    }
+
     const timer = setInterval(() => {
         setTraceTimeLeft(prevTime => {
             const newTime = prevTime - 1;
@@ -211,13 +219,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, onReboot, addLog]);
-
-useEffect(() => {
-    if (isTraced && isScreaming) {
-        onSoundEvent('scream');
-    }
-}, [traceTimeLeft, isScreaming, isTraced, onSoundEvent]);
+}, [isTraced, onReboot, addLog, isScreaming, onSoundEvent]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
@@ -291,7 +293,7 @@ useEffect(() => {
     };
     onSoundEvent('email');
     setEmailNotification(true);
-    setTimeout(() => setEmailNotification(false), 2000); // Show notification for 2s
+    setTimeout(() => setEmailNotification(false), 2000);
     
     setEmails(prev => [...prev, newEmail]);
     addLog(`EMAIL: Sent email to ${email.recipient} with subject "${email.subject}"`);
