@@ -10,8 +10,10 @@ import Desktop from '@/components/desktop';
 import AudioManager, { MusicEvent, SoundEvent } from '@/components/audio-manager';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { loadGameState } from '@/lib/save-manager';
+import { network as initialNetworkData } from '@/lib/network';
 
-type MachineState = 'off' | 'bios' | 'booting' | 'login' | 'desktop';
+type MachineState = 'off' | 'bios' | 'booting' | 'login' | 'desktop' | 'recovery';
 
 const biosLines = [
     'NEO-SYSTEM BIOS v1.0.3',
@@ -33,7 +35,6 @@ const bootLines = [
     'Loading drivers [OK]',
     'Mounting file systems [OK]',
     'Initializing subsystem interface...',
-    'Welcome, Operator.',
 ];
 
 const ratios = [
@@ -150,38 +151,56 @@ const BiosScreen = ({ onComplete }: { onComplete: () => void }) => {
 };
 
 
-const BootScreen = ({ onBootComplete }: { onBootComplete: () => void }) => {
+const BootScreen = ({ onBootComplete, onRecovery, username }: { onBootComplete: () => void; onRecovery: () => void; username: string; }) => {
     const [lines, setLines] = useState<string[]>([]);
     const [progress, setProgress] = useState(0);
+    const [error, setError] = useState('');
     
     useEffect(() => {
         let i = 0;
         const intervalId = setInterval(() => {
             if (i < bootLines.length) {
                 setLines(prev => [...prev, bootLines[i]]);
-                setProgress(p => p + (100 / bootLines.length));
+                setProgress(p => p + (100 / (bootLines.length + 1) ));
             } else {
+                // Final check: XserverOS
+                const savedState = loadGameState(username);
+                const playerPc = savedState.network.find(p => p.id === 'player-pc');
+                const sysFolder = playerPc?.fileSystem.find(f => f.name === 'sys');
+                const xserverFile = sysFolder?.children?.find(f => f.name === 'XserverOS.sys');
+
+                if (!xserverFile) {
+                    setError('CRITICAL ERROR: XserverOS.sys not found. Cannot boot desktop environment.');
+                    setTimeout(() => {
+                        setLines(prev => [...prev, 'CRITICAL ERROR: XserverOS.sys not found. Cannot boot desktop environment.']);
+                        setProgress(100);
+                        setTimeout(onRecovery, 2000);
+                    }, 1000);
+                } else {
+                    setLines(prev => [...prev, 'Welcome, Operator.']);
+                    setProgress(100);
+                    setTimeout(onBootComplete, 1200);
+                }
                 clearInterval(intervalId);
-                setTimeout(onBootComplete, 1200);
             }
             i++;
         }, 600);
 
         return () => clearInterval(intervalId);
-    }, [onBootComplete]);
+    }, [onBootComplete, onRecovery, username]);
 
     return (
       <div className="bg-black p-8 w-full h-full flex flex-col justify-center text-green-400 font-code cursor-none">
         <div className="whitespace-pre-wrap text-lg">
           {lines.map((line, i) => (
-            <p key={i}>{line}</p>
+            <p key={i} className={cn(line.startsWith('CRITICAL') ? 'text-red-500' : '')}>{line}</p>
           ))}
         </div>
         <div className="mt-8 flex items-center gap-4">
-            <Progress value={progress} className="h-2 bg-green-900/50 border border-green-700/50" indicatorClassName="bg-green-400" />
+            <Progress value={progress} className="h-2 bg-green-900/50 border border-green-700/50" indicatorClassName={cn("bg-green-400", error && 'bg-red-500')} />
             <span className='text-lg'>{Math.round(progress)}%</span>
         </div>
-        {progress >= 100 && (
+        {progress >= 100 && !error &&(
             <p className='mt-4 text-xl animate-pulse'>Boot sequence complete. Handing over control...</p>
         )}
       </div>
@@ -243,6 +262,65 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
     );
 };
 
+const RecoveryScreen = ({ onReboot }: { onReboot: () => void }) => {
+    const [input, setInput] = useState('');
+    const [history, setHistory] = useState<string[]>([
+        'SubSystem Recovery Mode',
+        'Kernel not found or unable to mount.',
+        'Type "help" for a list of commands.'
+    ]);
+
+    const handleCommand = () => {
+        const newHistory = [...history, `> ${input}`];
+        if (input.trim().toLowerCase() === 'restore_kernel') {
+            const playerPcTemplate = initialNetworkData.find(p => p.id === 'player-pc');
+            const xserverFileTemplate = playerPcTemplate?.fileSystem.find(f => f.name === 'sys')?.children?.find(f => f.name === 'XserverOS.sys');
+            
+            if(xserverFileTemplate) {
+                // This is a bit of a hack. We modify localStorage directly.
+                const gameState = JSON.parse(localStorage.getItem('gameState_Operator') || '{}');
+                const playerPc = gameState.network.find((p:any) => p.id === 'player-pc');
+                const sysFolder = playerPc.fileSystem.find((f:any) => f.name === 'sys');
+                if (sysFolder && !sysFolder.children.some((f:any) => f.name === 'XserverOS.sys')) {
+                    sysFolder.children.push(xserverFileTemplate);
+                    localStorage.setItem('gameState_Operator', JSON.stringify(gameState));
+                }
+            }
+            
+            newHistory.push('Restoring kernel from backup...');
+            newHistory.push('Restore complete. System will now reboot.');
+            setHistory(newHistory);
+            setTimeout(onReboot, 2000);
+
+        } else if (input.trim().toLowerCase() === 'help') {
+            newHistory.push('Available commands:');
+            newHistory.push('  restore_kernel   - Restores the system kernel from the recovery partition.');
+        } else {
+            newHistory.push(`Command not found: ${input}`);
+        }
+        setHistory(newHistory);
+        setInput('');
+    }
+
+    return (
+        <div className="w-full h-full p-8 bg-black text-red-500 font-code flex flex-col">
+            <div className="flex-grow overflow-y-auto">
+                {history.map((line, i) => <p key={i}>{line}</p>)}
+            </div>
+            <div className="flex items-center">
+                <span>&gt;&nbsp;</span>
+                <Input
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleCommand()}
+                    className="bg-transparent border-none text-red-500 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 h-6 p-0 ml-1"
+                    autoFocus
+                />
+            </div>
+        </div>
+    );
+};
+
 
 export default function Home() {
     const [machineState, setMachineState] = useState<MachineState>('off');
@@ -282,12 +360,25 @@ export default function Home() {
             e.preventDefault();
         };
         document.addEventListener('contextmenu', handleContextMenu);
+        
+        // On first load, check if there's a saved game.
+        const savedState = localStorage.getItem(`gameState_${username}`);
+        if(savedState) {
+            try {
+                const parsedState = JSON.parse(savedState);
+                if(parsedState.machineState && parsedState.machineState !== 'off') {
+                    setMachineState(parsedState.machineState);
+                }
+            } catch(e) {
+                // corrupted save, ignore.
+            }
+        }
 
         return () => {
             window.removeEventListener('resize', updateScale);
             document.removeEventListener('contextmenu', handleContextMenu);
         };
-    }, [updateScale]);
+    }, [updateScale, username]);
     
     const handleStartSystem = () => {
         setSoundEvent('fan');
@@ -306,7 +397,8 @@ export default function Home() {
     
     const handleReboot = () => {
         setMusicEvent('none');
-        setMachineState('off');
+        setSoundEvent('fan');
+        setMachineState('bios');
     }
 
     const renderState = () => {
@@ -324,13 +416,19 @@ export default function Home() {
             case 'booting':
                 return (
                     <div className="w-full h-full bg-black">
-                        <BootScreen onBootComplete={() => setMachineState('login')} />
+                        <BootScreen onBootComplete={() => setMachineState('login')} onRecovery={() => setMachineState('recovery')} username={username}/>
                     </div>
                 );
             case 'login':
                 return (
                     <div className="w-full h-full flex flex-col justify-center items-center">
                         <LoginScreen onLogin={handleLogin} />
+                    </div>
+                );
+            case 'recovery':
+                return (
+                    <div className="w-full h-full bg-black">
+                        <RecoveryScreen onReboot={handleReboot} />
                     </div>
                 );
             case 'desktop':
@@ -346,6 +444,7 @@ export default function Home() {
                 id="viewport" 
                 className="absolute bg-background origin-top-left"
             >
+                <div className={cn("absolute inset-0 bg-red-600/80 pointer-events-none z-[9998]", machineState === 'desktop' ? 'animate-scream' : 'hidden')} style={{ animationIterationCount: machineState === 'desktop' ? 'infinite' : 1, animationDuration: '1s' }} />
                 <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
                 {renderState()}
             </div>

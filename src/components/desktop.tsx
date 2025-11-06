@@ -20,6 +20,7 @@ import WebBrowser from './apps/web-browser';
 import { ShieldAlert, ShieldCheck, Mail, AlertTriangle, Skull } from 'lucide-react';
 import { Progress } from './ui/progress';
 import TracerTerminal, { traceCommands, decryptCommands, isolationCommands } from './tracer-terminal';
+import { saveGameState, loadGameState } from '@/lib/save-manager';
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser';
 
@@ -96,8 +97,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const nextInstanceIdRef = useRef(0);
   const [editingFile, setEditingFile] = useState<EditingFile>(null);
   const nanoRef = useRef(null);
-  const [network, setNetwork] = useState<PC[]>(() => JSON.parse(JSON.stringify(initialNetwork)));
-  const [hackedPcs, setHackedPcs] = useState<Set<string>>(new Set(['player-pc']));
+
+  const [network, setNetwork] = useState<PC[]>(() => loadGameState(username).network);
+  const [hackedPcs, setHackedPcs] = useState<Set<string>>(() => loadGameState(username).hackedPcs);
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
   const [dangerLevel, setDangerLevel] = useState(0);
 
@@ -120,6 +122,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       },
   ]);
 
+  useEffect(() => {
+    // Autosave interval
+    const saveInterval = setInterval(() => {
+        saveGameState(username, { network, hackedPcs, machineState: 'desktop' });
+    }, 5000); // Save every 5 seconds
+
+    return () => clearInterval(saveInterval);
+  }, [network, hackedPcs, username]);
 
   const addLog = useCallback((message: string) => {
     const timestamp = new Date().toISOString();
@@ -195,9 +205,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
           onReboot();
           return 0;
         }
-        onSoundEvent('scream');
         return newTime;
       });
+      onSoundEvent('scream');
     }, 1000);
 
     return () => clearInterval(timer);
