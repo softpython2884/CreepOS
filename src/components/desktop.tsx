@@ -222,10 +222,11 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
                     return pc;
                 });
                 setNetwork(updatedNetwork);
+                
+                saveGameState(username, { network: updatedNetwork, hackedPcs, machineState: 'desktop' });
 
-                saveGameState(username, { ...gameState, network: updatedNetwork });
-
-                onReboot();
+                onSoundEvent('bsod');
+                setMachineState('bsod');
                 return 0;
             }
             if (newTime > 0 && !isScreaming) {
@@ -237,7 +238,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, onReboot, addLog, isScreaming, onSoundEvent, network, gameState, username]);
+}, [isTraced, addLog, isScreaming, onSoundEvent, network, username, setMachineState, hackedPcs]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
@@ -575,5 +576,3 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     </main>
   );
 }
-
-    

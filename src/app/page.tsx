@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { User, Lock, Power, Monitor, Ratio, RefreshCw } from 'lucide-react';
+import { User, Lock, Power, Monitor, Ratio, RefreshCw, Skull } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Desktop from '@/components/desktop';
 import AudioManager, { MusicEvent, SoundEvent } from '@/components/audio-manager';
@@ -13,7 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { loadGameState, deleteGameState } from '@/lib/save-manager';
 import { network as initialNetworkData } from '@/lib/network';
 
-type MachineState = 'off' | 'bios' | 'booting' | 'login' | 'desktop' | 'recovery';
+type MachineState = 'off' | 'bios' | 'booting' | 'login' | 'desktop' | 'recovery' | 'bsod';
 
 const biosLines = [
     'NEO-SYSTEM BIOS v1.0.3',
@@ -328,6 +328,24 @@ const RecoveryScreen = ({ onReboot }: { onReboot: () => void }) => {
     );
 };
 
+const BsodScreen = ({ onReboot }: { onReboot: () => void }) => {
+
+    useEffect(() => {
+        const timer = setTimeout(onReboot, 7000);
+        return () => clearTimeout(timer);
+    }, [onReboot]);
+
+    return (
+        <div className="w-full h-full p-8 sm:p-16 bg-[#0000AA] text-white font-code flex flex-col justify-center items-center text-center">
+            <Skull className="h-24 w-24 mb-8 animate-pulse" />
+            <h1 className="text-3xl font-bold mb-4">A fatal exception has occurred.</h1>
+            <p className="text-lg">The system can no longer operate safely.</p>
+            <p className="text-lg mt-4">ERROR: 0E : 016F : BFF9B3D4 - KERNEL_DELETED_BY_TRACE</p>
+            <p className="text-lg mt-8">System will reboot automatically.</p>
+        </div>
+    )
+}
+
 
 export default function Home() {
     const [machineState, setMachineState] = useState<MachineState>('off');
@@ -372,22 +390,11 @@ export default function Home() {
             window.removeEventListener('resize', updateScale);
             document.removeEventListener('contextmenu', handleContextMenu);
         };
-    }, [updateScale, username]);
+    }, [updateScale]);
     
     const handleStartSystem = () => {
-        const savedState = loadGameState(username);
-        const savedMachineState = savedState.machineState;
-    
-        if (savedMachineState && savedMachineState !== 'off' && savedMachineState !== 'bios') {
-             // If there's a valid saved state (e.g., desktop, login), go to booting
-            setSoundEvent('fan');
-            setMusicEvent('epic');
-            setMachineState('booting');
-        } else {
-            // Otherwise, start the normal boot sequence
-            setSoundEvent('fan');
-            setMachineState('bios');
-        }
+        setSoundEvent('fan');
+        setMachineState('bios');
     }
 
     const handleBiosComplete = () => {
@@ -434,6 +441,12 @@ export default function Home() {
                 return (
                     <div className="w-full h-full bg-black">
                         <RecoveryScreen onReboot={handleReboot} />
+                    </div>
+                );
+            case 'bsod':
+                return (
+                    <div className="w-full h-full bg-black">
+                        <BsodScreen onReboot={handleReboot} />
                     </div>
                 );
             case 'desktop':

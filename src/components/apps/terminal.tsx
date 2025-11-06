@@ -788,14 +788,13 @@ export default function Terminal({
             }
             
             if (fileNode.name === 'XserverOS.sys') {
-                const isLocal = connectedIp === '127.0.0.1';
                 handleOutput(`WARNING: This is a critical system file. Deleting it will cause system instability.`);
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 handleOutput(`Deletion of ${fileArg} will proceed.`);
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
-                if (isLocal) {
-                    addLog(`CRITICAL: XserverOS.sys deleted from local machine. System rebooting.`);
+                if (connectedIp === '127.0.0.1') {
+                    addLog(`CRITICAL: XserverOS.sys deleted from local machine. Next reboot will fail.`);
                     setNetwork(currentNetwork => {
                         const newNetwork = currentNetwork.map(pc => {
                             if (pc.ip === connectedIp) {
@@ -807,10 +806,8 @@ export default function Terminal({
                         return newNetwork;
                     });
                     
-                    // Use timeout to ensure state update is processed before saving and rebooting
                     setTimeout(() => {
                         saveGameState();
-                        onReboot();
                     }, 100);
 
                 } else {
