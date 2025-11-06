@@ -173,7 +173,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     if (!isTraced || traceTimeLeft <= 0) return;
 
     const timer = setInterval(() => {
-      onSoundEvent('scream'); // Play the pulse sound
+      onSoundEvent('scream');
       setTraceTimeLeft(prevTime => {
         if (prevTime <= 1) {
           clearInterval(timer);
@@ -357,11 +357,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   };
 
   const openApp = useCallback((appId: AppId, sourceInstanceId?: number) => {
-    // Temp trigger for trace testing
-    if (appId === 'logs') {
-        handleStartTrace('Test System', 60, sourceInstanceId || 0);
-    }
-    
     const playerFs = getPlayerFileSystem();
     if (appId === 'documents' && playerFs.length === 0) return;
 
@@ -385,7 +380,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setActiveInstanceId(instanceId);
     setNextZIndex(prev => prev + 1);
     onSoundEvent('click');
-  }, [nextZIndex, onSoundEvent, appConfig, getPlayerFileSystem, handleStartTrace]);
+  }, [nextZIndex, onSoundEvent, appConfig, getPlayerFileSystem]);
 
   const closeApp = useCallback((instanceId: number) => {
     onSoundEvent('close');
@@ -509,5 +504,3 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     </main>
   );
 }
-
-    

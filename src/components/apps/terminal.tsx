@@ -511,6 +511,7 @@ export default function Terminal({
             if (connectedIp === '127.0.0.1' || !targetPC) {
                 handleOutput('probe: Must be connected to a remote system.');
             } else {
+                checkAndTriggerTrace();
                 handleOutput(`Probing ${targetPC.ip}...`);
                 await runProgressBar(2000);
                 const secInfo = [
