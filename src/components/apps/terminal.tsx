@@ -94,6 +94,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
   const [input, setInput] = useState('');
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Network and FS state
   const [connectedIp, setConnectedIp] = useState<string>('127.0.0.1');
@@ -228,18 +229,94 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
   }
 
 
-  const handleCommand = () => {
+  const runProgressBar = async (duration: number) => {
+    const barLength = 20;
+    const interval = duration / barLength;
+    let currentProgress = 0;
+    
+    setHistory(prev => [...prev, {type: 'output', content: ''}]); // Add an empty line to update
+
+    while (currentProgress <= barLength) {
+        const bar = '[' + '#'.repeat(currentProgress) + ' '.repeat(barLength - currentProgress) + ']';
+        const percentage = Math.round((currentProgress / barLength) * 100);
+        
+        setHistory(prev => {
+            const newHistory = [...prev];
+            newHistory[newHistory.length - 1] = { type: 'output', content: `${bar} ${percentage}%`};
+            return newHistory;
+        });
+
+        await new Promise(resolve => setTimeout(resolve, interval));
+        currentProgress++;
+    }
+  };
+
+  const runAnalyzeMinigame = async (solution: string) => {
+    const duration = 4000;
+    const interval = 100;
+    const steps = duration / interval;
+    const revealedChars = new Array(solution.length).fill(null);
+    let revealedCount = 0;
+
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    const randomChar = () => chars[Math.floor(Math.random() * chars.length)];
+
+    setHistory(prev => [...prev, {type: 'output', content: 'Initiating deep scan...'}]);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setHistory(prev => [...prev, {type: 'output', content: ''}]); // Placeholder for the animation
+
+    for (let i = 0; i < steps; i++) {
+        let output = '';
+        for (let j = 0; j < solution.length; j++) {
+            if (revealedChars[j] !== null) {
+                output += ` ${solution[j]} `;
+            } else {
+                output += ` ${randomChar()} `;
+            }
+        }
+
+        if (i > 0 && i % Math.floor(steps / solution.length) === 0 && revealedCount < solution.length) {
+            let nextIndexToReveal;
+            do {
+                nextIndexToReveal = Math.floor(Math.random() * solution.length);
+            } while (revealedChars[nextIndexToReveal] !== null);
+            
+            revealedChars[nextIndexToReveal] = solution[nextIndexToReveal];
+            revealedCount++;
+        }
+
+        setHistory(prev => {
+            const newHistory = [...prev];
+            newHistory[newHistory.length - 1] = { type: 'output', content: `[${output}]` };
+            return newHistory;
+        });
+        
+        await new Promise(resolve => setTimeout(resolve, interval));
+    }
+    
+    setHistory(prev => {
+        const newHistory = [...prev];
+        newHistory[newHistory.length - 1] = { type: 'output', content: `Solution Fragment: [ ${solution} ]` };
+        return newHistory;
+    });
+  };
+
+
+  const handleCommand = async () => {
     const fullCommand = input.trim();
     if (fullCommand === '') {
         setHistory([...history, { type: 'command', content: getPrompt() }]);
         return;
     };
 
+    setIsProcessing(true);
     addLog(`COMMAND: Executed '${fullCommand}' on ${connectedIp}`);
     setCommandHistory(prev => [fullCommand, ...prev]);
     setHistoryIndex(-1);
 
     let newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${fullCommand}` }];
+    setHistory(newHistory);
+    setInput('');
 
     const append = fullCommand.includes('>>');
     const redirect = fullCommand.includes('>');
@@ -257,45 +334,48 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
     
     const handleOutput = (output: string) => {
         if ((redirect || append) && redirectPathArg) {
-            newHistory.push({ type: 'output', content: `error: Redirection not yet implemented for this command.` });
+            setHistory(prev => [...prev, { type: 'output', content: `error: Redirection not yet implemented for this command.` }]);
         } else {
-            newHistory.push({ type: 'output', content: output });
+            setHistory(prev => [...prev, { type: 'output', content: output }]);
         }
     }
     
     const checkAuth = () => {
         if (!isAuthenticated) {
-            newHistory.push({ type: 'output', content: 'error: Permission denied. You are not authenticated.' });
+            setHistory(prev => [...prev, { type: 'output', content: 'error: Permission denied. You are not authenticated.' }]);
             return false;
         }
         return true;
     }
 
-    const handlePortHack = (portNumber: number, portName: string) => {
+    const handlePortHack = async (portNumber: number, portName: string) => {
       const targetPC = getCurrentPc();
       if (connectedIp === '127.0.0.1' || !targetPC) {
-        newHistory.push({ type: 'output', content: `${portName}: Must be connected to a remote system.` });
+        setHistory(prev => [...prev, { type: 'output', content: `${portName}: Must be connected to a remote system.` }]);
         return;
       }
       if (targetPC.firewall.enabled) {
-        newHistory.push({ type: 'output', content: `${portName} failed: Active firewall detected.` });
+        setHistory(prev => [...prev, { type: 'output', content: `${portName} failed: Active firewall detected.` }]);
         addRemoteLog(`HACK: ${portName} failed on port ${portNumber}. Reason: Firewall active.`);
         return;
       }
       if (targetPC.proxy.enabled) {
-        newHistory.push({ type: 'output', content: `${portName} failed: Active proxy detected.` });
+        setHistory(prev => [...prev, { type: 'output', content: `${portName} failed: Active proxy detected.` }]);
         addRemoteLog(`HACK: ${portName} failed on port ${portNumber}. Reason: Proxy active.`);
         return;
       }
       const port = targetPC.ports.find(p => p.port === portNumber);
       if (!port) {
-        newHistory.push({ type: 'output', content: `${portName} failed: Port ${portNumber} not found on this system.` });
+        setHistory(prev => [...prev, { type: 'output', content: `${portName} failed: Port ${portNumber} not found on this system.` }]);
         return;
       }
       if (port.isOpen) {
-        newHistory.push({ type: 'output', content: `Port ${portNumber} is already open.` });
+        setHistory(prev => [...prev, { type: 'output', content: `Port ${portNumber} is already open.` }]);
         return;
       }
+
+      setHistory(prev => [...prev, { type: 'output', content: `Running ${portName} exploit...` }]);
+      await runProgressBar(3000);
   
       setNetwork(network.map(pc => {
         if (pc.id === targetPC.id) {
@@ -305,7 +385,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
         return pc;
       }));
   
-      newHistory.push({ type: 'output', content: `${port.service} port (${portNumber}) is now open.` });
+      setHistory(prev => [...prev, { type: 'output', content: `${port.service} port (${portNumber}) is now open.` }]);
       addRemoteLog(`HACK: Port ${portNumber} (${port.service}) opened by ${username}.`);
     };
 
@@ -313,31 +393,35 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
     if (command.toLowerCase() === 'porthack') {
         const targetPC = getCurrentPc();
         if (connectedIp === '127.0.0.1') {
-            newHistory.push({ type: 'output', content: 'porthack: cannot run on local machine.' });
+            setHistory(prev => [...prev, { type: 'output', content: 'porthack: cannot run on local machine.' }]);
         } else if (!targetPC) {
-            newHistory.push({ type: 'output', content: 'porthack: critical error, no target system.' });
+            setHistory(prev => [...prev, { type: 'output', content: 'porthack: critical error, no target system.' }]);
         } else if (hackedPcs.has(targetPC.id)) {
-            newHistory.push({ type: 'output', content: `porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}` });
+            setHistory(prev => [...prev, { type: 'output', content: `porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}` }]);
         } else if (targetPC.firewall.enabled) {
-            newHistory.push({ type: 'output', content: `ERROR: Active firewall detected. Connection terminated.`});
+            setHistory(prev => [...prev, { type: 'output', content: `ERROR: Active firewall detected. Connection terminated.`}]);
             addRemoteLog(`HACK: PortHack failed. Reason: Firewall active.`);
         } else if (targetPC.proxy.enabled) {
-            newHistory.push({ type: 'output', content: `ERROR: Active proxy detected. Connection bounced.` });
+            setHistory(prev => [...prev, { type: 'output', content: `ERROR: Active proxy detected. Connection bounced.` }]);
             addRemoteLog(`HACK: PortHack failed. Reason: Proxy active.`);
         } else {
+            setHistory(prev => [...prev, { type: 'output', content: `Initiating PortHack sequence...` }]);
+            await runProgressBar(5000);
             const openPorts = targetPC.ports.filter(p => p.isOpen).length;
             if (openPorts >= targetPC.requiredPorts) {
-                newHistory.push({ type: 'output', content: `PortHack successful on ${targetPC.ip}. Firewall breached.` });
-                newHistory.push({ type: 'output', content: `  Password cracked: ${targetPC.auth.pass}` });
+                setHistory(prev => [
+                    ...prev, 
+                    { type: 'output', content: `PortHack successful on ${targetPC.ip}. Firewall breached.` },
+                    { type: 'output', content: `  Password cracked: ${targetPC.auth.pass}` }
+                ]);
                 addRemoteLog(`HACK: PortHack successful. Root access gained by ${username}.`);
                 onHack(targetPC.id, targetPC.ip);
             } else {
-                newHistory.push({ type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open port(s) required. (${openPorts}/${targetPC.requiredPorts} open)` });
+                setHistory(prev => [...prev, { type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open port(s) required. (${openPorts}/${targetPC.requiredPorts} open)` }]);
                 addRemoteLog(`HACK: PortHack failed. Reason: Insufficient open ports.`);
             }
         }
-        setHistory(newHistory);
-        setInput('');
+        setIsProcessing(false);
         return;
     }
 
@@ -346,25 +430,25 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
     if (executable) {
         const cmdName = executable.name.split('.')[0].toLowerCase();
         if (cmdName === 'nano') {
-            if (!checkAuth()) { setHistory(newHistory); setInput(''); return; }
+            if (!checkAuth()) { setIsProcessing(false); return; }
             const pathArg = args[0];
             if (!pathArg) {
-                newHistory.push({ type: 'output', content: `nano: missing file operand` });
+                handleOutput(`nano: missing file operand`);
             } else {
                 const filePath = resolvePath(pathArg);
                 if (connectedIp !== '127.0.0.1') {
-                    newHistory.push({ type: 'output', content: `nano: cannot edit files on remote systems yet.` });
+                    handleOutput(`nano: cannot edit files on remote systems yet.`);
                 } else {
                     const file = findNodeByPath(filePath, fileSystem);
                     if (file && file.type === 'folder') {
-                        newHistory.push({ type: 'output', content: `nano: cannot edit directory '${pathArg}'` });
+                        handleOutput(`nano: cannot edit directory '${pathArg}'`);
                     } else {
                         onOpenFileEditor(filePath, file?.content || '');
                     }
                 }
             }
         } else if (cmdName === 'scan') {
-             if (!checkAuth()) { setHistory(newHistory); setInput(''); return; }
+             if (!checkAuth()) { setIsProcessing(false); return; }
             const currentPc = getCurrentPc();
             if (currentPc && currentPc.links) {
                 const linkedPcs = currentPc.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
@@ -380,18 +464,21 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
         } else if (cmdName === 'analyze') {
             const targetPC = getCurrentPc();
             if (connectedIp === '127.0.0.1' || !targetPC) {
-                newHistory.push({ type: 'output', content: 'analyze: Must be connected to a remote system.' });
+                handleOutput('analyze: Must be connected to a remote system.');
             } else if (!targetPC.firewall.enabled) {
-                newHistory.push({ type: 'output', content: 'Firewall is not active.' });
+                handleOutput('Firewall is not active.');
             } else {
-                 newHistory.push({ type: 'output', content: `Analyzing firewall... Solution found: ${targetPC.firewall.solution}` });
-                 addRemoteLog(`HACK: Firewall analysis by ${username} revealed solution: ${targetPC.firewall.solution}`);
+                await runAnalyzeMinigame(targetPC.firewall.solution || 'UNKNOWN');
+                handleOutput(`Firewall analysis complete. Solution fragment acquired.`);
+                addRemoteLog(`HACK: Firewall analysis by ${username} revealed solution: ${targetPC.firewall.solution}`);
             }
         } else if (cmdName === 'probe') {
             const targetPC = getCurrentPc();
             if (connectedIp === '127.0.0.1' || !targetPC) {
-                newHistory.push({ type: 'output', content: 'probe: Must be connected to a remote system.' });
+                handleOutput('probe: Must be connected to a remote system.');
             } else {
+                handleOutput(`Probing ${targetPC.ip}...`);
+                await runProgressBar(2000);
                 const secInfo = [
                     `Security Probe results for ${targetPC.ip}:`,
                     `  Firewall: ${targetPC.firewall.enabled ? `ACTIVE (Complexity: ${targetPC.firewall.complexity})` : 'INACTIVE'}`,
@@ -408,38 +495,42 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
                     secInfo.push('  No scannable ports detected.');
                 }
                 addRemoteLog(`INFO: System ${targetPC.ip} probed by ${username}.`);
-                newHistory.push({ type: 'output', content: secInfo.join('\n') });
+                handleOutput(secInfo.join('\n'));
             }
         } else if (cmdName === 'overload') {
             const targetPC = getCurrentPc();
             if (connectedIp === '127.0.0.1' || !targetPC) {
-                newHistory.push({ type: 'output', content: 'overload: Must be connected to a remote system.' });
+                handleOutput('overload: Must be connected to a remote system.');
             } else if (!targetPC.proxy.enabled) {
-                newHistory.push({ type: 'output', content: 'Proxy is not active.' });
+                handleOutput('Proxy is not active.');
             } else {
                 const requiredNodes = targetPC.proxy.level;
                 const availableNodes = hackedPcs.size;
+                
+                handleOutput(`Overloading proxy... (Requires: ${requiredNodes} nodes, Have: ${availableNodes})`);
+                await runProgressBar(targetPC.proxy.level * 2000);
+
                 if (availableNodes >= requiredNodes) {
                     setNetwork(network.map(pc => pc.id === targetPC.id ? { ...pc, proxy: { ...pc.proxy, enabled: false } } : pc));
-                    newHistory.push({ type: 'output', content: `Proxy disabled on ${targetPC.ip}.` });
+                    handleOutput(`Proxy disabled on ${targetPC.ip}.`);
                     addRemoteLog(`HACK: Proxy on ${targetPC.ip} disabled via overload by ${username}.`);
                 } else {
-                    newHistory.push({ type: 'output', content: `Overload failed. Insufficient nodes. Required: ${requiredNodes}, Available: ${availableNodes}` });
+                    handleOutput(`Overload failed. Insufficient nodes.`);
                     addRemoteLog(`HACK: Proxy overload failed. Required ${requiredNodes} nodes, have ${availableNodes}.`);
                 }
             }
         } else if (cmdName.toLowerCase() === 'ftpbounce') {
-            handlePortHack(21, 'FTPBounce');
+            await handlePortHack(21, 'FTPBounce');
         } else if (cmdName.toLowerCase() === 'sshbounce') {
-            handlePortHack(22, 'SSHBounce');
+            await handlePortHack(22, 'SSHBounce');
         } else if (cmdName.toLowerCase() === 'smtpoverflow') {
-            handlePortHack(25, 'SMTPOverflow');
+            await handlePortHack(25, 'SMTPOverflow');
         } else if (cmdName.toLowerCase() === 'webserverworm') {
-            handlePortHack(80, 'WebServerWorm');
+            await handlePortHack(80, 'WebServerWorm');
         } else if (cmdName.toLowerCase() === 'forkbomb') {
             const targetPC = getCurrentPc();
             if (connectedIp === '127.0.0.1') {
-                newHistory.push({ type: 'output', content: 'SYSTEM CRASH IMMINENT. REBOOTING...' });
+                handleOutput('SYSTEM CRASH IMMINENT. REBOOTING...');
                 addLog(`CRITICAL: Forkbomb executed on local machine. System rebooting.`);
                 setTimeout(onReboot, 1000);
             } else if (targetPC) {
@@ -452,11 +543,10 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             }
         }
         else {
-             newHistory.push({ type: 'output', content: `Execution of ${command} is not yet implemented.` });
+             handleOutput(`Execution of ${command} is not yet implemented.`);
         }
 
-        setHistory(newHistory);
-        setInput('');
+        setIsProcessing(false);
         return;
     }
 
@@ -490,7 +580,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
                 '',
                 '  clear          - Clear the terminal screen',
             ].join('\n');
-            newHistory.push({ type: 'output', content: helpText });
+            handleOutput(helpText);
             break;
         }
         case 'ls': {
@@ -525,7 +615,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
                 const content = targetNode.children.map(node => `${node.name}${node.type === 'folder' ? '/' : ''}`).join('  ');
                 handleOutput(content || "(empty)");
             } else if (!currentPathResolved) {
-                 newHistory.push({ type: 'output', content: `ls: cannot access '${pathArg}': No such file or directory` });
+                 handleOutput(`ls: cannot access '${pathArg}': No such file or directory`);
             }
             break;
         }
@@ -562,7 +652,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             if (isValid) {
                 setCurrentDirectory(newPath);
             } else {
-                newHistory.push({ type: 'output', content: `cd: no such file or directory: ${pathArg}` });
+                handleOutput(`cd: no such file or directory: ${pathArg}`);
             }
             break;
         }
@@ -570,7 +660,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             if(!checkAuth()) break;
             const filename = args.join(' ');
             if (!filename) {
-                newHistory.push({ type: 'output', content: `cat: missing file operand` });
+                handleOutput(`cat: missing file operand`);
                 break;
             }
             const path = resolvePath(filename);
@@ -580,10 +670,10 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
                 if (file.type === 'file') {
                     handleOutput(file.content || '');
                 } else {
-                    newHistory.push({ type: 'output', content: `cat: ${filename}: Is a directory` });
+                    handleOutput(`cat: ${filename}: Is a directory`);
                 }
             } else {
-                newHistory.push({ type: 'output', content: `cat: ${filename}: No such file or directory` });
+                handleOutput(`cat: ${filename}: No such file or directory`);
             }
             break;
         }
@@ -595,10 +685,10 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
         case 'touch': {
             if(!checkAuth()) break;
             if (connectedIp !== '127.0.0.1') {
-                 newHistory.push({ type: 'output', content: `touch: cannot create files on remote systems.` });
+                 handleOutput(`touch: cannot create files on remote systems.`);
                  break;
             }
-            newHistory.push({ type: 'output', content: `touch: This command is not fully implemented. Use 'nano' to create and edit files.` });
+            handleOutput(`touch: This command is not fully implemented. Use 'nano' to create and edit files.`);
             break;
         }
         case 'rm': {
@@ -606,25 +696,27 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
 
             const fileArg = args[0];
             if (!fileArg) {
-                newHistory.push({ type: 'output', content: 'rm: missing operand' });
+                handleOutput('rm: missing operand');
                 break;
             }
             const filePath = resolvePath(fileArg);
             const fileNode = findNodeByPath(filePath, fileSystem);
 
             if (!fileNode) {
-                newHistory.push({ type: 'output', content: `rm: cannot remove '${fileArg}': No such file or directory` });
+                handleOutput(`rm: cannot remove '${fileArg}': No such file or directory`);
                 break;
             }
             if (fileNode.type === 'folder') {
-                newHistory.push({ type: 'output', content: `rm: cannot remove '${fileArg}': Is a directory` });
+                handleOutput(`rm: cannot remove '${fileArg}': Is a directory`);
                 break;
             }
             
             if (fileNode.name === 'XserverOS.sys') {
                 const isLocal = connectedIp === '127.0.0.1';
-                newHistory.push({ type: 'output', content: `WARNING: This is a critical system file. Deleting it will cause system instability.` });
-                newHistory.push({ type: 'output', content: `Deletion of ${fileArg} will proceed.` });
+                handleOutput(`WARNING: This is a critical system file. Deleting it will cause system instability.`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                handleOutput(`Deletion of ${fileArg} will proceed.`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
                 if (isLocal) {
                     addLog(`CRITICAL: XserverOS.sys deleted from local machine. System rebooting.`);
@@ -646,7 +738,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             }
 
             if (fileNode.isSystemFile) {
-                newHistory.push({ type: 'output', content: `rm: cannot remove '${fileArg}': Permission denied` });
+                handleOutput(`rm: cannot remove '${fileArg}': Permission denied`);
                 if (connectedIp !== '127.0.0.1') {
                     addRemoteLog(`SECURITY: Denied attempt to remove system file ${fileNode.name} by ${username}.`);
                 }
@@ -665,11 +757,11 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             }));
 
             if(isAccessLog) {
-                newHistory.push({ type: 'output', content: `Cleared content of '${fileArg}'` });
+                handleOutput(`Cleared content of '${fileArg}'`);
                 if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: Log file '${fileArg}' cleared by user ${username}.`);
                 addLog(`EVENT: Log file '${fileArg}' on ${connectedIp} cleared.`);
             } else {
-                newHistory.push({ type: 'output', content: `Removed '${fileArg}'` });
+                handleOutput(`Removed '${fileArg}'`);
                 if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: File removed by user ${username}: ${filePath.join('/')}`);
                 addLog(`EVENT: File '${fileArg}' on ${connectedIp} removed.`);
             }
@@ -680,26 +772,26 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             const targetIp = args[0];
 
             if (!targetIp) {
-                newHistory.push({ type: 'output', content: 'connect: missing target IP address' });
+                handleOutput('connect: missing target IP address');
                 break;
             }
 
             const targetPC = network.find(pc => pc.ip === targetIp);
             
             if (!targetPC) {
-                newHistory.push({ type: 'output', content: `connect: unable to resolve host ${targetIp}` });
+                handleOutput(`connect: unable to resolve host ${targetIp}`);
                 break;
             }
              if (targetPC.ip === connectedIp) {
-                newHistory.push({ type: 'output', content: `connect: already connected to ${targetIp}` });
+                handleOutput(`connect: already connected to ${targetIp}`);
                 break;
             }
             
             setConnectedIp(targetIp);
             setIsAuthenticated(false);
             setCurrentDirectory([]);
-            newHistory.push({ type: 'output', content: `Connection established to ${targetPC.name} (${targetPC.ip}).` });
-            newHistory.push({ type: 'output', content: `Use 'login' to authenticate.` });
+            handleOutput(`Connection established to ${targetPC.name} (${targetPC.ip}).`);
+            handleOutput(`Use 'login' to authenticate.`);
             addLog(`EVENT: Connection established to ${targetPC.name} (${targetPC.ip})`);
             addRemoteLog(`Connection established from unknown source.`);
             break;
@@ -707,15 +799,15 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
         case 'login': {
             const [userArg, passArg] = args;
             if (connectedIp === '127.0.0.1') {
-                newHistory.push({ type: 'output', content: 'login: cannot login to local machine.' });
+                handleOutput('login: cannot login to local machine.');
                 break;
             }
             if (isAuthenticated) {
-                newHistory.push({ type: 'output', content: 'login: already authenticated.' });
+                handleOutput('login: already authenticated.');
                 break;
             }
             if (!userArg || !passArg) {
-                newHistory.push({ type: 'output', content: 'login: missing user or password operand.' });
+                handleOutput('login: missing user or password operand.');
                 break;
             }
             
@@ -723,11 +815,11 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             if (targetPC && targetPC.auth.user === userArg && targetPC.auth.pass === passArg) {
                 setIsAuthenticated(true);
                 setCurrentDirectory([]);
-                newHistory.push({ type: 'output', content: 'Authentication successful.' });
+                handleOutput('Authentication successful.');
                 addRemoteLog(`AUTH: Login successful as user ${userArg}.`);
                 addLog(`AUTH: Authenticated on ${targetPC.ip} as ${userArg}.`);
             } else {
-                newHistory.push({ type: 'output', content: 'Authentication failed.' });
+                handleOutput('Authentication failed.');
                 addRemoteLog(`AUTH: Failed login attempt with user ${userArg}.`);
             }
             break;
@@ -739,11 +831,11 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
         }
         case 'reboot': {
             if (connectedIp === '127.0.0.1') {
-                 newHistory.push({ type: 'output', content: 'System is going down for reboot NOW!' });
+                 handleOutput('System is going down for reboot NOW!');
                  addLog(`CRITICAL: Local system reboot initiated.`);
                  setTimeout(onReboot, 1000);
             } else {
-                newHistory.push({ type: 'output', content: `Rebooting remote system...` });
+                handleOutput(`Rebooting remote system...`);
                 addRemoteLog(`COMMAND: Reboot initiated by user ${username}.`);
                 disconnect();
             }
@@ -753,15 +845,15 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             const solution = args[0];
             const targetPC = getCurrentPc();
             if (connectedIp === '127.0.0.1' || !targetPC) {
-                newHistory.push({ type: 'output', content: 'solve: Must be connected to a remote system.' });
+                handleOutput('solve: Must be connected to a remote system.');
             } else if (!targetPC.firewall.enabled) {
-                newHistory.push({ type: 'output', content: 'Firewall is not active.' });
+                handleOutput('Firewall is not active.');
             } else if (targetPC.firewall.solution === solution) {
                 setNetwork(network.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
-                newHistory.push({ type: 'output', content: 'Firewall disabled.' });
+                handleOutput('Firewall disabled.');
                 addRemoteLog(`HACK: Firewall disabled by ${username} with solution: ${solution}.`);
             } else {
-                 newHistory.push({ type: 'output', content: 'Incorrect solution.' });
+                 handleOutput('Incorrect solution.');
                  addRemoteLog(`HACK: Incorrect firewall solution '${solution}' attempt by ${username}.`);
             }
             break;
@@ -769,18 +861,18 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
         case 'clear': {
             setHistory([]);
             setInput('');
+            setIsProcessing(false);
             return;
         }
         case '':
             break;
         default:
-            newHistory.push({ type: 'output', content: `command not found: ${command}` });
+            handleOutput(`command not found: ${command}`);
             break;
     }
 
 
-    setHistory(newHistory);
-    setInput('');
+    setIsProcessing(false);
   };
 
   const handleTabCompletion = () => {
@@ -835,6 +927,10 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (isProcessing) {
+        e.preventDefault();
+        return;
+    }
     if (e.key === 'Enter') {
       e.preventDefault();
       handleCommand();
@@ -877,23 +973,25 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
         </div>
       </ScrollArea>
       <div className="flex items-center mt-2">
-          <span className="text-muted-foreground">{getPrompt()}</span>
-          <Input
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="bg-transparent border-none text-green-400 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 h-6 p-0 ml-1"
-          autoComplete="off"
-          autoCapitalize="off"
-          autoCorrect="off"
-          spellCheck="false"
-          />
+        {!isProcessing && (
+          <>
+            <span className="text-muted-foreground">{getPrompt()}</span>
+            <Input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="bg-transparent border-none text-green-400 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 h-6 p-0 ml-1"
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck="false"
+            />
+          </>
+        )}
       </div>
     </div>
   );
 }
-
-    
 
     
