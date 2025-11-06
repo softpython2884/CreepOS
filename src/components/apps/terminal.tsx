@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect, KeyboardEvent, useCallback, useMemo } from 'react';
@@ -30,6 +29,9 @@ interface TerminalProps {
     saveGameState: () => void;
     resetGame: () => void;
     dangerLevel: number;
+    machineState: string; // To know if we are in survival mode
+    setPlayerDefenses?: any;
+    playerDefenses?: any;
 }
 
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
@@ -110,7 +112,10 @@ export default function Terminal({
     onStopTrace,
     saveGameState,
     resetGame,
-    dangerLevel
+    dangerLevel,
+    machineState,
+    setPlayerDefenses,
+    playerDefenses,
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
@@ -162,6 +167,9 @@ export default function Terminal({
   }, [isProcessing]);
 
   const getPrompt = () => {
+    if (machineState === 'survival') {
+        return `[DEFENSE_MODE] Operator@${getCurrentPc()?.name}$ `;
+    }
     const currentPc = getCurrentPc();
     const hostName = currentPc?.name || 'neo-system';
     
@@ -258,7 +266,7 @@ export default function Terminal({
   }
 
 
-  const runProgressBar = async (duration: number) => {
+  const runProgressBar = async (duration: number, text?: string) => {
     const barLength = 20;
     const interval = duration / barLength;
     let currentProgress = 0;
@@ -271,7 +279,8 @@ export default function Terminal({
         
         setHistory(prev => {
             const newHistory = [...prev];
-            newHistory[newHistory.length - 1] = { type: 'output', content: `${bar} ${percentage}%`};
+            const content = text ? `${text} ${bar} ${percentage}%` : `${bar} ${percentage}%`;
+            newHistory[newHistory.length - 1] = { type: 'output', content: content};
             return newHistory;
         });
 
@@ -379,15 +388,60 @@ export default function Terminal({
 
     const checkAndTriggerTrace = (pc?: PC | null) => {
         const targetPc = pc || getCurrentPc();
-        if (targetPc && targetPc.traceTime > 0) {
+        if (targetPc?.isDangerous) {
+            onStartTrace(targetPc.name, 6, instanceId); // Default short trace for dangerous servers
+        }
+        else if (targetPc && targetPc.traceTime > 0) {
             onStartTrace(targetPc.name, targetPc.traceTime, instanceId);
             return true;
         }
-        if (targetPc && targetPc.isDangerous) {
-            onStartTrace(targetPc.name, 6, instanceId);
-        }
         return false;
     }
+    
+    if (machineState === 'survival') {
+        const [cmd, ...cmdArgs] = command.toLowerCase().split(' ');
+        switch(cmd) {
+            case 'help':
+                handleOutput('Available defense commands:\n  firewall --reboot\n  ports --open &lt;port_number>');
+                break;
+            case 'firewall':
+                if (cmdArgs[0] === '--reboot') {
+                    if (playerDefenses.firewall) {
+                        handleOutput('Firewall is already active.');
+                    } else {
+                        await runProgressBar(3000, 'Rebooting firewall...');
+                        setPlayerDefenses((d: any) => ({...d, firewall: true}));
+                        handleOutput('Firewall online. Port-based attacks blocked.');
+                    }
+                } else {
+                    handleOutput('Usage: firewall --reboot');
+                }
+                break;
+            case 'ports':
+                if (cmdArgs[0] === '--open' && cmdArgs[1]) {
+                    const portToOpen = parseInt(cmdArgs[1]);
+                    if (isNaN(portToOpen)) {
+                        handleOutput('Invalid port number.');
+                        break;
+                    }
+                    if (playerDefenses.ports.includes(portToOpen)) {
+                        handleOutput(`Port ${portToOpen} is already open.`);
+                    } else {
+                        await runProgressBar(2000, `Opening port ${portToOpen}...`);
+                        setPlayerDefenses((d: any) => ({...d, ports: [...d.ports, portToOpen]}));
+                        handleOutput(`Port ${portToOpen} is now open.`);
+                    }
+                } else {
+                    handleOutput('Usage: ports --open &lt;port_number>');
+                }
+                break;
+            default:
+                handleOutput(`Unknown defense command: ${cmd}`);
+        }
+        setIsProcessing(false);
+        return;
+    }
+
 
     const handlePortHack = async (portNumber: number, portName: string) => {
         if (connectedIp === '127.0.0.1') {
@@ -594,21 +648,21 @@ export default function Terminal({
             const commandList = [
                 '  help           - Show this help message',
                 '  ls [path]      - List files and directories (auth required)',
-                '  cd <path>      - Change directory (auth required)',
-                '  cat <file>     - Display file content (auth required)',
-                '  echo <text>    - Display a line of text. Supports > and >> redirection.',
-                '  touch <file>   - Create an empty file (local system only)',
-                '  rm <file>      - Remove a file or clear its content (auth required)',
+                '  cd &lt;path>      - Change directory (auth required)',
+                '  cat &lt;file>     - Display file content (auth required)',
+                '  echo &lt;text>    - Display a line of text. Supports > and >> redirection.',
+                '  touch &lt;file>   - Create an empty file (local system only)',
+                '  rm &lt;file>      - Remove a file or clear its content (auth required)',
                 '  reboot         - Reboots the current system',
                 '  save           - Save current game state (local only)',
                 '  reset-game --confirm - Deletes save data and reboots (local only)',
                 '  danger         - Shows current trace danger level',
                 '',
                 'Network commands:',
-                '  connect <ip>   - Connect to a remote system',
+                '  connect &lt;ip>   - Connect to a remote system',
                 '  disconnect / dc- Disconnect from the current remote system',
-                '  login <user> <pass> - Authenticate to a connected system',
-                '  solve <solution> - Attempt to disable a firewall with a solution.',
+                '  login &lt;user> &lt;pass> - Authenticate to a connected system',
+                '  solve &lt;solution> - Attempt to disable a firewall with a solution.',
                 '',
                 'Hacking tools (run from your machine):',
             ];
@@ -800,7 +854,7 @@ export default function Terminal({
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
                 if (connectedIp === '127.0.0.1') {
-                    setNetwork(currentNetwork => {
+                     setNetwork(currentNetwork => {
                         const newNetwork = currentNetwork.map(pc => {
                             if (pc.ip === connectedIp) {
                                 const newFs = updateNodeByPath(pc.fileSystem, filePath, () => null);
@@ -808,15 +862,13 @@ export default function Terminal({
                             }
                             return pc;
                         });
+                        setTimeout(() => {
+                           saveGameState();
+                           addLog(`CRITICAL: XserverOS.sys deleted from local machine. Next reboot will fail.`);
+                           handleOutput('Deletion of XserverOS.sys complete.');
+                        }, 100);
                         return newNetwork;
                     });
-                    
-                    setTimeout(() => {
-                        saveGameState();
-                        addLog(`CRITICAL: XserverOS.sys deleted from local machine. Next reboot will fail.`);
-                        handleOutput('Deletion of XserverOS.sys complete.');
-                    }, 100);
-
                 } else {
                     addRemoteLog(`CRITICAL: XserverOS.sys deleted by ${username}. System crashing.`);
                     setNetwork(currentNetwork => currentNetwork.map(pc => {

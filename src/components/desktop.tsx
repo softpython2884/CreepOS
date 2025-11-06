@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useCallback, createRef, useEffect } from 'react';
@@ -111,6 +110,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const [traceTarget, setTraceTarget] = useState({ name: '', time: 0 });
   const [isScreaming, setIsScreaming] = useState(false);
   const [emailNotification, setEmailNotification] = useState(false);
+  
+  // Survival mode state
+  const [playerDefenses, setPlayerDefenses] = useState({
+      firewall: true,
+      ports: [80, 443, 22]
+  });
 
 
   const [emails, setEmails] = useState<Email[]>([
@@ -335,8 +340,11 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setEmails(prev => [...prev, newEmail]);
     addLog(`EMAIL: Sent email to ${email.recipient} with subject "${email.subject}"`);
     
-    setEmailNotification(true);
-    setTimeout(() => setEmailNotification(false), 2000);
+    // This was causing a re-render error. Wrapping in setTimeout defers the state update.
+    setTimeout(() => {
+        setEmailNotification(true);
+        setTimeout(() => setEmailNotification(false), 2000);
+    }, 0);
   };
 
   const getPlayerFileSystem = useCallback(() => {
@@ -385,6 +393,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
                 onReboot();
             },
             dangerLevel,
+            machineState: 'desktop', // Default state for desktop terminal
+            setPlayerDefenses,
+            playerDefenses
         } 
     },
     documents: { 
@@ -438,6 +449,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         network: network,
       }
     }
+  };
+  
+  const survivalTerminalConfig = {
+      title: 'DEFENSE_TERMINAL',
+      component: Terminal,
+      width: 700,
+      height: 450,
+      props: { ...appConfig.terminal.props, machineState: 'survival' }
   };
 
   const openApp = useCallback((appId: AppId, sourceInstanceId?: number) => {
