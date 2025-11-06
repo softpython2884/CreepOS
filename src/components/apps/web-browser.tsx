@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Globe, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,37 +11,90 @@ interface WebBrowserProps {
   network: PC[];
 }
 
-const defaultHomePage = `
-<div class='h-full flex flex-col justify-center items-center text-center text-muted-foreground p-8'>
-    <h1 class='text-4xl mb-4 font-bold text-foreground'>Hypnet Explorer</h1>
-    <p class='text-lg'>Welcome to the Hypnet. Enter a domain in the address bar to begin.</p>
-</div>
-`;
+const defaultHomePageContent = (network: PC[]): string => {
+    const searchServer = network.find(pc => pc.domain === 'hyp.net');
+    return searchServer?.websiteContent || `
+        <div class='h-full flex flex-col justify-center items-center text-center text-red-400 p-8'>
+            <h1 class='text-2xl mb-4'>CRITICAL ERROR</h1>
+            <p>Hypnet Search (hyp.net) could not be found. The network may be unstable.</p>
+        </div>
+    `;
+};
+
 
 export default function WebBrowser({ network }: WebBrowserProps) {
-  const [address, setAddress] = useState('');
-  const [currentContent, setCurrentContent] = useState(defaultHomePage);
-  const [currentDomain, setCurrentDomain] = useState('home');
+  const [address, setAddress] = useState('hyp.net');
+  const [currentContent, setCurrentContent] = useState('');
+  const [currentDomain, setCurrentDomain] = useState('');
 
-  const navigate = () => {
-    const targetDomain = address.trim().toLowerCase();
-    if (!targetDomain) return;
+  const navigate = (targetDomain?: string) => {
+    const domain = (targetDomain || address).trim().toLowerCase();
+    if (!domain) return;
 
-    const targetServer = network.find(pc => pc.type === 'WebServer' && pc.domain?.toLowerCase() === targetDomain);
+    const targetServer = network.find(pc => pc.type === 'WebServer' && pc.domain?.toLowerCase() === domain);
     
     if (targetServer && targetServer.websiteContent) {
       setCurrentContent(targetServer.websiteContent);
       setCurrentDomain(targetServer.domain || 'unknown');
+      setAddress(domain);
     } else {
       setCurrentContent(`
-        <div class='h-full flex flex-col justify-center items-center text-center text-red-400 p-8'>
+        <div class='h-full flex flex-col justify-center items-center text-center text-red-400 p-8 font-code'>
             <h1 class='text-2xl mb-4'>ERR_NAME_NOT_RESOLVED</h1>
-            <p>The domain '${targetDomain}' could not be found on the Hypnet.</p>
+            <p>The domain '${domain}' could not be found on the Hypnet.</p>
         </div>
       `);
       setCurrentDomain('error');
     }
   };
+
+  useEffect(() => {
+    // Set home page on initial load
+    const homeContent = defaultHomePageContent(network);
+    setCurrentContent(homeContent);
+    setCurrentDomain('hyp.net');
+    setAddress('hyp.net');
+  }, [network]);
+
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+        // IMPORTANT: Add origin check in a real app
+        // if (event.origin !== "expected-origin") return;
+        
+        if (event.data && event.data.type === 'hypnet-navigate') {
+            const domain = event.data.domain;
+            navigate(domain);
+        }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    
+    return () => {
+        window.removeEventListener('message', handleMessage);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [network]); // Re-add listener if network changes, so navigate has fresh data.
+
+
+  const injectedScript = `
+    <script>
+        document.addEventListener('click', function(e) {
+            let target = e.target;
+            while (target && target.tagName !== 'A') {
+                target = target.parentElement;
+            }
+
+            if (target && target.hasAttribute('data-internal-link')) {
+                e.preventDefault();
+                const domain = target.getAttribute('data-internal-link');
+                window.parent.postMessage({ type: 'hypnet-navigate', domain: domain }, '*');
+            }
+        });
+    </script>
+  `;
+  
+  const contentWithScript = currentContent + injectedScript;
 
   return (
     <div className="h-full flex flex-col bg-card font-sans">
@@ -56,14 +109,14 @@ export default function WebBrowser({ network }: WebBrowserProps) {
             className="h-8 bg-secondary border-input"
           />
         </div>
-        <Button size="sm" className="h-8" onClick={navigate}>
+        <Button size="sm" className="h-8" onClick={() => navigate()}>
           <ArrowRight />
         </Button>
       </div>
       <div className="flex-grow bg-gray-100 dark:bg-gray-900 overflow-y-auto">
         <iframe
-          srcDoc={currentContent}
-          sandbox="allow-scripts" // Be careful with this in a real app
+          srcDoc={contentWithScript}
+          sandbox="allow-scripts allow-same-origin"
           className="w-full h-full border-0"
           title={currentDomain}
         />
@@ -71,5 +124,7 @@ export default function WebBrowser({ network }: WebBrowserProps) {
     </div>
   );
 }
+
+    
 
     
