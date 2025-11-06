@@ -796,15 +796,23 @@ export default function Terminal({
 
                 if (isLocal) {
                     addLog(`CRITICAL: XserverOS.sys deleted from local machine. System rebooting.`);
-                    setNetwork(currentNetwork => currentNetwork.map(pc => {
-                        if (pc.ip === connectedIp) {
-                            const newFs = updateNodeByPath(pc.fileSystem, filePath, () => null);
-                            return { ...pc, fileSystem: newFs };
-                        }
-                        return pc;
-                    }));
-                    saveGameState();
-                    setTimeout(onReboot, 2000);
+                    setNetwork(currentNetwork => {
+                        const newNetwork = currentNetwork.map(pc => {
+                            if (pc.ip === connectedIp) {
+                                const newFs = updateNodeByPath(pc.fileSystem, filePath, () => null);
+                                return { ...pc, fileSystem: newFs };
+                            }
+                            return pc;
+                        });
+                        return newNetwork;
+                    });
+                    
+                    // Use timeout to ensure state update is processed before saving and rebooting
+                    setTimeout(() => {
+                        saveGameState();
+                        onReboot();
+                    }, 100);
+
                 } else {
                     addRemoteLog(`CRITICAL: XserverOS.sys deleted by ${username}. System crashing.`);
                     setNetwork(currentNetwork => currentNetwork.map(pc => {
