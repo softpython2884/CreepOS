@@ -461,6 +461,7 @@ export default function Terminal({
                 if (scanTarget && scanTarget.links) {
                     const linkedPcs = scanTarget.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
                     if (linkedPcs.length > 0) {
+                        linkedPcs.forEach(pc => onDiscovered(pc.id));
                         const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
                         handleOutput(output);
                     } else {
@@ -942,6 +943,7 @@ export default function Terminal({
             if (scanTarget && scanTarget.links) {
                 const linkedPcs = scanTarget.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
                 if (linkedPcs.length > 0) {
+                    linkedPcs.forEach(pc => onDiscovered(pc.id));
                     const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
                     handleOutput(output);
                 } else {

@@ -101,7 +101,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
 
   const [network, setNetwork] = useState<PC[]>(() => loadGameState(username).network);
   const [hackedPcs, setHackedPcs] = useState<Set<string>>(() => loadGameState(username).hackedPcs);
-  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => new Set(['player-pc']));
+  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => new Set(loadGameState(username).network.map(p => p.id)));
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
   const [dangerLevel, setDangerLevel] = useState(0);
 
@@ -248,7 +248,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   }
 
   const handleDiscoveredPc = (pcId: string) => {
-    setDiscoveredPcs(prev => new Set(prev).add(pcId));
+    setDiscoveredPcs(prev => {
+        const newSet = new Set(prev);
+        if (!newSet.has(pcId)) {
+            newSet.add(pcId);
+            addLog(`INFO: New device discovered and added to Network Map.`);
+        }
+        return newSet;
+    });
   }
 
   const handleIncreaseDanger = (amount: number) => {
