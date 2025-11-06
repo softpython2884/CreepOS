@@ -124,14 +124,16 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       },
   ]);
 
+  const gameState = { network, hackedPcs, machineState: 'desktop' };
+
   useEffect(() => {
     // Autosave interval
     const saveInterval = setInterval(() => {
-        saveGameState(username, { network, hackedPcs, machineState: 'desktop' });
+        saveGameState(username, gameState);
     }, 5000); // Save every 5 seconds
 
     return () => clearInterval(saveInterval);
-  }, [network, hackedPcs, username]);
+  }, [network, hackedPcs, username, gameState]);
 
   const addLog = useCallback((message: string) => {
     setLogs(prev => {
@@ -206,19 +208,36 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             const newTime = prevTime - 1;
             if (newTime <= 0) {
                 clearInterval(timer);
-                addLog(`CRITICAL: Trace completed. System integrity compromised. Rebooting...`);
+                addLog(`CRITICAL: Trace completed. KERNEL DELETED.`);
+
+                const updatedNetwork = network.map(pc => {
+                    if (pc.id === 'player-pc') {
+                        const newFileSystem = updateNodeByPath(
+                            pc.fileSystem,
+                            ['sys', 'XserverOS.sys'],
+                            () => null
+                        );
+                        return { ...pc, fileSystem: newFileSystem };
+                    }
+                    return pc;
+                });
+                setNetwork(updatedNetwork);
+
+                saveGameState(username, { ...gameState, network: updatedNetwork });
+
                 onReboot();
                 return 0;
             }
-            if (newTime > 0 && isScreaming) {
+            if (newTime > 0 && !isScreaming) {
                 onSoundEvent('scream');
+                setIsScreaming(true);
             }
             return newTime;
         });
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, onReboot, addLog, isScreaming, onSoundEvent]);
+}, [isTraced, onReboot, addLog, isScreaming, onSoundEvent, network, gameState, username]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
@@ -290,12 +309,15 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       timestamp: new Date().toISOString(),
       folder: 'sent',
     };
+
     onSoundEvent('email');
-    setEmailNotification(true);
-    setTimeout(() => setEmailNotification(false), 2000);
-    
     setEmails(prev => [...prev, newEmail]);
     addLog(`EMAIL: Sent email to ${email.recipient} with subject "${email.subject}"`);
+    
+    setEmailNotification(true);
+    setTimeout(() => {
+        setEmailNotification(false);
+    }, 2000);
   };
 
   const getPlayerFileSystem = useCallback(() => {
@@ -337,7 +359,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             handleIncreaseDanger: handleIncreaseDanger,
             onStartTrace: handleStartTrace,
             onStopTrace: handleStopTrace,
-            saveGameState: () => saveGameState(username, { network, hackedPcs, machineState: 'desktop' }),
+            saveGameState: () => saveGameState(username, gameState),
             resetGame: () => {
                 deleteGameState(username);
                 onReboot();
@@ -553,3 +575,5 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     </main>
   );
 }
+
+    
