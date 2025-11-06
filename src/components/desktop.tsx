@@ -19,7 +19,7 @@ import EmailClient, { type Email } from './apps/email-client';
 import WebBrowser from './apps/web-browser';
 import { ShieldAlert, ShieldCheck, Mail, AlertTriangle, Skull } from 'lucide-react';
 import { Progress } from './ui/progress';
-import TracerTerminal from './tracer-terminal';
+import TracerTerminal, { traceCommands, decryptCommands, isolationCommands } from './tracer-terminal';
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser';
 
@@ -168,15 +168,23 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     
     addLog(`INFO: Trace averted. Disconnected from ${traceTarget.name}.`);
     onMusicEvent('calm');
-    onSoundEvent('stopScream');
-    setIsScreaming(false);
+    if (isScreaming) {
+        onSoundEvent('stopScream');
+        setIsScreaming(false);
+    }
     setIsTraced(false);
     setTraceTimeLeft(0);
     setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
-  }, [addLog, onMusicEvent, isTraced, traceTarget, onSoundEvent]);
+  }, [addLog, onMusicEvent, isTraced, traceTarget, onSoundEvent, isScreaming]);
 
   useEffect(() => {
-    if (!isTraced || traceTimeLeft <= 0) return;
+    if (!isTraced || traceTimeLeft <= 0) {
+      if (isScreaming) {
+        onSoundEvent('stopScream');
+        setIsScreaming(false);
+      }
+      return;
+    };
 
     const timer = setInterval(() => {
       setTraceTimeLeft(prevTime => {
@@ -188,12 +196,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
           onReboot();
           return 0;
         }
+        // Re-trigger scream sound every second
+        onSoundEvent('scream'); 
         return prevTime - 1;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isTraced, traceTimeLeft, onReboot, addLog, onSoundEvent]);
+  }, [isTraced, traceTimeLeft, onReboot, addLog, onSoundEvent, isScreaming]);
 
   const handleHackedPc = (pcId: string, ip: string) => {
     addLog(`SUCCESS: Root access gained on ${ip}`);
@@ -460,9 +470,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
           </div>
 
           <div className='absolute top-32 left-4 z-50 flex flex-col gap-2'>
-            <TracerTerminal title="INCOMING_TRACE::ID_77_A" startDelay={0} />
-            <TracerTerminal title="ROUTE_ANALYSIS::ID_34_B" startDelay={1000} />
-            <TracerTerminal title="NODE_ISOLATION::ID_99_C" startDelay={2000} />
+            <TracerTerminal title="INCOMING_TRACE::ID_77_A" commands={traceCommands} startDelay={0} />
+            <TracerTerminal title="ROUTE_ANALYSIS::ID_34_B" commands={decryptCommands} startDelay={1000} />
+            <TracerTerminal title="NODE_ISOLATION::ID_99_C" commands={isolationCommands} startDelay={2000} />
           </div>
         </>
       )}
@@ -519,3 +529,5 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     </main>
   );
 }
+
+    

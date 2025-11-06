@@ -1,36 +1,62 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from './ui/scroll-area';
 
-const commands = [
+export const traceCommands = [
     'INITIATING REVERSE TRACE...',
     'TARGET IP: 127.0.0.1',
-    'BYPASSING LOCAL PROXY...',
+    'BYPASSING LOCAL PROXY... [OK]',
     'CONNECTION ESTABLISHED. ANALYZING SIGNATURE...',
     'SIGNATURE FOUND: "OPERATOR"',
-    'DECRYPTING PACKET STREAM...',
-    'PACKET HEADERS: [OK]',
-    'PAYLOAD: [ENCRYPTED]',
-    'BRUTE-FORCING ENCRYPTION KEY...',
-    'MATCH FOUND. APPLYING COUNTER-MEASURES.',
-    'REINFORCING FIREWALL RULES...',
-    'ISOLATING TARGET NODE...',
-    'TRACE COMPLETE. SYSTEM LOCKDOWN IN 3..2..1..',
+    'LOCKING ONTO SOURCE SIGNAL...',
+    'GEOLOCATING... [REGION: EU-WEST]',
+    'NARROWING COORDINATES...',
+    'TRACE COMPLETE. STANDBY FOR PAYLOAD.',
+];
+
+export const decryptCommands = [
+    'ANALYZING COUNTER-MEASURES...',
+    'DETECTED ENCRYPTION: AES-256',
+    'INITIATING DECRYPTION PROTOCOL...',
+    'GENERATING KEYSPACE... [2^256]',
+    'APPLYING RAINBOW TABLES...',
+    'NO MATCH FOUND.',
+    'SWITCHING TO BRUTE-FORCE ATTACK...',
+    'ESTIMATED TIME: 4.8E+75 YEARS',
+    'ACCELERATING... APPLYING QUANTUM OVERRIDE',
+    'KEY FOUND: 0xDEADBEEFCAFEBABE',
+    'DECRYPTION COMPLETE. ACCESSING PAYLOAD.',
+];
+
+export const isolationCommands = [
+    'EXECUTING NODE ISOLATION PROTOCOL...',
+    'TARGET: "OPERATOR"',
+    'SEVERING EXTERNAL NETWORK LINKS... [OK]',
+    'ROUTING ALL TRAFFIC TO QUARANTINE... [OK]',
+    'DISABLING USER INPUT... [FAILED]',
+    'OVERRIDING PERMISSIONS...',
+    'USER INPUT DISABLED. [OK]',
+    'DEPLOYING SYSTEM LOCKDOWN...',
+    'TARGET ISOLATED. AWAITING FINAL COMMAND.',
+    'SYSTEM WILL REBOOT IN 3...2...1...',
 ];
 
 const typingSpeed = 50; // ms per character
-const commandDelay = 800; // ms between commands
+const commandDelay = 500; // ms between commands
 
 interface TracerTerminalProps {
     title: string;
+    commands: string[];
     startDelay?: number;
 }
 
-export default function TracerTerminal({ title, startDelay = 0 }: TracerTerminalProps) {
+export default function TracerTerminal({ title, commands, startDelay = 0 }: TracerTerminalProps) {
     const [lines, setLines] = useState<string[]>([]);
     const [isComplete, setIsComplete] = useState(false);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const startTimeout = setTimeout(() => {
@@ -69,19 +95,28 @@ export default function TracerTerminal({ title, startDelay = 0 }: TracerTerminal
         }, startDelay);
 
         return () => clearTimeout(startTimeout);
-    }, [startDelay]);
+    }, [startDelay, commands]);
 
+    useEffect(() => {
+        if (scrollAreaRef.current) {
+            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        }
+    }, [lines]);
 
     return (
         <div className="w-[450px] h-[150px] bg-destructive/20 border-2 border-destructive-foreground/50 rounded-md font-code text-destructive-foreground text-xs p-2 flex flex-col animate-in fade-in slide-in-from-left-10 duration-500">
             <div className="flex-shrink-0 text-center border-b border-destructive-foreground/30 pb-1 mb-1">
                 {title}
             </div>
-            <div className="flex-grow overflow-hidden">
-                {lines.map((line, i) => (
-                    <p key={i} className={cn("whitespace-nowrap", (i === lines.length - 1 && !isComplete) && 'animate-typing-cursor-slow border-r-2 border-current')}>{`> ${line}`}</p>
-                ))}
-            </div>
+            <ScrollArea className="flex-grow" viewportRef={scrollAreaRef}>
+                <div className='p-1'>
+                    {lines.map((line, i) => (
+                        <p key={i} className={cn("whitespace-nowrap", (i === lines.length - 1 && !isComplete) && 'animate-typing-cursor-slow border-r-2 border-current')}>{`> ${line}`}</p>
+                    ))}
+                </div>
+            </ScrollArea>
         </div>
     );
 }
+
+    
