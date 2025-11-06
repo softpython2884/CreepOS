@@ -21,6 +21,7 @@ interface TerminalProps {
     setNetwork: React.Dispatch<React.SetStateAction<PC[]>>;
     hackedPcs: Set<string>;
     onHack: (pcId: string, ip: string) => void;
+    onDiscovered: (pcId: string) => void;
     onReboot: () => void;
     addLog: (message: string) => void;
     handleIncreaseDanger: (amount: number) => void;
@@ -28,6 +29,7 @@ interface TerminalProps {
     onStopTrace: () => void;
     saveGameState: () => void;
     resetGame: () => void;
+    dangerLevel: number;
 }
 
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
@@ -99,7 +101,8 @@ export default function Terminal({
     network, 
     setNetwork, 
     hackedPcs, 
-    onHack, 
+    onHack,
+    onDiscovered,
     onReboot, 
     addLog, 
     handleIncreaseDanger,
@@ -107,6 +110,7 @@ export default function Terminal({
     onStopTrace,
     saveGameState,
     resetGame,
+    dangerLevel
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
@@ -373,11 +377,14 @@ export default function Terminal({
         return true;
     }
 
-    const checkAndTriggerTrace = () => {
-        const pc = getCurrentPc();
-        if (pc && pc.traceTime > 0) {
-            onStartTrace(pc.name, pc.traceTime, instanceId);
+    const checkAndTriggerTrace = (pc?: PC | null) => {
+        const targetPc = pc || getCurrentPc();
+        if (targetPc && targetPc.traceTime > 0) {
+            onStartTrace(targetPc.name, targetPc.traceTime, instanceId);
             return true;
+        }
+        if (targetPc && targetPc.isDangerous) {
+            onStartTrace(targetPc.name, 6, instanceId);
         }
         return false;
     }
@@ -450,8 +457,9 @@ export default function Terminal({
        
         switch(cmdName) {
             case 'scan':
-                if (targetPC && targetPC.links) {
-                    const linkedPcs = targetPC.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
+                 const scanTarget = getCurrentPc();
+                if (scanTarget && scanTarget.links) {
+                    const linkedPcs = scanTarget.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
                     if (linkedPcs.length > 0) {
                         const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
                         handleOutput(output);
@@ -570,10 +578,8 @@ export default function Terminal({
                 break;
             case 'ftpbounce': await handlePortHack(21, 'FTPBounce'); break;
             case 'sshbounce': await handlePortHack(22, 'SSHBounce'); break;
-
             case 'smtpoverflow': await handlePortHack(25, 'SMTPOverflow'); break;
             case 'webserverworm': await handlePortHack(80, 'WebServerWorm'); break;
-            // Commands that require auth check on remote system are handled below
             default:
                  handleOutput(`Execution of ${command} is not implemented as a hacking tool.`);
         }
@@ -595,6 +601,7 @@ export default function Terminal({
                 '  reboot         - Reboots the current system',
                 '  save           - Save current game state (local only)',
                 '  reset-game --confirm - Deletes save data and reboots (local only)',
+                '  danger         - Shows current trace danger level',
                 '',
                 'Network commands:',
                 '  connect <ip>   - Connect to a remote system',
@@ -790,11 +797,8 @@ export default function Terminal({
             if (fileNode.name === 'XserverOS.sys') {
                 handleOutput(`WARNING: This is a critical system file. Deleting it will cause system instability.`);
                 await new Promise(resolve => setTimeout(resolve, 1000));
-                handleOutput(`Deletion of ${fileArg} will proceed.`);
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
+                
                 if (connectedIp === '127.0.0.1') {
-                    addLog(`CRITICAL: XserverOS.sys deleted from local machine. Next reboot will fail.`);
                     setNetwork(currentNetwork => {
                         const newNetwork = currentNetwork.map(pc => {
                             if (pc.ip === connectedIp) {
@@ -808,6 +812,8 @@ export default function Terminal({
                     
                     setTimeout(() => {
                         saveGameState();
+                        addLog(`CRITICAL: XserverOS.sys deleted from local machine. Next reboot will fail.`);
+                        handleOutput('Deletion of XserverOS.sys complete.');
                     }, 100);
 
                 } else {
@@ -877,10 +883,12 @@ export default function Terminal({
             setConnectedIp(targetIp);
             setIsAuthenticated(false);
             setCurrentDirectory([]);
+            onDiscovered(targetPC.id);
             handleOutput(`Connection established to ${targetPC.name} (${targetPC.ip}).`);
             handleOutput(`Use 'login' to authenticate.`);
             addLog(`EVENT: Connection established to ${targetPC.name} (${targetPC.ip})`);
             addRemoteLog(`Connection established from unknown source.`);
+            checkAndTriggerTrace(targetPC);
             break;
         }
         case 'login': {
@@ -929,15 +937,24 @@ export default function Terminal({
             }
             break;
         }
-        case 'solve': {
-            if (connectedIp === '127.0.0.1') {
-                 handleOutput('solve: can only be run on remote machines.');
-                 break;
+        case 'scan': {
+            const scanTarget = getCurrentPc();
+            if (scanTarget && scanTarget.links) {
+                const linkedPcs = scanTarget.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
+                if (linkedPcs.length > 0) {
+                    const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
+                    handleOutput(output);
+                } else {
+                    handleOutput('No linked devices found.');
+                }
+            } else {
+                handleOutput('Scan failed: could not determine current network segment.');
             }
-            // This is handled above in the `isHackingTool` block
-            handleOutput(`command not found: ${command}`);
             break;
         }
+        case 'danger':
+            handleOutput(`Current danger level: ${dangerLevel}%`);
+            break;
         case 'save': {
             if (connectedIp !== '127.0.0.1') {
                 handleOutput('save: can only be run on local machine.');
@@ -986,7 +1003,7 @@ export default function Terminal({
     // Command completion
     if (parts.length === 1) {
         const executables = allExecutables.map(f => f.name.split('.')[0].toLowerCase());
-        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game'];
+        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan'];
         const allCommands = [...new Set([...mainCommands, ...executables])];
         const possibilities = allCommands.filter(cmd => cmd.startsWith(lastPart));
 

@@ -101,6 +101,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
 
   const [network, setNetwork] = useState<PC[]>(() => loadGameState(username).network);
   const [hackedPcs, setHackedPcs] = useState<Set<string>>(() => loadGameState(username).hackedPcs);
+  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => new Set(['player-pc']));
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
   const [dangerLevel, setDangerLevel] = useState(0);
 
@@ -238,12 +239,16 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, addLog, isScreaming, onSoundEvent, network, username, setMachineState, hackedPcs]);
+}, [isTraced, addLog, isScreaming, onSoundEvent, network, username, setMachineState, hackedPcs, onReboot]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
     addLog(`SUCCESS: Root access gained on ${ip}`);
     setHackedPcs(prev => new Set(prev).add(pcId));
+  }
+
+  const handleDiscoveredPc = (pcId: string) => {
+    setDiscoveredPcs(prev => new Set(prev).add(pcId));
   }
 
   const handleIncreaseDanger = (amount: number) => {
@@ -316,9 +321,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     addLog(`EMAIL: Sent email to ${email.recipient} with subject "${email.subject}"`);
     
     setEmailNotification(true);
-    setTimeout(() => {
-        setEmailNotification(false);
-    }, 2000);
+    setTimeout(() => setEmailNotification(false), 2000);
   };
 
   const getPlayerFileSystem = useCallback(() => {
@@ -355,6 +358,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             setNetwork,
             hackedPcs,
             onHack: handleHackedPc,
+            onDiscovered: handleDiscoveredPc,
             onReboot,
             addLog,
             handleIncreaseDanger: handleIncreaseDanger,
@@ -364,7 +368,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             resetGame: () => {
                 deleteGameState(username);
                 onReboot();
-            }
+            },
+            dangerLevel,
         } 
     },
     documents: { 
@@ -394,8 +399,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       width: 800,
       height: 600,
       props: {
-        network: network,
-        hackedPcs: hackedPcs
+        network: network.filter(pc => discoveredPcs.has(pc.id)),
+        hackedPcs: hackedPcs,
       }
     },
     email: {

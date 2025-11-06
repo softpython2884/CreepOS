@@ -20,6 +20,7 @@
         "enabled": true,
         "level": 3
     },
+    "isDangerous": true,
     "traceTime": 30,
     "requiredPorts": 0,
     "traceability": 30,

@@ -46,4 +46,5 @@ export interface PC {
     traceability?: number; // How much danger is added if logs are not cleared
     domain?: string;
     websiteContent?: string;
+    isDangerous?: boolean;
 }
