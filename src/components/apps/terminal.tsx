@@ -388,7 +388,13 @@ export default function Terminal({
             return;
         }
     
-        const currentTargetPC = getCurrentPc();
+        let currentTargetPC: PC | undefined;
+        setNetwork(currentNetwork => {
+            currentTargetPC = currentNetwork.find(p => p.ip === connectedIp);
+            return currentNetwork;
+        });
+        await new Promise(r => setTimeout(r,0));
+        
         if (!currentTargetPC) {
             handleOutput('Critical error: Target system disconnected.');
             return;
@@ -479,7 +485,13 @@ export default function Terminal({
         const cmdName = executable.name.split('.')[0].toLowerCase();
         
         let shouldProcess = true;
-        let targetPC = getCurrentPc(); 
+        
+        let targetPC: PC | undefined;
+        setNetwork(currentNetwork => {
+            targetPC = currentNetwork.find(p => p.ip === connectedIp);
+            return currentNetwork;
+        });
+        await new Promise(r => setTimeout(r,0));
 
         if (cmdName !== 'scan' && cmdName !== 'probe') {
             if(!checkAuth()) {
@@ -535,12 +547,6 @@ export default function Terminal({
                     }
                     break;
                 case 'probe':
-                    setNetwork(currentNetwork => {
-                        targetPC = currentNetwork.find(p => p.ip === connectedIp);
-                        return currentNetwork;
-                    });
-                    await new Promise(r => setTimeout(r,0));
-
                     if (connectedIp === '127.0.0.1' || !targetPC) {
                         handleOutput('probe: Must be connected to a remote system.');
                     } else {
@@ -801,6 +807,7 @@ export default function Terminal({
                         }
                         return pc;
                     }));
+                    saveGameState();
                     setTimeout(onReboot, 2000);
                 } else {
                     addRemoteLog(`CRITICAL: XserverOS.sys deleted by ${username}. System crashing.`);
