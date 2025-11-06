@@ -16,10 +16,11 @@ import { type PC } from '@/lib/network/types';
 import LiveLogs from './apps/live-logs';
 import NetworkMap from './apps/network-map';
 import EmailClient, { type Email } from './apps/email-client';
+import WebBrowser from './apps/web-browser';
 import { ShieldAlert, ShieldCheck, Mail } from 'lucide-react';
 import { Progress } from './ui/progress';
 
-export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email';
+export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser';
 
 type AppConfig = {
   [key in AppId]: {
@@ -292,6 +293,15 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         onSend: handleSendEmail,
         currentUser: username,
       }
+    },
+    'web-browser': {
+      title: 'Hypnet Explorer',
+      component: WebBrowser,
+      width: 1024,
+      height: 768,
+      props: {
+        network: network,
+      }
     }
   };
 
@@ -392,6 +402,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             props.emails = emails;
             props.onSend = handleSendEmail;
           }
+           if (app.appId === 'web-browser') {
+            props.network = network;
+          }
           
           return (
               <Draggable
@@ -446,3 +459,5 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     </main>
   );
 }
+
+    

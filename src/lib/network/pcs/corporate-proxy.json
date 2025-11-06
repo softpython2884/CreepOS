@@ -1,8 +1,11 @@
+
 {
     "id": "corporate-proxy",
     "name": "Corporate Proxy",
     "ip": "203.0.113.1",
-    "type": "Server",
+    "type": "WebServer",
+    "domain": "proxy.corp",
+    "websiteContent": "<html><head><title>Access Denied</title><style>body { background-color: #111; color: #f00; font-family: monospace; text-align: center; padding-top: 20%; } h1 { font-size: 4em; text-shadow: 0 0 10px #f00; } p { font-size: 1.5em; } </style></head><body><h1>ACCESS DENIED</h1><p>Your request has been blocked by the corporate firewall.</p><p>Ref: PX55-K-8812</p></body></html>",
     "links": ["workstation-01", "holberton-gateway"],
     "auth": {
         "user": "admin",

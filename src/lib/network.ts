@@ -9,5 +9,7 @@ export const network: PC[] = [
     playerPc,
     holbertonGateway,
     workstation01,
-    corporateProxy
+    corporateProxy,
 ];
+
+    
