@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Inbox, Send, Edit, Trash2, CornerUpLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -23,14 +23,13 @@ export interface Email {
 
 interface EmailClientProps {
   emails: Email[];
-  setEmails: (emails: Email[] | ((current: Email[]) => Email[])) => void;
   onSend: (email: Omit<Email, 'id' | 'timestamp' | 'read' | 'folder'>) => void;
   currentUser: string;
 }
 
 type View = 'list' | 'read' | 'compose';
 
-export default function EmailClient({ emails, setEmails, onSend, currentUser }: EmailClientProps) {
+export default function EmailClient({ emails, onSend, currentUser }: EmailClientProps) {
   const [currentView, setCurrentView] = useState<View>('list');
   const [currentFolder, setCurrentFolder] = useState<'inbox' | 'sent'>('inbox');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
@@ -53,7 +52,7 @@ export default function EmailClient({ emails, setEmails, onSend, currentUser }: 
   const handleSelectEmail = (emailId: string) => {
     setSelectedEmailId(emailId);
     setCurrentView('read');
-    setEmails(currentEmails => currentEmails.map(e => e.id === emailId ? { ...e, read: true } : e));
+    // Note: This relies on the parent component to handle the "read" state update via a potential 'onRead' prop if persistence is needed across sessions.
   };
   
   const handleCompose = () => {

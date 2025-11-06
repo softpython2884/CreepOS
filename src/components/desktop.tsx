@@ -199,7 +199,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       onSoundEvent('click');
   };
 
-  const handleSendEmail = (email: Omit<Email, 'id' | 'timestamp' | 'read' | 'folder'>) => {
+  const handleSendEmail = useCallback((email: Omit<Email, 'id' | 'timestamp' | 'read' | 'folder'>) => {
     const newEmail: Email = {
       ...email,
       id: `email-${Date.now()}`,
@@ -210,7 +210,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setEmails(prev => [...prev, newEmail]);
     addLog(`EMAIL: Sent email to ${email.recipient} with subject "${email.subject}"`);
     // Here you can add logic to trigger story events based on the sent email
-  };
+  }, [addLog]);
 
   const getPlayerFileSystem = () => {
     const playerPc = network.find(p => p.id === 'player-pc');
@@ -289,7 +289,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       height: 600,
       props: {
         emails: emails,
-        setEmails: setEmails,
         onSend: handleSendEmail,
         currentUser: username,
       }
@@ -391,7 +390,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
           }
           if (app.appId === 'email') {
             props.emails = emails;
-            props.setEmails = setEmails;
+            props.onSend = handleSendEmail;
           }
           
           return (
