@@ -6,7 +6,7 @@ import Dock from '@/components/dock';
 import Window from '@/components/window';
 import Terminal from '@/components/apps/terminal';
 import DocumentFolder from '@/components/apps/document-folder';
-import TextEditor from '@/components/ui/text-editor';
+import TextEditor from '@/components/apps/text-editor';
 import { cn } from '@/lib/utils';
 import { SoundEvent, MusicEvent } from './audio-manager';
 import { type FileSystemNode } from '@/lib/network/types';
@@ -173,6 +173,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     if (!isTraced || traceTimeLeft <= 0) return;
 
     const timer = setInterval(() => {
+      onSoundEvent('scream'); // Play the pulse sound
       setTraceTimeLeft(prevTime => {
         if (prevTime <= 1) {
           clearInterval(timer);
@@ -185,7 +186,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isTraced, traceTimeLeft, onReboot, addLog]);
+  }, [isTraced, traceTimeLeft, onReboot, addLog, onSoundEvent]);
 
   const handleHackedPc = (pcId: string, ip: string) => {
     addLog(`SUCCESS: Root access gained on ${ip}`);
@@ -439,6 +440,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       )}
       style={{ backgroundImage: `linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)`, backgroundSize: `2rem 2rem` }}
     >
+        {isTraced && (
+            <div className="absolute inset-0 bg-destructive/80 animate-blink pointer-events-none z-[9998]" />
+        )}
       <div className={cn("absolute inset-0 bg-gradient-to-b from-transparent to-background/80 transition-opacity", isTraced && "bg-destructive/30 animate-pulse-slow")} />
       
       {isTraced && (
@@ -474,44 +478,32 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
                 onStart={() => bringToFront(app.instanceId)}
               >
                 <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                    <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} isCorrupted={app.isSourceOfTrace}>
-                        <AppComponent {...props}/>
+                    <Window 
+                      title={currentAppConfig.title} 
+                      onClose={() => closeApp(app.instanceId)} 
+                      width={currentAppConfig.width}
+                      height={currentAppConfig.height}
+                      isCorrupted={app.isSourceOfTrace}
+                    >
+                      <AppComponent {...props} />
                     </Window>
                 </div>
               </Draggable>
-          )
+          );
       })}
-      
+
       {editingFile && (
-        <Draggable
-            handle=".handle"
-            bounds="parent"
-            nodeRef={nanoRef}
-            defaultPosition={{ 
-                x: (document.getElementById('viewport')?.offsetWidth || 1920) / 2 - 400,
-                y: (document.getElementById('viewport')?.offsetHeight || 1080) / 2 - 300,
-             }}
-        >
-            <div ref={nanoRef} style={{ zIndex: nextZIndex + 1 }} className="absolute">
-              <Window title={`nano - ${editingFile.path.join('/')}`} onClose={() => setEditingFile(null)} width={800} height={600}>
-                  <TextEditor 
-                      fileContent={editingFile.content}
-                      onSave={(newContent) => handleSaveFile(editingFile.path, newContent)}
-                  />
+          <Draggable handle=".handle" bounds="parent" nodeRef={nanoRef}>
+            <div ref={nanoRef} style={{ zIndex: nextZIndex + 1, position: 'absolute' }}>
+              <Window title={`nano - /${editingFile.path.join('/')}`} onClose={() => setEditingFile(null)} width={800} height={600}>
+                <TextEditor 
+                    fileContent={editingFile.content}
+                    onSave={(newContent) => handleSaveFile(editingFile.path, newContent)}
+                />
               </Window>
             </div>
-        </Draggable>
+          </Draggable>
       )}
-
-      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-64">
-        <div className='flex items-center gap-2 text-sm'>
-            {dangerLevel > 75 ? <ShieldAlert className="text-destructive" /> : <ShieldCheck className="text-muted-foreground" />} 
-            <span className={cn('text-muted-foreground', dangerLevel > 50 && 'text-amber-400', dangerLevel > 75 && 'text-destructive font-bold' )}>
-                Danger Level: {dangerLevel}%
-            </span>
-        </div>
-        <Progress value={dangerLevel} className="h-2 mt-1" indicatorClassName={cn(dangerLevel > 75 ? 'bg-destructive' : 'bg-accent')}/>
-      </div>
 
       <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} />
     </main>

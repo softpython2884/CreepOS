@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { User, Lock, Power, Monitor, Ratio } from 'lucide-react';
+import { User, Lock, Power, Monitor, Ratio, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Desktop from '@/components/desktop';
 import AudioManager, { MusicEvent, SoundEvent } from '@/components/audio-manager';
@@ -47,6 +47,36 @@ const ratios = [
 ];
 
 const OffScreen = ({ onStart, onRatioChange, currentRatio }: { onStart: () => void; onRatioChange: (ratio: number) => void; currentRatio: number }) => {
+    const [selectedRatio, setSelectedRatio] = useState<string | number>(currentRatio.toString());
+    const [isCustomRatio, setIsCustomRatio] = useState(false);
+    const [customWidth, setCustomWidth] = useState(1920);
+    const [customHeight, setCustomHeight] = useState(1080);
+    
+    const handleRatioSelection = (value: string) => {
+        if (value === 'custom') {
+            setIsCustomRatio(true);
+        } else {
+            setIsCustomRatio(false);
+            const numericValue = parseFloat(value);
+            onRatioChange(numericValue);
+            setSelectedRatio(numericValue);
+        }
+    };
+    
+    useEffect(() => {
+        if(isCustomRatio && customWidth > 0 && customHeight > 0) {
+            onRatioChange(customWidth/customHeight);
+        }
+    }, [customWidth, customHeight, isCustomRatio, onRatioChange]);
+
+    const handleAutoDetect = () => {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        setCustomWidth(w);
+        setCustomHeight(h);
+        onRatioChange(w/h);
+    }
+    
     return (
         <div className="w-full h-full flex flex-col justify-center items-center bg-black font-code">
             <div className="w-[450px] border border-accent/20 bg-card/50 rounded-lg p-6 shadow-2xl shadow-primary/10 flex flex-col gap-4">
@@ -55,7 +85,7 @@ const OffScreen = ({ onStart, onRatioChange, currentRatio }: { onStart: () => vo
                     <div className='flex items-center gap-2'>
                         <Ratio className="text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">Display Ratio:</span>
-                        <Select onValueChange={(value) => onRatioChange(parseFloat(value))} defaultValue={currentRatio.toString()}>
+                        <Select onValueChange={handleRatioSelection} defaultValue={currentRatio.toString()}>
                             <SelectTrigger className="flex-1 bg-input/50">
                                 <SelectValue placeholder="Select ratio" />
                             </SelectTrigger>
@@ -63,9 +93,23 @@ const OffScreen = ({ onStart, onRatioChange, currentRatio }: { onStart: () => vo
                                 {ratios.map(r => (
                                     <SelectItem key={r.value} value={r.value.toString()}>{r.name}</SelectItem>
                                 ))}
+                                <SelectItem value="custom">Custom</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
+                    {isCustomRatio && (
+                        <div className="flex flex-col gap-2 p-3 border border-input rounded-md animate-in fade-in">
+                            <div className="flex items-center gap-2">
+                                <Input type="number" placeholder="Width" value={customWidth} onChange={e => setCustomWidth(parseInt(e.target.value))} className="bg-secondary/50"/>
+                                <span className="text-muted-foreground">x</span>
+                                <Input type="number" placeholder="Height" value={customHeight} onChange={e => setCustomHeight(parseInt(e.target.value))} className="bg-secondary/50"/>
+                            </div>
+                            <Button variant="secondary" size="sm" className="w-full" onClick={handleAutoDetect}>
+                                <RefreshCw className="mr-2" size={14}/>
+                                Auto-detect
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
                 <Button variant="outline" size="lg" className="gap-2 text-lg p-8 mt-4" onClick={onStart}>
@@ -207,30 +251,30 @@ export default function Home() {
     const [musicEvent, setMusicEvent] = useState<MusicEvent>('none');
     const [aspectRatio, setAspectRatio] = useState(16/9);
 
-    useEffect(() => {
-        const updateScale = () => {
-            const viewportBaseWidth = 1920;
-            const viewportWidth = viewportBaseWidth;
-            const viewportHeight = viewportWidth / aspectRatio;
+    const updateScale = useCallback(() => {
+        const viewportBaseWidth = 1920;
+        const viewportWidth = viewportBaseWidth;
+        const viewportHeight = viewportWidth / aspectRatio;
 
-            const { innerWidth: windowWidth, innerHeight: windowHeight } = window;
-    
-            const scaleX = windowWidth / viewportWidth;
-            const scaleY = windowHeight / viewportHeight;
-    
-            const scale = Math.min(scaleX, scaleY);
-    
-            const left = (windowWidth - viewportWidth * scale) / 2;
-            const top = (windowHeight - viewportHeight * scale) / 2;
-    
-            const root = document.documentElement;
-            root.style.setProperty('--viewport-width', `${viewportWidth}px`);
-            root.style.setProperty('--viewport-height', `${viewportHeight}px`);
-            root.style.setProperty('--viewport-scale', scale.toString());
-            root.style.setProperty('--viewport-left', `${left}px`);
-            root.style.setProperty('--viewport-top', `${top}px`);
-        };
-      
+        const { innerWidth: windowWidth, innerHeight: windowHeight } = window;
+
+        const scaleX = windowWidth / viewportWidth;
+        const scaleY = windowHeight / viewportHeight;
+
+        const scale = Math.min(scaleX, scaleY);
+
+        const left = (windowWidth - viewportWidth * scale) / 2;
+        const top = (windowHeight - viewportHeight * scale) / 2;
+
+        const root = document.documentElement;
+        root.style.setProperty('--viewport-width', `${viewportWidth}px`);
+        root.style.setProperty('--viewport-height', `${viewportHeight}px`);
+        root.style.setProperty('--viewport-scale', scale.toString());
+        root.style.setProperty('--viewport-left', `${left}px`);
+        root.style.setProperty('--viewport-top', `${top}px`);
+    }, [aspectRatio]);
+
+    useEffect(() => {
         updateScale();
         window.addEventListener('resize', updateScale);
 
@@ -243,7 +287,7 @@ export default function Home() {
             window.removeEventListener('resize', updateScale);
             document.removeEventListener('contextmenu', handleContextMenu);
         };
-    }, [aspectRatio]);
+    }, [updateScale]);
     
     const handleStartSystem = () => {
         setSoundEvent('fan');
