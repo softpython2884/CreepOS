@@ -23,7 +23,7 @@ interface TerminalProps {
     onHack: (pcId: string, ip: string) => void;
     onReboot: () => void;
     addLog: (message: string) => void;
-    onIncreaseDanger: (amount: number) => void;
+    handleIncreaseDanger: (amount: number) => void;
     onStartTrace: (targetName: string, time: number, sourceInstanceId: number) => void;
     onStopTrace: () => void;
     saveGameState: () => void;
@@ -102,7 +102,7 @@ export default function Terminal({
     onHack, 
     onReboot, 
     addLog, 
-    onIncreaseDanger,
+    handleIncreaseDanger,
     onStartTrace,
     onStopTrace,
     saveGameState,
@@ -233,7 +233,7 @@ export default function Terminal({
       const hasLogs = logFile && logFile.content && (logFile.content.includes('successful') || logFile.content.includes('disabled') || logFile.content.includes('opened'));
 
       if (hasLogs && currentPc.traceability) {
-        onIncreaseDanger(currentPc.traceability);
+        handleIncreaseDanger(currentPc.traceability);
         addLog(`DANGER: Traces left on ${currentPc.ip}. Danger level increased by ${currentPc.traceability}%.`);
       }
 
@@ -807,7 +807,7 @@ export default function Terminal({
                         }
                         return pc;
                     }));
-                    saveGameState();
+                    saveGameState(); // Save right before rebooting
                     setTimeout(onReboot, 2000);
                 } else {
                     addRemoteLog(`CRITICAL: XserverOS.sys deleted by ${username}. System crashing.`);
@@ -1110,5 +1110,3 @@ export default function Terminal({
     </div>
   );
 }
-
-    

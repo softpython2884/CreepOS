@@ -368,15 +368,6 @@ export default function Home() {
         };
         document.addEventListener('contextmenu', handleContextMenu);
         
-        // On first load, check if there's a saved game.
-        const savedState = loadGameState(username);
-        if(savedState.machineState && savedState.machineState !== 'off') {
-            setMachineState(savedState.machineState);
-            if (savedState.machineState !== 'off' && savedState.machineState !== 'login') {
-                setSoundEvent('fan');
-            }
-        }
-
         return () => {
             window.removeEventListener('resize', updateScale);
             document.removeEventListener('contextmenu', handleContextMenu);
@@ -384,8 +375,19 @@ export default function Home() {
     }, [updateScale, username]);
     
     const handleStartSystem = () => {
-        setSoundEvent('fan');
-        setMachineState('bios');
+        const savedState = loadGameState(username);
+        const savedMachineState = savedState.machineState;
+    
+        if (savedMachineState && savedMachineState !== 'off' && savedMachineState !== 'bios') {
+             // If there's a valid saved state (e.g., desktop, login), go to booting
+            setSoundEvent('fan');
+            setMusicEvent('epic');
+            setMachineState('booting');
+        } else {
+            // Otherwise, start the normal boot sequence
+            setSoundEvent('fan');
+            setMachineState('bios');
+        }
     }
 
     const handleBiosComplete = () => {
