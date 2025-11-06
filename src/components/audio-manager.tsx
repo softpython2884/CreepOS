@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useEffect, useRef, useState }from 'react';
 
-export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | null;
+export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'stopScream' | null;
 export type MusicEvent = 'calm' | 'epic' | 'alarm' | 'none';
 
 interface AudioManagerProps {
@@ -13,7 +14,7 @@ interface AudioManagerProps {
 
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
-const sounds: Record<NonNullable<SoundEvent>, { src: string | string[]; volume: number; loop?: boolean }> = {
+const sounds: Record<NonNullable<Exclude<SoundEvent, 'stopScream'>>, { src: string | string[]; volume: number; loop?: boolean }> = {
     scream: { src: '/action.mp3', volume: 0.8 },
     glitch: { src: ['/glitch-sound-scary-mp3.mp3', '/error-glitch.mp3', '/glitch-sound-effect_FugN82U.mp3'], volume: 0.4 },
     click: { src: '/clicksoundeffect.mp3', volume: 0.6 },
@@ -33,6 +34,7 @@ const SFX_PLAYER_COUNT = 5;
 export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioManagerProps) {
   const sfxPlayersRef = useRef<HTMLAudioElement[]>([]);
   const musicPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const screamPlayerRef = useRef<HTMLAudioElement | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const currentMusic = useRef<MusicEvent>('none');
 
@@ -44,6 +46,10 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
     }
     if (!musicPlayerRef.current) {
         musicPlayerRef.current = new Audio();
+    }
+    if (!screamPlayerRef.current) {
+        screamPlayerRef.current = new Audio();
+        screamPlayerRef.current.loop = true;
     }
 
     const enableAudio = async () => {
@@ -66,7 +72,29 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
   }, [isInitialized]);
 
   useEffect(() => {
-    if (!isInitialized || !soundEvent) return;
+    if (!isInitialized) return;
+    
+    if (soundEvent === 'stopScream') {
+        if (screamPlayerRef.current) {
+            screamPlayerRef.current.pause();
+            screamPlayerRef.current.currentTime = 0;
+        }
+        onEnd(null);
+        return;
+    }
+    
+    if (!soundEvent) return;
+
+    if (soundEvent === 'scream') {
+        if (screamPlayerRef.current && screamPlayerRef.current.paused) {
+            const sound = sounds.scream;
+            screamPlayerRef.current.src = Array.isArray(sound.src) ? sound.src[0] : sound.src;
+            screamPlayerRef.current.volume = sound.volume;
+            screamPlayerRef.current.play().catch(e => console.warn('Scream play failed', e));
+        }
+        onEnd(null);
+        return;
+    }
 
     const sound = sounds[soundEvent];
     if (!sound) return;

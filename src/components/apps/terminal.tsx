@@ -458,7 +458,7 @@ export default function Terminal({
         return;
     }
 
-    const executable = allExecutables.find(file => file.name.startsWith(command.toLowerCase()) && (file.name.endsWith('.bin') || file.name.endsWith('.exe')));
+    const executable = allExecutables.find(file => file.name.toLowerCase().startsWith(command.toLowerCase()));
 
     if (executable) {
         const cmdName = executable.name.split('.')[0].toLowerCase();

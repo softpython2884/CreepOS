@@ -104,6 +104,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const [isTraced, setIsTraced] = useState(false);
   const [traceTimeLeft, setTraceTimeLeft] = useState(0);
   const [traceTarget, setTraceTarget] = useState({ name: '', time: 0 });
+  const [isScreaming, setIsScreaming] = useState(false);
 
   const [emails, setEmails] = useState<Email[]>([
       {
@@ -150,6 +151,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     
     addLog(`DANGER: Trace initiated from ${targetName}. You have ${time} seconds to disconnect.`);
     onMusicEvent('alarm');
+    onSoundEvent('scream');
+    setIsScreaming(true);
     setIsTraced(true);
     setTraceTimeLeft(time);
     setTraceTarget({ name: targetName, time: time });
@@ -157,26 +160,29 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setOpenApps(prev => prev.map(app => 
         app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
     ));
-  }, [addLog, onMusicEvent, isTraced]);
+  }, [addLog, onMusicEvent, isTraced, onSoundEvent]);
 
   const handleStopTrace = useCallback(() => {
     if (!isTraced) return;
     
     addLog(`INFO: Trace averted. Disconnected from ${traceTarget.name}.`);
     onMusicEvent('calm');
+    onSoundEvent('stopScream');
+    setIsScreaming(false);
     setIsTraced(false);
     setTraceTimeLeft(0);
     setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
-  }, [addLog, onMusicEvent, isTraced, traceTarget]);
+  }, [addLog, onMusicEvent, isTraced, traceTarget, onSoundEvent]);
 
   useEffect(() => {
     if (!isTraced || traceTimeLeft <= 0) return;
 
     const timer = setInterval(() => {
-      onSoundEvent('scream');
       setTraceTimeLeft(prevTime => {
         if (prevTime <= 1) {
           clearInterval(timer);
+          onSoundEvent('stopScream');
+          setIsScreaming(false);
           addLog(`CRITICAL: Trace completed. System integrity compromised. Rebooting...`);
           onReboot();
           return 0;
