@@ -889,7 +889,6 @@ export default function Terminal({
             handleOutput(`Use 'login' to authenticate.`);
             addLog(`EVENT: Connection established to ${targetPC.name} (${targetPC.ip})`);
             addRemoteLog(`Connection established from unknown source.`);
-            checkAndTriggerTrace(targetPC);
             break;
         }
         case 'login': {

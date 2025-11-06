@@ -1,5 +1,4 @@
 
-
 {
     "id": "workstation-01",
     "name": "Workstation-01",
@@ -13,7 +12,7 @@
         "solution": "PX55"
     },
     "proxy": { "enabled": true, "level": 1 },
-    "traceTime": 0,
+    "traceTime": 60,
     "requiredPorts": 1,
     "ports": [
         { "port": 22, "service": "SSH", "isOpen": false }
