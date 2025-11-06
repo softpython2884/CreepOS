@@ -18,7 +18,7 @@ interface TerminalProps {
     onSoundEvent?: (event: 'click') => void;
     onOpenFileEditor: (path: string[], content: string) => void;
     network: PC[];
-    setNetwork: (network: PC[]) => void;
+    setNetwork: React.Dispatch<React.SetStateAction<PC[]>>;
     hackedPcs: Set<string>;
     onHack: (pcId: string, ip: string) => void;
     onReboot: () => void;
@@ -200,19 +200,19 @@ export default function Terminal({
     const timestamp = new Date().toUTCString();
     const logEntry = `[${timestamp}] - ${message}`;
 
-    setNetwork(
-      network.map(pc => {
-        if (pc.ip === connectedIp) {
-          const newFileSystem = updateNodeByPath(pc.fileSystem, ['logs', 'access.log'], (node) => {
-            if (node.type === 'file') {
-              return { ...node, content: (node.content || '') + logEntry + '\n' };
+    setNetwork(currentNetwork =>
+        currentNetwork.map(pc => {
+            if (pc.ip === connectedIp) {
+                const newFileSystem = updateNodeByPath(pc.fileSystem, ['logs', 'access.log'], (node) => {
+                    if (node.type === 'file') {
+                        return { ...node, content: (node.content || '') + logEntry + '\n' };
+                    }
+                    return node;
+                });
+                return { ...pc, fileSystem: newFileSystem };
             }
-            return node;
-          });
-          return { ...pc, fileSystem: newFileSystem };
-        }
-        return pc;
-      })
+            return pc;
+        })
     );
   };
 
@@ -379,58 +379,54 @@ export default function Terminal({
     }
 
     const handlePortHack = async (portNumber: number, portName: string) => {
-      let targetPC = getCurrentPc(); // Initial fetch
-      if (connectedIp === '127.0.0.1' || !targetPC) {
-        setHistory(prev => [...prev, { type: 'output', content: `${portName}: Must be connected to a remote system.` }]);
-        return;
-      }
+        if (connectedIp === '127.0.0.1') {
+            setHistory(prev => [...prev, { type: 'output', content: `${portName}: Must be connected to a remote system.` }]);
+            return;
+        }
+    
+        const currentTargetPC = network.find(pc => pc.ip === connectedIp);
+        if (!currentTargetPC) {
+            setHistory(prev => [...prev, { type: 'output', content: 'Critical error: Target system disconnected.' }]);
+            return;
+        }
+    
+        if (currentTargetPC.firewall.enabled) {
+            setHistory(prev => [...prev, { type: 'output', content: `${portName} failed: Active firewall detected.` }]);
+            addRemoteLog(`HACK: ${portName} failed on port ${portNumber}. Reason: Firewall active.`);
+            return;
+        }
+        if (currentTargetPC.proxy.enabled) {
+            setHistory(prev => [...prev, { type: 'output', content: `${portName} failed: Active proxy detected.` }]);
+            addRemoteLog(`HACK: ${portName} failed on port ${portNumber}. Reason: Proxy active.`);
+            return;
+        }
+        const port = currentTargetPC.ports.find(p => p.port === portNumber);
+        if (!port) {
+            setHistory(prev => [...prev, { type: 'output', content: `${portName} failed: Port ${portNumber} not found on this system.` }]);
+            return;
+        }
+        if (port.isOpen) {
+            setHistory(prev => [...prev, { type: 'output', content: `Port ${portNumber} is already open.` }]);
+            return;
+        }
       
-      // Re-fetch the PC to ensure we have the latest state before checks
-      // This is crucial to get updates from previous commands in the same session.
-      targetPC = network.find(pc => pc.ip === connectedIp);
-      if (!targetPC) {
-          setHistory(prev => [...prev, { type: 'output', content: 'Critical error: Target system disconnected.' }]);
-          return;
-      }
+        checkAndTriggerTrace();
 
-      if (targetPC.firewall.enabled) {
-        setHistory(prev => [...prev, { type: 'output', content: `${portName} failed: Active firewall detected.` }]);
-        addRemoteLog(`HACK: ${portName} failed on port ${portNumber}. Reason: Firewall active.`);
-        return;
-      }
-      if (targetPC.proxy.enabled) {
-        setHistory(prev => [...prev, { type: 'output', content: `${portName} failed: Active proxy detected.` }]);
-        addRemoteLog(`HACK: ${portName} failed on port ${portNumber}. Reason: Proxy active.`);
-        return;
-      }
-      const port = targetPC.ports.find(p => p.port === portNumber);
-      if (!port) {
-        setHistory(prev => [...prev, { type: 'output', content: `${portName} failed: Port ${portNumber} not found on this system.` }]);
-        return;
-      }
-      if (port.isOpen) {
-        setHistory(prev => [...prev, { type: 'output', content: `Port ${portNumber} is already open.` }]);
-        return;
-      }
-      
-      checkAndTriggerTrace();
-
-      setHistory(prev => [...prev, { type: 'output', content: `Running ${portName} exploit...` }]);
-      await runProgressBar(3000);
+        setHistory(prev => [...prev, { type: 'output', content: `Running ${portName} exploit...` }]);
+        await runProgressBar(3000);
   
-      // Use the functional update form of setNetwork to ensure we're modifying the latest state
-      setNetwork(currentNetwork => 
-        currentNetwork.map(pc => {
-          if (pc.id === targetPC!.id) {
-            const newPorts = pc.ports.map(p => p.port === portNumber ? { ...p, isOpen: true } : p);
-            return { ...pc, ports: newPorts };
-          }
-          return pc;
-        })
-      );
+        setNetwork(currentNetwork => 
+            currentNetwork.map(pc => {
+                if (pc.id === currentTargetPC.id) {
+                    const newPorts = pc.ports.map(p => p.port === portNumber ? { ...p, isOpen: true } : p);
+                    return { ...pc, ports: newPorts };
+                }
+                return pc;
+            })
+        );
   
-      setHistory(prev => [...prev, { type: 'output', content: `${port.service} port (${portNumber}) is now open.` }]);
-      addRemoteLog(`HACK: Port ${portNumber} (${port.service}) opened by ${username}.`);
+        setHistory(prev => [...prev, { type: 'output', content: `${port.service} port (${portNumber}) is now open.` }]);
+        addRemoteLog(`HACK: Port ${portNumber} (${port.service}) opened by ${username}.`);
     };
 
     // --- Special cases for non-auth commands on remote systems ---
@@ -560,7 +556,7 @@ export default function Terminal({
                 await runProgressBar(targetPC.proxy.level * 2000);
 
                 if (availableNodes >= requiredNodes) {
-                    setNetwork(network.map(pc => pc.id === targetPC.id ? { ...pc, proxy: { ...pc.proxy, enabled: false } } : pc));
+                    setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC.id ? { ...pc, proxy: { ...pc.proxy, enabled: false } } : pc));
                     handleOutput(`Proxy disabled on ${targetPC.ip}.`);
                     addRemoteLog(`HACK: Proxy on ${targetPC.ip} disabled via overload by ${username}.`);
                 } else {
@@ -585,8 +581,13 @@ export default function Terminal({
             } else if (targetPC) {
                 addRemoteLog(`CRITICAL: Forkbomb executed by ${username}. System crashing.`);
                 
-                const newFileSystem = updateNodeByPath(targetPC.fileSystem, ['sys', 'XserverOS.sys'], (node) => ({ ...node, content: 'SYSTEM KERNEL CORRUPTED' }));
-                setNetwork(network.map(pc => pc.id === targetPC.id ? {...pc, fileSystem: newFileSystem} : pc));
+                setNetwork(currentNetwork => currentNetwork.map(pc => {
+                    if (pc.id === targetPC.id) {
+                        const newFileSystem = updateNodeByPath(pc.fileSystem, ['sys', 'XserverOS.sys'], (node) => ({ ...node, content: 'SYSTEM KERNEL CORRUPTED' }));
+                        return { ...pc, fileSystem: newFileSystem };
+                    }
+                    return pc;
+                }));
 
                 disconnect(true);
             }
@@ -775,7 +776,7 @@ export default function Terminal({
                     disconnect(true);
                 }
 
-                setNetwork(prevNetwork => prevNetwork.map(pc => {
+                setNetwork(currentNetwork => currentNetwork.map(pc => {
                     if (pc.ip === connectedIp) {
                         const newFs = updateNodeByPath(pc.fileSystem, filePath, () => null);
                         return { ...pc, fileSystem: newFs };
@@ -797,7 +798,7 @@ export default function Terminal({
             const isAccessLog = fileNode.name === 'access.log';
             const updater = isAccessLog ? (node: FileSystemNode) => ({ ...node, content: `Log cleared by ${username} at ${new Date().toISOString()}\n` }) : () => null;
 
-            setNetwork(prevNetwork => prevNetwork.map(pc => {
+            setNetwork(currentNetwork => currentNetwork.map(pc => {
                 if (pc.ip === connectedIp) {
                     const newFs = updateNodeByPath(pc.fileSystem, filePath, updater);
                     return { ...pc, fileSystem: newFs };
@@ -900,7 +901,7 @@ export default function Terminal({
             } else {
                 checkAndTriggerTrace();
                 if (targetPC.firewall.solution === solution) {
-                    setNetwork(network.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
+                    setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
                     handleOutput('Firewall disabled.');
                     addRemoteLog(`HACK: Firewall disabled by ${username} with solution: ${solution}.`);
                 } else {
@@ -1045,3 +1046,5 @@ export default function Terminal({
     </div>
   );
 }
+
+    
