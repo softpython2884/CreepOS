@@ -51,12 +51,45 @@ interface DesktopProps {
   onReboot: () => void;
 }
 
+const updateNodeByPath = (
+  nodes: FileSystemNode[],
+  path: string[],
+  updater: (node: FileSystemNode) => FileSystemNode | null
+): FileSystemNode[] => {
+  if (path.length === 0) return nodes;
+  const nodeName = path[0];
+  
+  if (path.length === 1) {
+      const nodeIndex = nodes.findIndex(n => n.name === nodeName);
+      if (nodeIndex !== -1) {
+          const updatedNode = updater(nodes[nodeIndex]);
+          const newNodes = [...nodes];
+          if (updatedNode === null) {
+              newNodes.splice(nodeIndex, 1);
+          } else {
+              newNodes[nodeIndex] = updatedNode;
+          }
+          return newNodes;
+      }
+  }
+
+  return nodes.map(node => {
+      if (node.name === nodeName && node.type === 'folder' && node.children) {
+          return {
+              ...node,
+              children: updateNodeByPath(node.children, path.slice(1), updater),
+          };
+      }
+      return node;
+  });
+};
+
+
 export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [nextZIndex, setNextZIndex] = useState(10);
   const nextInstanceIdRef = useRef(0);
-  const [fileSystem, setFileSystem] = useState<FileSystemNode[]>([]);
   const [editingFile, setEditingFile] = useState<EditingFile>(null);
   const nanoRef = useRef(null);
   const [network, setNetwork] = useState<PC[]>(() => JSON.parse(JSON.stringify(initialNetwork)));
@@ -68,25 +101,25 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     const timestamp = new Date().toISOString();
     const formattedMessage = `${timestamp} - ${message}`;
     setLogs(prev => [...prev, formattedMessage]);
+    
+    setNetwork(prevNetwork => {
+        const playerPcIndex = prevNetwork.findIndex(p => p.id === 'player-pc');
+        if (playerPcIndex === -1) return prevNetwork;
 
-    // This logic updates the local log file on the player's machine.
-    setFileSystem(prevFs => {
-      const recursiveUpdate = (nodes: FileSystemNode[], path: string[], newContent: string): FileSystemNode[] => {
-        const [current, ...rest] = path;
-        return nodes.map(node => {
-          if (node.name === current) {
-            if (rest.length === 0 && node.type === 'file') {
-              return { ...node, content: (node.content ? node.content + '\n' : '') + newContent };
+        const playerPc = prevNetwork[playerPcIndex];
+        const logPath = ['home', username, 'logs', 'activity.log'];
+
+        const newFileSystem = updateNodeByPath(playerPc.fileSystem, logPath, (node) => {
+            if (node.type === 'file') {
+                return { ...node, content: (node.content || '') + formattedMessage + '\n' };
             }
-            if (node.type === 'folder' && node.children) {
-              return { ...node, children: recursiveUpdate(node.children, rest, newContent) };
-            }
-          }
-          return node;
+            return node;
         });
-      };
-      const logPath = ['home', username, 'logs', 'activity.log'];
-      return recursiveUpdate(prevFs, logPath, formattedMessage);
+
+        const newPlayerPc = { ...playerPc, fileSystem: newFileSystem };
+        const newNetwork = [...prevNetwork];
+        newNetwork[playerPcIndex] = newPlayerPc;
+        return newNetwork;
     });
   }, [username]);
 
@@ -100,59 +133,77 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     addLog(`DANGER: Trace level increased by ${amount}%`);
   }
 
-  useEffect(() => {
-      const playerPc = network.find(p => p.id === 'player-pc');
-      if (playerPc) {
-        const personalizeFileSystem = (nodes: FileSystemNode[]): FileSystemNode[] => {
-            return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, username));
-        };
-        setFileSystem(personalizeFileSystem(playerPc.fileSystem));
-      }
-  }, [username]);
-
   const handleOpenFileEditor = (path: string[], content: string) => {
     setEditingFile({ path, content });
   };
 
     const handleSaveFile = (path: string[], newContent: string) => {
         addLog(`EVENT: File saved at /${path.join('/')}`);
-        const parentPath = path.slice(0, -1);
-        const fileName = path[path.length - 1];
+        
+        setNetwork(prevNetwork => {
+            return prevNetwork.map(pc => {
+                if (pc.id !== 'player-pc') return pc;
+                
+                const parentPath = path.slice(0, -1);
+                const fileName = path[path.length - 1];
 
-        const recursiveUpdate = (nodes: FileSystemNode[], currentPath: string[]): FileSystemNode[] => {
-            if (currentPath.length === 0) {
-                const fileExists = nodes.some(node => node.name === fileName);
-                if (fileExists) {
+                const recursiveUpdate = (nodes: FileSystemNode[], currentPath: string[]): FileSystemNode[] => {
+                    if (currentPath.length === 0) {
+                        const fileExists = nodes.some(node => node.name === fileName);
+                        if (fileExists) {
+                            return nodes.map(node => 
+                                node.name === fileName && node.type === 'file' 
+                                    ? { ...node, content: newContent } 
+                                    : node
+                            );
+                        } else {
+                            addLog(`EVENT: File created at /${path.join('/')}`);
+                            const newFile: FileSystemNode = {
+                                id: `file-${Date.now()}`,
+                                name: fileName,
+                                type: 'file',
+                                content: newContent,
+                            };
+                            return [...nodes, newFile];
+                        }
+                    }
+
+                    const [next, ...rest] = currentPath;
                     return nodes.map(node => 
-                        node.name === fileName && node.type === 'file' 
-                            ? { ...node, content: newContent } 
+                        (node.name === next && node.type === 'folder' && node.children)
+                            ? { ...node, children: recursiveUpdate(node.children, rest) }
                             : node
                     );
-                } else {
-                    addLog(`EVENT: File created at /${path.join('/')}`);
-                    const newFile: FileSystemNode = {
-                        id: `file-${Date.now()}`,
-                        name: fileName,
-                        type: 'file',
-                        content: newContent,
-                    };
-                    return [...nodes, newFile];
-                }
-            }
+                };
+                
+                const newFileSystem = recursiveUpdate(pc.fileSystem, parentPath);
+                return { ...pc, fileSystem: newFileSystem };
+            });
+        });
 
-            const [next, ...rest] = currentPath;
-            return nodes.map(node => 
-                (node.name === next && node.type === 'folder')
-                    ? { ...node, children: recursiveUpdate(node.children || [], rest) }
-                    // @ts-ignore
-                    : node
-            );
-        };
-
-        setFileSystem(prevFs => recursiveUpdate(prevFs, parentPath));
         setEditingFile(null); // Close editor
         onSoundEvent('click');
     };
+
+  const getPlayerFileSystem = () => {
+    const playerPc = network.find(p => p.id === 'player-pc');
+    return playerPc ? playerPc.fileSystem : [];
+  };
+
+  const setPlayerFileSystem = (newFileSystem: FileSystemNode[] | ((fs: FileSystemNode[]) => FileSystemNode[])) => {
+    setNetwork(prevNetwork => {
+        const playerPcIndex = prevNetwork.findIndex(p => p.id === 'player-pc');
+        if (playerPcIndex === -1) return prevNetwork;
+
+        const playerPc = prevNetwork[playerPcIndex];
+        const updatedFileSystem = typeof newFileSystem === 'function' ? newFileSystem(playerPc.fileSystem) : newFileSystem;
+        const newPlayerPc = { ...playerPc, fileSystem: updatedFileSystem };
+
+        const newNetwork = [...prevNetwork];
+        newNetwork[playerPcIndex] = newPlayerPc;
+        return newNetwork;
+    });
+  };
 
   const appConfig: AppConfig = {
     terminal: { 
@@ -179,8 +230,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         width: 700, 
         height: 500, 
         props: { 
-            fileSystem: fileSystem,
-            onFileSystemUpdate: setFileSystem,
+            fileSystem: getPlayerFileSystem(),
+            onFileSystemUpdate: setPlayerFileSystem,
             onSoundEvent: onSoundEvent,
             username: username,
         } 
@@ -207,7 +258,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   };
 
   const openApp = useCallback((appId: AppId) => {
-    if (appId === 'documents' && fileSystem.length === 0) return;
+    const playerFs = getPlayerFileSystem();
+    if (appId === 'documents' && playerFs.length === 0) return;
 
     const instanceId = nextInstanceIdRef.current++;
     const config = appConfig[appId];
@@ -229,7 +281,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setActiveInstanceId(instanceId);
     setNextZIndex(prev => prev + 1);
     onSoundEvent('click');
-  }, [nextZIndex, onSoundEvent, appConfig, fileSystem.length]);
+  }, [nextZIndex, onSoundEvent, appConfig, network]);
 
   const closeApp = useCallback((instanceId: number) => {
     onSoundEvent('close');
@@ -280,15 +332,23 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
           const AppComponent = currentAppConfig.component;
           
           let props = { ...currentAppConfig.props };
+          // This ensures that the components always have the latest state.
           if (app.appId === 'terminal') {
             props.network = network;
             props.setNetwork = setNetwork;
+            props.hackedPcs = hackedPcs;
+            props.logs = logs;
           }
            if (app.appId === 'network-map') {
             props.network = network;
+            props.hackedPcs = hackedPcs;
           }
           if (app.appId === 'logs') {
             props.logs = logs;
+          }
+           if (app.appId === 'documents') {
+            props.fileSystem = getPlayerFileSystem();
+            props.onFileSystemUpdate = setPlayerFileSystem;
           }
           
           return (
@@ -344,5 +404,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     </main>
   );
 }
+
+    
 
     

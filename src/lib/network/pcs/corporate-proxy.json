@@ -20,7 +20,6 @@
     "traceTime": 30,
     "requiredPorts": 0,
     "traceability": 30,
-    "remoteLogs": [],
     "ports": [
         { "port": 8080, "service": "HTTP", "isOpen": false },
         { "port": 1080, "service": "UNKNOWN", "isOpen": false }
@@ -46,3 +45,5 @@
         }
     ]
 }
+
+    

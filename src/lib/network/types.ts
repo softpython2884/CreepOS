@@ -44,6 +44,8 @@ export interface PC {
     ports: Port[];
     fileSystem: FileSystemNode[];
     traceability?: number; // How much danger is added if logs are not cleared
-    remoteLogs?: string[]; // In-session logs left by the player
 }
 
+
+
+    

@@ -68,14 +68,8 @@
                 { "id": "file-webserverworm", "name": "WebServerWorm.bin", "type": "file", "content": "Port 80 (HTTP) cracker.", "isSystemFile": true },
                 { "id": "file-forkbomb", "name": "forkbomb.bin", "type": "file", "content": "System crash utility.", "isSystemFile": true }
             ]
-        },
-        {
-            "id": "folder-logs-root",
-            "name": "logs",
-            "type": "folder",
-            "children": [
-                { "id": "file-accesslog", "name": "access.log", "type": "file", "content": "USER <user> logged in." }
-            ]
         }
     ]
 }
+
+    

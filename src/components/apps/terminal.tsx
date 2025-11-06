@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, KeyboardEvent, useCallback } from 'react';
+import { useState, useRef, useEffect, KeyboardEvent, useCallback, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileSystemNode, PC } from '@/lib/network/types';
@@ -125,6 +125,13 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
     const getCurrentPc = () => {
         return network.find(pc => pc.ip === connectedIp);
     }
+    
+    const allExecutables = useMemo(() => {
+      const playerPcFs = initialNetworkData.find(p => p.id === 'player-pc')?.fileSystem;
+      if (!playerPcFs) return [];
+      const binFolder = personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder');
+      return binFolder?.children?.filter(f => f.type === 'file' && (f.name.endsWith('.bin') || f.name.endsWith('.exe'))) || [];
+    }, [username]);
 
   const getPrompt = () => {
     const currentPc = getCurrentPc();
@@ -334,9 +341,6 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
         return;
     }
 
-    const playerPcFs = initialNetworkData.find(p => p.id === 'player-pc')?.fileSystem;
-    const localBinFolder = playerPcFs ? personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder') : undefined;
-    const allExecutables = localBinFolder?.children?.filter(f => f.type === 'file' && (f.name.endsWith('.bin') || f.name.endsWith('.exe'))) || [];
     const executable = allExecutables.find(file => file.name.startsWith(command.toLowerCase()) && (file.name.endsWith('.bin') || file.name.endsWith('.exe')));
 
     if (executable) {
@@ -872,5 +876,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
     </div>
   );
 }
+
+    
 
     
