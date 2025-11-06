@@ -109,6 +109,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const [traceTimeLeft, setTraceTimeLeft] = useState(0);
   const [traceTarget, setTraceTarget] = useState({ name: '', time: 0 });
   const [isScreaming, setIsScreaming] = useState(false);
+  const [emailNotification, setEmailNotification] = useState(false);
+
 
   const [emails, setEmails] = useState<Email[]>([
       {
@@ -118,7 +120,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         subject: 'Welcome, Operator',
         body: 'Welcome to the SubSystem OS, Operator. Your terminal is now active. All system communications will be directed here. Await your first directive.\n\n- Néo',
         timestamp: new Date().toISOString(),
-        read: false,
         folder: 'inbox',
       },
   ]);
@@ -163,7 +164,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     
     addLog(`DANGER: Trace initiated from ${targetName}. You have ${time} seconds to disconnect.`);
     onMusicEvent('alarm');
-    onSoundEvent('scream');
     setIsScreaming(true);
     setIsTraced(true);
     setTraceTimeLeft(time);
@@ -172,7 +172,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setOpenApps(prev => prev.map(app => 
         app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
     ));
-  }, [addLog, onMusicEvent, isTraced, onSoundEvent]);
+  }, [addLog, onMusicEvent, isTraced]);
 
   const handleStopTrace = useCallback(() => {
     if (!isTraced) return;
@@ -188,8 +188,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
   }, [addLog, onMusicEvent, isTraced, traceTarget, onSoundEvent, isScreaming]);
 
-  useEffect(() => {
-    if (!isTraced || traceTimeLeft <= 0) {
+ useEffect(() => {
+    if (!isTraced) {
       if (isScreaming) {
         onSoundEvent('stopScream');
         setIsScreaming(false);
@@ -214,7 +214,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, traceTimeLeft, onReboot, addLog, onSoundEvent, isScreaming]);
+}, [isTraced, onReboot, addLog, onSoundEvent, isScreaming]);
+
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
@@ -279,14 +280,17 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       onSoundEvent('click');
   };
 
-  const handleSendEmail = (email: Omit<Email, 'id' | 'timestamp' | 'read' | 'folder'>) => {
+  const handleSendEmail = (email: Omit<Email, 'id' | 'timestamp' | 'folder'>) => {
     const newEmail: Email = {
       ...email,
       id: `email-${Date.now()}`,
       timestamp: new Date().toISOString(),
-      read: true,
       folder: 'sent',
     };
+    onSoundEvent('email');
+    setEmailNotification(true);
+    setTimeout(() => setEmailNotification(false), 1000);
+    
     setEmails(prev => [...prev, newEmail]);
     addLog(`EMAIL: Sent email to ${email.recipient} with subject "${email.subject}"`);
   };
@@ -327,7 +331,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             onHack: handleHackedPc,
             onReboot,
             addLog,
-            onIncreaseDanger: handleIncreaseDanger,
+            handleIncreaseDanger: handleIncreaseDanger,
             onStartTrace: handleStartTrace,
             onStopTrace: handleStopTrace,
             saveGameState: () => saveGameState(username, { network, hackedPcs, machineState: 'desktop' }),
@@ -542,9 +546,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
           </Draggable>
       )}
 
-      <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} />
+      <Dock onAppClick={openApp} openApps={openApps} activeInstanceId={activeInstanceId} emailNotification={emailNotification} />
     </main>
   );
 }
-
-    

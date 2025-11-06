@@ -10,6 +10,7 @@ interface DockProps {
   onAppClick: (appId: AppId) => void;
   openApps: { instanceId: number; appId: AppId }[];
   activeInstanceId: number | null;
+  emailNotification: boolean;
 }
 
 const apps: { id: AppId; name: string; icon: JSX.Element }[] = [
@@ -21,7 +22,7 @@ const apps: { id: AppId; name: string; icon: JSX.Element }[] = [
   { id: 'logs', name: 'Live Logs', icon: <ShieldCheck /> },
 ];
 
-export default function Dock({ onAppClick, openApps, activeInstanceId }: DockProps) {
+export default function Dock({ onAppClick, openApps, activeInstanceId, emailNotification }: DockProps) {
   
   return (
     <TooltipProvider delayDuration={0}>
@@ -29,7 +30,8 @@ export default function Dock({ onAppClick, openApps, activeInstanceId }: DockPro
         <div className="flex items-center justify-center gap-3 rounded-lg border bg-card/50 p-2 backdrop-blur-sm shadow-lg">
           {apps.map((app) => {
             const isActive = openApps.some(openApp => openApp.appId === app.id && openApp.instanceId === activeInstanceId);
-            
+            const isEmailAndNotifying = app.id === 'email' && emailNotification;
+
             return (
                 <Tooltip key={app.id}>
                 <TooltipTrigger asChild>
@@ -38,6 +40,7 @@ export default function Dock({ onAppClick, openApps, activeInstanceId }: DockPro
                     className={cn(
                         'relative flex h-12 w-12 items-center justify-center rounded-md transition-all duration-200 hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                         'text-foreground',
+                         isEmailAndNotifying && 'animate-pulse bg-accent/50'
                     )}
                     aria-label={`Open ${app.name}`}
                     >
@@ -61,5 +64,3 @@ export default function Dock({ onAppClick, openApps, activeInstanceId }: DockPro
     </TooltipProvider>
   );
 }
-
-    

@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
-import { Inbox, Send, Edit, Trash2, CornerUpLeft } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Inbox, Send, Edit, CornerUpLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,13 +17,12 @@ export interface Email {
   subject: string;
   body: string;
   timestamp: string;
-  read: boolean;
   folder: 'inbox' | 'sent';
 }
 
 interface EmailClientProps {
   emails: Email[];
-  onSend: (email: Omit<Email, 'id' | 'timestamp' | 'read' | 'folder'>) => void;
+  onSend: (email: Omit<Email, 'id' | 'timestamp' | 'folder'>) => void;
   currentUser: string;
 }
 
@@ -52,7 +51,6 @@ export default function EmailClient({ emails, onSend, currentUser }: EmailClient
   const handleSelectEmail = (emailId: string) => {
     setSelectedEmailId(emailId);
     setCurrentView('read');
-    // Note: This relies on the parent component to handle the "read" state update via a potential 'onRead' prop if persistence is needed across sessions.
   };
   
   const handleCompose = () => {
@@ -77,10 +75,6 @@ export default function EmailClient({ emails, onSend, currentUser }: EmailClient
     setCurrentFolder('sent');
   };
 
-  const unreadCount = useMemo(() => {
-    return emails.filter(e => e.folder === 'inbox' && !e.read).length;
-  }, [emails]);
-
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleString();
@@ -101,14 +95,11 @@ export default function EmailClient({ emails, onSend, currentUser }: EmailClient
           filteredEmails.map(email => (
             <div
               key={email.id}
-              className={cn(
-                "p-3 border-b cursor-pointer hover:bg-accent/50",
-                !email.read && currentFolder === 'inbox' ? 'bg-secondary' : ''
-              )}
+              className="p-3 border-b cursor-pointer hover:bg-accent/50"
               onClick={() => handleSelectEmail(email.id)}
             >
               <div className="flex justify-between items-start">
-                <p className={cn("font-semibold", !email.read && 'text-accent')}>
+                <p className="font-semibold text-accent">
                   {currentFolder === 'inbox' ? email.sender : `To: ${email.recipient}`}
                 </p>
                 <p className="text-xs text-muted-foreground">{formatTimestamp(email.timestamp)}</p>
@@ -203,7 +194,6 @@ export default function EmailClient({ emails, onSend, currentUser }: EmailClient
           >
             <Inbox size={16} />
             Boîte de réception
-            {unreadCount > 0 && <span className="ml-auto bg-accent text-accent-foreground text-xs font-bold rounded-full px-2 py-0.5">{unreadCount}</span>}
           </Button>
           <Button 
             variant={currentFolder === 'sent' ? 'secondary' : 'ghost'} 

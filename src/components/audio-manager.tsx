@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState }from 'react';
 
-export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'stopScream' | null;
+export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'stopScream' | 'email' | null;
 export type MusicEvent = 'calm' | 'epic' | 'alarm' | 'none';
 
 interface AudioManagerProps {
@@ -18,6 +18,7 @@ const sounds: Record<NonNullable<Exclude<SoundEvent, 'stopScream'>>, { src: stri
     scream: { src: '/action.mp3', volume: 0.8 },
     glitch: { src: ['/glitch-sound-scary-mp3.mp3', '/error-glitch.mp3', '/glitch-sound-effect_FugN82U.mp3'], volume: 0.4 },
     click: { src: '/clicksoundeffect.mp3', volume: 0.6 },
+    email: { src: '/clicksoundeffect.mp3', volume: 0.5 }, // Using click as a placeholder for mail.mp3
     close: { src: '/clicksoundeffect.mp3', volume: 0.4 },
     bsod: { src: '/bluescreen.mp3', volume: 0.5 },
     fan: { src: '/ventil.mp3', volume: 0.4, loop: true },
