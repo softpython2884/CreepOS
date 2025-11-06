@@ -157,35 +157,43 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
     };
     
     return (
-        <div className="w-full h-full flex items-center justify-center bg-background">
-            <form onSubmit={handleLogin} className="w-full max-w-xs text-center p-8 bg-card rounded-lg shadow-2xl shadow-primary/20 animate-in fade-in zoom-in-95">
-                <h1 className="text-2xl font-headline text-primary opacity-70 mb-2">NEO-SYSTEM</h1>
-                <p className="text-sm text-muted-foreground mb-6">Enter credentials to proceed</p>
-                <div className="relative mb-4">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="pl-10 text-center" 
-                        placeholder="Username"
-                        readOnly
-                    />
+        <div className="w-full h-full flex items-center justify-center bg-background font-code animate-in fade-in">
+            <form onSubmit={handleLogin} className="w-[400px] text-foreground border-2 border-accent/50 p-1 bg-card/30">
+                <div className="border border-accent/30 p-6">
+                    <div className="text-center mb-6">
+                        <h1 className="text-xl font-bold text-accent tracking-[0.2em]">NEO-SYSTEM</h1>
+                        <p className="text-sm text-accent/70">AUTHENTIFICATION REQUISE</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-[120px_1fr] items-center gap-x-4 gap-y-3">
+                        <label htmlFor="username">UTILISATEUR :</label>
+                        <Input 
+                            id="username"
+                            value={username}
+                            readOnly
+                            className="bg-input/50 border-accent/30 focus-visible:ring-accent"
+                        />
+                        
+                        <label htmlFor="password">MOT DE PASSE :</label>
+                        <Input 
+                            id="password"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="bg-input/50 border-accent/30 focus-visible:ring-accent tracking-widest" 
+                            placeholder="********"
+                            autoFocus
+                        />
+                    </div>
+                    
+                    <div className="mt-6 flex justify-end">
+                        <Button type="submit" variant="outline" className="bg-accent/10 hover:bg-accent hover:text-accent-foreground border-accent/30">
+                            CONNEXION
+                        </Button>
+                    </div>
+
+                    {error && <p className="mt-4 text-sm text-destructive text-center animate-in fade-in">ERREUR: Authentification échouée.</p>}
                 </div>
-                <div className="relative mb-6">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 text-center tracking-widest" 
-                        placeholder="••••••••"
-                        autoFocus
-                    />
-                </div>
-                <Button type="submit" className="w-full">
-                    Log In
-                </Button>
-                {error && <p className="mt-4 text-sm text-destructive animate-in fade-in">Authentication failed.</p>}
             </form>
         </div>
     );
