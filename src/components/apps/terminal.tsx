@@ -379,11 +379,19 @@ export default function Terminal({
     }
 
     const handlePortHack = async (portNumber: number, portName: string) => {
-      const targetPC = getCurrentPc();
+      let targetPC = getCurrentPc();
       if (connectedIp === '127.0.0.1' || !targetPC) {
         setHistory(prev => [...prev, { type: 'output', content: `${portName}: Must be connected to a remote system.` }]);
         return;
       }
+      
+      // Re-fetch the PC to ensure we have the latest state before checks
+      targetPC = network.find(pc => pc.ip === connectedIp);
+      if (!targetPC) {
+          setHistory(prev => [...prev, { type: 'output', content: 'Critical error: Target system disconnected.' }]);
+          return;
+      }
+
       if (targetPC.firewall.enabled) {
         setHistory(prev => [...prev, { type: 'output', content: `${portName} failed: Active firewall detected.` }]);
         addRemoteLog(`HACK: ${portName} failed on port ${portNumber}. Reason: Firewall active.`);
