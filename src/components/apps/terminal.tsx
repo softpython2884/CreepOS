@@ -131,8 +131,10 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
   }, [history]);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (!isProcessing) {
+        inputRef.current?.focus();
+    }
+  }, [isProcessing]);
 
   const getPrompt = () => {
     const currentPc = getCurrentPc();
@@ -993,5 +995,3 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
     </div>
   );
 }
-
-    

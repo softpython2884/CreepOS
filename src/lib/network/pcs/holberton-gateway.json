@@ -19,6 +19,7 @@
     },
     "traceTime": 0,
     "requiredPorts": 0,
+    "traceability": 10,
     "ports": [
         { "port": 80, "service": "HTTP", "isOpen": false },
         { "port": 443, "service": "HTTP", "isOpen": false }
