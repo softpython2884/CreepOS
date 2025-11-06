@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { loadGameState, deleteGameState } from '@/lib/save-manager';
 import { network as initialNetworkData } from '@/lib/network';
+import SurvivalMode from '@/components/survival-mode';
 
-type MachineState = 'off' | 'bios' | 'booting' | 'login' | 'desktop' | 'recovery' | 'bsod';
+type MachineState = 'off' | 'bios' | 'booting' | 'login' | 'desktop' | 'recovery' | 'bsod' | 'survival';
 
 const biosLines = [
     'NEO-SYSTEM BIOS v1.0.3',
@@ -449,6 +450,8 @@ export default function Home() {
                         <BsodScreen onReboot={handleReboot} />
                     </div>
                 );
+            case 'survival':
+                return <SurvivalMode onWin={() => { setMachineState('desktop'); onMusicEvent('calm') }} onLose={handleReboot} onSoundEvent={setSoundEvent}/>;
             case 'desktop':
                 return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} username={username} onReboot={handleReboot} setMachineState={setMachineState} />;
             default:

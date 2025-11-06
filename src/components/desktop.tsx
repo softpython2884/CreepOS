@@ -136,6 +136,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     return () => clearInterval(saveInterval);
   }, [network, hackedPcs, username, gameState]);
 
+    useEffect(() => {
+        if (dangerLevel >= 100) {
+            setMachineState('survival');
+            onMusicEvent('alarm');
+            setDangerLevel(0); // Reset for next time
+        }
+    }, [dangerLevel, setMachineState, onMusicEvent]);
+
   const addLog = useCallback((message: string) => {
     setLogs(prev => {
         const timestamp = new Date().toISOString();
@@ -239,7 +247,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, addLog, isScreaming, onSoundEvent, network, username, setMachineState, hackedPcs, onReboot]);
+}, [isTraced, addLog, isScreaming, onSoundEvent, network, username, setMachineState, hackedPcs]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
