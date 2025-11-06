@@ -54,6 +54,7 @@ interface DesktopProps {
   onMusicEvent: (event: MusicEvent) => void;
   username: string;
   onReboot: () => void;
+  setMachineState: (state: string) => void;
 }
 
 const updateNodeByPath = (
@@ -90,7 +91,7 @@ const updateNodeByPath = (
 };
 
 
-export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot }: DesktopProps) {
+export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot, setMachineState }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [nextZIndex, setNextZIndex] = useState(10);
@@ -197,21 +198,23 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     }
 
     const timer = setInterval(() => {
-      setTraceTimeLeft(prevTime => {
-        const newTime = prevTime - 1;
-        if (newTime <= 0) {
-          clearInterval(timer);
-          addLog(`CRITICAL: Trace completed. System integrity compromised. Rebooting...`);
-          onReboot();
-          return 0;
-        }
-        return newTime;
-      });
-      onSoundEvent('scream');
+        setTraceTimeLeft(prevTime => {
+            const newTime = prevTime - 1;
+            if (newTime <= 0) {
+                clearInterval(timer);
+                addLog(`CRITICAL: Trace completed. System integrity compromised. Rebooting...`);
+                onReboot();
+                return 0;
+            }
+            if (isScreaming) {
+                onSoundEvent('scream');
+            }
+            return newTime;
+        });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isTraced, traceTimeLeft, onReboot, addLog, onSoundEvent, isScreaming]);
+}, [isTraced, traceTimeLeft, onReboot, addLog, onSoundEvent, isScreaming]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
@@ -315,18 +318,23 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         width: 700, 
         height: 450, 
         props: { 
-            onSoundEvent: onSoundEvent,
-            username: username,
+            onSoundEvent,
+            username,
             onOpenFileEditor: handleOpenFileEditor,
-            network: network,
-            setNetwork: setNetwork,
-            hackedPcs: hackedPcs,
+            network,
+            setNetwork,
+            hackedPcs,
             onHack: handleHackedPc,
-            onReboot: onReboot,
-            addLog: addLog,
-            onIncreaseDanger: handleIncreaseDanger,
+            onReboot,
+            addLog,
+            onIncreaseDanger,
             onStartTrace: handleStartTrace,
             onStopTrace: handleStopTrace,
+            saveGameState: () => saveGameState(username, { network, hackedPcs, machineState: 'desktop' }),
+            resetGame: () => {
+                saveGameState(username, { network: initialNetwork, hackedPcs: new Set(['player-pc']), machineState: 'off' });
+                onReboot();
+            }
         } 
     },
     documents: { 

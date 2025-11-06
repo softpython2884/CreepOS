@@ -26,6 +26,8 @@ interface TerminalProps {
     onIncreaseDanger: (amount: number) => void;
     onStartTrace: (targetName: string, time: number, sourceInstanceId: number) => void;
     onStopTrace: () => void;
+    saveGameState: () => void;
+    resetGame: () => void;
 }
 
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
@@ -102,7 +104,9 @@ export default function Terminal({
     addLog, 
     onIncreaseDanger,
     onStartTrace,
-    onStopTrace 
+    onStopTrace,
+    saveGameState,
+    resetGame,
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
@@ -380,44 +384,51 @@ export default function Terminal({
 
     const handlePortHack = async (portNumber: number, portName: string) => {
         if (connectedIp === '127.0.0.1') {
-            setHistory(prev => [...prev, { type: 'output', content: `${portName}: Must be connected to a remote system.` }]);
+            handleOutput(`${portName}: Must be connected to a remote system.`);
             return;
         }
     
-        const currentTargetPC = network.find(pc => pc.ip === connectedIp);
+        // Refresh PC state before check
+        let currentTargetPC: PC | undefined;
+        setNetwork(currentNetwork => {
+            currentTargetPC = currentNetwork.find(pc => pc.ip === connectedIp);
+            return currentNetwork;
+        });
+        await new Promise(resolve => setTimeout(resolve, 0)); // Wait for state to hopefully update
+
         if (!currentTargetPC) {
-            setHistory(prev => [...prev, { type: 'output', content: 'Critical error: Target system disconnected.' }]);
+            handleOutput('Critical error: Target system disconnected.');
             return;
         }
     
         if (currentTargetPC.firewall.enabled) {
-            setHistory(prev => [...prev, { type: 'output', content: `${portName} failed: Active firewall detected.` }]);
+            handleOutput(`${portName} failed: Active firewall detected.`);
             addRemoteLog(`HACK: ${portName} failed on port ${portNumber}. Reason: Firewall active.`);
             return;
         }
         if (currentTargetPC.proxy.enabled) {
-            setHistory(prev => [...prev, { type: 'output', content: `${portName} failed: Active proxy detected.` }]);
+            handleOutput(`${portName} failed: Active proxy detected.`);
             addRemoteLog(`HACK: ${portName} failed on port ${portNumber}. Reason: Proxy active.`);
             return;
         }
         const port = currentTargetPC.ports.find(p => p.port === portNumber);
         if (!port) {
-            setHistory(prev => [...prev, { type: 'output', content: `${portName} failed: Port ${portNumber} not found on this system.` }]);
+            handleOutput(`${portName} failed: Port ${portNumber} not found on this system.`);
             return;
         }
         if (port.isOpen) {
-            setHistory(prev => [...prev, { type: 'output', content: `Port ${portNumber} is already open.` }]);
+            handleOutput(`Port ${portNumber} is already open.`);
             return;
         }
       
         checkAndTriggerTrace();
 
-        setHistory(prev => [...prev, { type: 'output', content: `Running ${portName} exploit...` }]);
+        handleOutput(`Running ${portName} exploit...`);
         await runProgressBar(3000);
   
         setNetwork(currentNetwork => 
             currentNetwork.map(pc => {
-                if (pc.id === currentTargetPC.id) {
+                if (pc.id === currentTargetPC!.id) {
                     const newPorts = pc.ports.map(p => p.port === portNumber ? { ...p, isOpen: true } : p);
                     return { ...pc, ports: newPorts };
                 }
@@ -425,40 +436,40 @@ export default function Terminal({
             })
         );
   
-        setHistory(prev => [...prev, { type: 'output', content: `${port.service} port (${portNumber}) is now open.` }]);
+        handleOutput(`${port.service} port (${portNumber}) is now open.`);
         addRemoteLog(`HACK: Port ${portNumber} (${port.service}) opened by ${username}.`);
     };
 
     // --- Special cases for non-auth commands on remote systems ---
     if (command.toLowerCase() === 'porthack') {
-        const targetPC = getCurrentPc();
+        let targetPC: PC | undefined;
+        setNetwork(cn => { targetPC = cn.find(p => p.ip === connectedIp); return cn; });
+        await new Promise(r => setTimeout(r,0));
+
+
         if (connectedIp === '127.0.0.1') {
-            setHistory(prev => [...prev, { type: 'output', content: 'porthack: cannot run on local machine.' }]);
+            handleOutput('porthack: cannot run on local machine.');
         } else if (!targetPC) {
-            setHistory(prev => [...prev, { type: 'output', content: 'porthack: critical error, no target system.' }]);
+            handleOutput('porthack: critical error, no target system.');
         } else if (hackedPcs.has(targetPC.id)) {
-            setHistory(prev => [...prev, { type: 'output', content: `porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}` }]);
+            handleOutput(`porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}`);
         } else if (targetPC.firewall.enabled) {
-            setHistory(prev => [...prev, { type: 'output', content: `ERROR: Active firewall detected. Connection terminated.`}]);
+            handleOutput(`ERROR: Active firewall detected. Connection terminated.`);
             addRemoteLog(`HACK: PortHack failed. Reason: Firewall active.`);
         } else if (targetPC.proxy.enabled) {
-            setHistory(prev => [...prev, { type: 'output', content: `ERROR: Active proxy detected. Connection bounced.` }]);
+            handleOutput(`ERROR: Active proxy detected. Connection bounced.`);
             addRemoteLog(`HACK: PortHack failed. Reason: Proxy active.`);
         } else {
             checkAndTriggerTrace();
-            setHistory(prev => [...prev, { type: 'output', content: `Initiating PortHack sequence...` }]);
+            handleOutput(`Initiating PortHack sequence...`);
             await runProgressBar(5000);
             const openPorts = targetPC.ports.filter(p => p.isOpen).length;
             if (openPorts >= targetPC.requiredPorts) {
-                setHistory(prev => [
-                    ...prev, 
-                    { type: 'output', content: `PortHack successful on ${targetPC.ip}. Firewall breached.` },
-                    { type: 'output', content: `  Password cracked: ${targetPC.auth.pass}` }
-                ]);
+                handleOutput(`PortHack successful on ${targetPC.ip}. Firewall breached.\n  Password cracked: ${targetPC.auth.pass}`);
                 addRemoteLog(`HACK: PortHack successful. Root access gained by ${username}.`);
                 onHack(targetPC.id, targetPC.ip);
             } else {
-                setHistory(prev => [...prev, { type: 'output', content: `PortHack failed: ${targetPC.requiredPorts} open port(s) required. (${openPorts}/${targetPC.requiredPorts} open)` }]);
+                handleOutput(`PortHack failed: ${targetPC.requiredPorts} open port(s) required. (${openPorts}/${targetPC.requiredPorts} open)`);
                 addRemoteLog(`HACK: PortHack failed. Reason: Insufficient open ports.`);
             }
         }
@@ -470,130 +481,142 @@ export default function Terminal({
 
     if (executable) {
         const cmdName = executable.name.split('.')[0].toLowerCase();
-        if (cmdName === 'nano') {
-            if (!checkAuth()) { setIsProcessing(false); return; }
-            const pathArg = args[0];
-            if (!pathArg) {
-                handleOutput(`nano: missing file operand`);
-            } else {
-                const filePath = resolvePath(pathArg);
-                if (connectedIp !== '127.0.0.1') {
-                    handleOutput(`nano: cannot edit files on remote systems yet.`);
-                } else {
-                    const file = findNodeByPath(filePath, fileSystem);
-                    if (file && file.type === 'folder') {
-                        handleOutput(`nano: cannot edit directory '${pathArg}'`);
-                    } else {
-                        onOpenFileEditor(filePath, file?.content || '');
-                    }
-                }
-            }
-        } else if (cmdName === 'scan') {
-             if (!checkAuth()) { setIsProcessing(false); return; }
-            const currentPc = getCurrentPc();
-            if (currentPc && currentPc.links) {
-                const linkedPcs = currentPc.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
-                if (linkedPcs.length > 0) {
-                    const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
-                    handleOutput(output);
-                } else {
-                    handleOutput('No linked devices found.');
-                }
-            } else {
-                handleOutput('Scan failed: could not determine current network segment.');
-            }
-        } else if (cmdName === 'analyze') {
-            const targetPC = getCurrentPc();
-            if (connectedIp === '127.0.0.1' || !targetPC) {
-                handleOutput('analyze: Must be connected to a remote system.');
-            } else if (!targetPC.firewall.enabled) {
-                handleOutput('Firewall is not active.');
-            } else {
-                checkAndTriggerTrace();
-                await runAnalyzeMinigame(targetPC.firewall.solution || 'UNKNOWN');
-                handleOutput(`Firewall analysis complete. Solution fragment acquired.`);
-                addRemoteLog(`HACK: Firewall analysis by ${username} revealed solution: ${targetPC.firewall.solution}`);
-            }
-        } else if (cmdName === 'probe') {
-            const targetPC = getCurrentPc();
-            if (connectedIp === '127.0.0.1' || !targetPC) {
-                handleOutput('probe: Must be connected to a remote system.');
-            } else {
-                checkAndTriggerTrace();
-                handleOutput(`Probing ${targetPC.ip}...`);
-                await runProgressBar(2000);
-                const secInfo = [
-                    `Security Probe results for ${targetPC.ip}:`,
-                    `  Firewall: ${targetPC.firewall.enabled ? `ACTIVE (Complexity: ${targetPC.firewall.complexity})` : 'INACTIVE'}`,
-                    `  Proxy: ${targetPC.proxy.enabled ? `ACTIVE (Level: ${targetPC.proxy.level})` : 'INACTIVE'}`,
-                    `  Trace Time: ${targetPC.traceTime > 0 ? `${targetPC.traceTime}s` : 'N/A'}`,
-                    `  Ports required for PortHack: ${targetPC.requiredPorts}`
-                ];
+        
+        let shouldProcess = true;
+        let targetPC = getCurrentPc(); 
 
-                if (targetPC.ports.length > 0) {
-                    secInfo.push('\n  Available Ports:');
-                    targetPC.ports.forEach(p => {
-                        secInfo.push(`    - ${p.port} (${p.service}): ${p.isOpen ? 'OPEN' : 'CLOSED'}`);
-                    });
-                } else {
-                    secInfo.push('  No scannable ports detected.');
-                }
-                addRemoteLog(`INFO: System ${targetPC.ip} probed by ${username}.`);
-                handleOutput(secInfo.join('\n'));
-            }
-        } else if (cmdName === 'overload') {
-            const targetPC = getCurrentPc();
-            if (connectedIp === '127.0.0.1' || !targetPC) {
-                handleOutput('overload: Must be connected to a remote system.');
-            } else if (!targetPC.proxy.enabled) {
-                handleOutput('Proxy is not active.');
-            } else {
-                checkAndTriggerTrace();
-                const requiredNodes = targetPC.proxy.level;
-                const availableNodes = hackedPcs.size;
-                
-                handleOutput(`Overloading proxy... (Requires: ${requiredNodes} nodes, Have: ${availableNodes})`);
-                await runProgressBar(targetPC.proxy.level * 2000);
-
-                if (availableNodes >= requiredNodes) {
-                    setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC.id ? { ...pc, proxy: { ...pc.proxy, enabled: false } } : pc));
-                    handleOutput(`Proxy disabled on ${targetPC.ip}.`);
-                    addRemoteLog(`HACK: Proxy on ${targetPC.ip} disabled via overload by ${username}.`);
-                } else {
-                    handleOutput(`Overload failed. Insufficient nodes.`);
-                    addRemoteLog(`HACK: Proxy overload failed. Required ${requiredNodes} nodes, have ${availableNodes}.`);
-                }
-            }
-        } else if (cmdName.toLowerCase() === 'ftpbounce') {
-            await handlePortHack(21, 'FTPBounce');
-        } else if (cmdName.toLowerCase() === 'sshbounce') {
-            await handlePortHack(22, 'SSHBounce');
-        } else if (cmdName.toLowerCase() === 'smtpoverflow') {
-            await handlePortHack(25, 'SMTPOverflow');
-        } else if (cmdName.toLowerCase() === 'webserverworm') {
-            await handlePortHack(80, 'WebServerWorm');
-        } else if (cmdName.toLowerCase() === 'forkbomb') {
-            const targetPC = getCurrentPc();
-            if (connectedIp === '127.0.0.1') {
-                handleOutput('SYSTEM CRASH IMMINENT. REBOOTING...');
-                addLog(`CRITICAL: Forkbomb executed on local machine. System rebooting.`);
-                setTimeout(onReboot, 1000);
-            } else if (targetPC) {
-                addRemoteLog(`CRITICAL: Forkbomb executed by ${username}. System crashing.`);
-                
-                setNetwork(currentNetwork => currentNetwork.map(pc => {
-                    if (pc.id === targetPC.id) {
-                        const newFileSystem = updateNodeByPath(pc.fileSystem, ['sys', 'XserverOS.sys'], (node) => ({ ...node, content: 'SYSTEM KERNEL CORRUPTED' }));
-                        return { ...pc, fileSystem: newFileSystem };
-                    }
-                    return pc;
-                }));
-
-                disconnect(true);
+        if (cmdName !== 'scan' && cmdName !== 'probe') {
+            if(!checkAuth()) {
+                shouldProcess = false;
             }
         }
-        else {
-             handleOutput(`Execution of ${command} is not yet implemented.`);
+        
+        if (shouldProcess) {
+            switch(cmdName) {
+                case 'nano':
+                    if (!checkAuth()) { setIsProcessing(false); return; }
+                    const pathArg = args[0];
+                    if (!pathArg) {
+                        handleOutput(`nano: missing file operand`);
+                    } else {
+                        const filePath = resolvePath(pathArg);
+                        if (connectedIp !== '127.0.0.1') {
+                            handleOutput(`nano: cannot edit files on remote systems yet.`);
+                        } else {
+                            const file = findNodeByPath(filePath, fileSystem);
+                            if (file && file.type === 'folder') {
+                                handleOutput(`nano: cannot edit directory '${pathArg}'`);
+                            } else {
+                                onOpenFileEditor(filePath, file?.content || '');
+                            }
+                        }
+                    }
+                    break;
+                case 'scan':
+                    if (!checkAuth()) { setIsProcessing(false); return; }
+                    if (targetPC && targetPC.links) {
+                        const linkedPcs = targetPC.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
+                        if (linkedPcs.length > 0) {
+                            const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
+                            handleOutput(output);
+                        } else {
+                            handleOutput('No linked devices found.');
+                        }
+                    } else {
+                        handleOutput('Scan failed: could not determine current network segment.');
+                    }
+                    break;
+                case 'analyze':
+                    if (connectedIp === '127.0.0.1' || !targetPC) {
+                        handleOutput('analyze: Must be connected to a remote system.');
+                    } else if (!targetPC.firewall.enabled) {
+                        handleOutput('Firewall is not active.');
+                    } else {
+                        checkAndTriggerTrace();
+                        await runAnalyzeMinigame(targetPC.firewall.solution || 'UNKNOWN');
+                        handleOutput(`Firewall analysis complete. Solution fragment acquired.`);
+                        addRemoteLog(`HACK: Firewall analysis by ${username} revealed solution: ${targetPC.firewall.solution}`);
+                    }
+                    break;
+                case 'probe':
+                    setNetwork(cn => { targetPC = cn.find(p => p.ip === connectedIp); return cn; });
+                    await new Promise(r => setTimeout(r,0));
+
+                    if (connectedIp === '127.0.0.1' || !targetPC) {
+                        handleOutput('probe: Must be connected to a remote system.');
+                    } else {
+                        checkAndTriggerTrace();
+                        handleOutput(`Probing ${targetPC.ip}...`);
+                        await runProgressBar(2000);
+                        const secInfo = [
+                            `Security Probe results for ${targetPC.ip}:`,
+                            `  Firewall: ${targetPC.firewall.enabled ? `ACTIVE (Complexity: ${targetPC.firewall.complexity})` : 'INACTIVE'}`,
+                            `  Proxy: ${targetPC.proxy.enabled ? `ACTIVE (Level: ${targetPC.proxy.level})` : 'INACTIVE'}`,
+                            `  Trace Time: ${targetPC.traceTime > 0 ? `${targetPC.traceTime}s` : 'N/A'}`,
+                            `  Ports required for PortHack: ${targetPC.requiredPorts}`
+                        ];
+
+                        if (targetPC.ports.length > 0) {
+                            secInfo.push('\n  Available Ports:');
+                            targetPC.ports.forEach(p => {
+                                secInfo.push(`    - ${p.port} (${p.service}): ${p.isOpen ? 'OPEN' : 'CLOSED'}`);
+                            });
+                        } else {
+                            secInfo.push('  No scannable ports detected.');
+                        }
+                        addRemoteLog(`INFO: System ${targetPC.ip} probed by ${username}.`);
+                        handleOutput(secInfo.join('\n'));
+                    }
+                    break;
+                case 'overload':
+                    if (connectedIp === '127.0.0.1' || !targetPC) {
+                        handleOutput('overload: Must be connected to a remote system.');
+                    } else if (!targetPC.proxy.enabled) {
+                        handleOutput('Proxy is not active.');
+                    } else {
+                        checkAndTriggerTrace();
+                        const requiredNodes = targetPC.proxy.level;
+                        const availableNodes = hackedPcs.size;
+                        
+                        handleOutput(`Overloading proxy... (Requires: ${requiredNodes} nodes, Have: ${availableNodes})`);
+                        await runProgressBar(targetPC.proxy.level * 2000);
+
+                        if (availableNodes >= requiredNodes) {
+                            setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC!.id ? { ...pc, proxy: { ...pc.proxy, enabled: false } } : pc));
+                            handleOutput(`Proxy disabled on ${targetPC.ip}.`);
+                            addRemoteLog(`HACK: Proxy on ${targetPC.ip} disabled via overload by ${username}.`);
+                        } else {
+                            handleOutput(`Overload failed. Insufficient nodes.`);
+                            addRemoteLog(`HACK: Proxy overload failed. Required ${requiredNodes} nodes, have ${availableNodes}.`);
+                        }
+                    }
+                    break;
+                case 'ftpbounce': await handlePortHack(21, 'FTPBounce'); break;
+                case 'sshbounce': await handlePortHack(22, 'SSHBounce'); break;
+                case 'smtpoverflow': await handlePortHack(25, 'SMTPOverflow'); break;
+                case 'webserverworm': await handlePortHack(80, 'WebServerWorm'); break;
+                case 'forkbomb':
+                    if (connectedIp === '127.0.0.1') {
+                        handleOutput('SYSTEM CRASH IMMINENT. REBOOTING...');
+                        addLog(`CRITICAL: Forkbomb executed on local machine. System rebooting.`);
+                        setTimeout(onReboot, 1000);
+                    } else if (targetPC) {
+                        addRemoteLog(`CRITICAL: Forkbomb executed by ${username}. System crashing.`);
+                        
+                        setNetwork(currentNetwork => currentNetwork.map(pc => {
+                            if (pc.id === targetPC!.id) {
+                                const newFileSystem = updateNodeByPath(pc.fileSystem, ['sys', 'XserverOS.sys'], (node) => ({ ...node, content: 'SYSTEM KERNEL CORRUPTED' }));
+                                return { ...pc, fileSystem: newFileSystem };
+                            }
+                            return pc;
+                        }));
+
+                        disconnect(true);
+                    }
+                    break;
+                default:
+                     handleOutput(`Execution of ${command} is not yet implemented.`);
+            }
         }
 
         setIsProcessing(false);
@@ -612,6 +635,8 @@ export default function Terminal({
                 '  touch <file>   - Create an empty file (local system only)',
                 '  rm <file>      - Remove a file or clear its content (auth required)',
                 '  reboot         - Reboots the current system',
+                '  save           - Save current game state (local only)',
+                '  reset-game --confirm - Deletes save data and reboots (local only)',
                 '',
                 'Network commands:',
                 '  connect <ip>   - Connect to a remote system',
@@ -770,20 +795,25 @@ export default function Terminal({
 
                 if (isLocal) {
                     addLog(`CRITICAL: XserverOS.sys deleted from local machine. System rebooting.`);
+                    setNetwork(currentNetwork => currentNetwork.map(pc => {
+                        if (pc.ip === connectedIp) {
+                            const newFs = updateNodeByPath(pc.fileSystem, filePath, () => null);
+                            return { ...pc, fileSystem: newFs };
+                        }
+                        return pc;
+                    }));
                     setTimeout(onReboot, 2000);
                 } else {
                     addRemoteLog(`CRITICAL: XserverOS.sys deleted by ${username}. System crashing.`);
+                    setNetwork(currentNetwork => currentNetwork.map(pc => {
+                        if (pc.ip === connectedIp) {
+                            const newFs = updateNodeByPath(pc.fileSystem, filePath, () => null);
+                            return { ...pc, fileSystem: newFs };
+                        }
+                        return pc;
+                    }));
                     disconnect(true);
                 }
-
-                setNetwork(currentNetwork => currentNetwork.map(pc => {
-                    if (pc.ip === connectedIp) {
-                        const newFs = updateNodeByPath(pc.fileSystem, filePath, () => null);
-                        return { ...pc, fileSystem: newFs };
-                    }
-                    return pc;
-                }));
-
                 break;
             }
 
@@ -893,7 +923,10 @@ export default function Terminal({
         }
         case 'solve': {
             const solution = args[0];
-            const targetPC = getCurrentPc();
+            let targetPC: PC | undefined;
+            setNetwork(cn => { targetPC = cn.find(p => p.ip === connectedIp); return cn; });
+            await new Promise(r => setTimeout(r,0));
+
             if (connectedIp === '127.0.0.1' || !targetPC) {
                 handleOutput('solve: Must be connected to a remote system.');
             } else if (!targetPC.firewall.enabled) {
@@ -901,13 +934,35 @@ export default function Terminal({
             } else {
                 checkAndTriggerTrace();
                 if (targetPC.firewall.solution === solution) {
-                    setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
+                    setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC!.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
                     handleOutput('Firewall disabled.');
                     addRemoteLog(`HACK: Firewall disabled by ${username} with solution: ${solution}.`);
                 } else {
                      handleOutput('Incorrect solution.');
                      addRemoteLog(`HACK: Incorrect firewall solution '${solution}' attempt by ${username}.`);
                 }
+            }
+            break;
+        }
+        case 'save': {
+            if (connectedIp !== '127.0.0.1') {
+                handleOutput('save: can only be run on local machine.');
+                break;
+            }
+            saveGameState();
+            handleOutput('Game state saved.');
+            break;
+        }
+        case 'reset-game': {
+            if (connectedIp !== '127.0.0.1') {
+                handleOutput('reset-game: can only be run on local machine.');
+                break;
+            }
+            if (args[0] === '--confirm') {
+                resetGame();
+                handleOutput('Save data deleted. System will reboot.');
+            } else {
+                handleOutput('This is a destructive action. Type `reset-game --confirm` to proceed.');
             }
             break;
         }
@@ -937,7 +992,7 @@ export default function Terminal({
     // Command completion
     if (parts.length === 1) {
         const executables = allExecutables.map(f => f.name.split('.')[0].toLowerCase());
-        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot'];
+        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game'];
         const allCommands = [...new Set([...mainCommands, ...executables])];
         const possibilities = allCommands.filter(cmd => cmd.startsWith(lastPart));
 
@@ -1046,5 +1101,3 @@ export default function Terminal({
     </div>
   );
 }
-
-    

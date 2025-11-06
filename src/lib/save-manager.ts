@@ -13,6 +13,7 @@ export interface GameState {
 const initialGameState: GameState = {
     network: JSON.parse(JSON.stringify(initialNetwork)), // Deep copy
     hackedPcs: new Set(['player-pc']),
+    machineState: 'off',
 };
 
 export const saveGameState = (username: string, gameState: GameState) => {
@@ -39,9 +40,14 @@ export const loadGameState = (username: string): GameState => {
         }
     } catch (error) {
         console.error("Failed to load game state:", error);
+        // If loading fails, delete corrupted save
+        deleteGameState(username);
     }
     // Return initial state if no save found or on error
-    return initialGameState;
+    return {
+        ...initialGameState,
+        network: JSON.parse(JSON.stringify(initialNetwork)), // ensure deep copy
+    };
 };
 
 export const deleteGameState = (username: string) => {

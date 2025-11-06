@@ -10,7 +10,7 @@ import Desktop from '@/components/desktop';
 import AudioManager, { MusicEvent, SoundEvent } from '@/components/audio-manager';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { loadGameState } from '@/lib/save-manager';
+import { loadGameState, deleteGameState } from '@/lib/save-manager';
 import { network as initialNetworkData } from '@/lib/network';
 
 type MachineState = 'off' | 'bios' | 'booting' | 'login' | 'desktop' | 'recovery';
@@ -295,7 +295,14 @@ const RecoveryScreen = ({ onReboot }: { onReboot: () => void }) => {
         } else if (input.trim().toLowerCase() === 'help') {
             newHistory.push('Available commands:');
             newHistory.push('  restore_kernel   - Restores the system kernel from the recovery partition.');
-        } else {
+            newHistory.push('  reset_game       - Deletes all save data and reboots.');
+        } else if (input.trim().toLowerCase() === 'reset_game') {
+            deleteGameState('Operator');
+            newHistory.push('All save data deleted. System will now reboot.');
+            setHistory(newHistory);
+            setTimeout(onReboot, 2000);
+        }
+        else {
             newHistory.push(`Command not found: ${input}`);
         }
         setHistory(newHistory);
@@ -324,7 +331,7 @@ const RecoveryScreen = ({ onReboot }: { onReboot: () => void }) => {
 
 export default function Home() {
     const [machineState, setMachineState] = useState<MachineState>('off');
-    const [username, setUsername] = useState('Operator');
+    const [username] = useState('Operator');
     const [soundEvent, setSoundEvent] = useState<SoundEvent>(null);
     const [musicEvent, setMusicEvent] = useState<MusicEvent>('none');
     const [aspectRatio, setAspectRatio] = useState(16/9);
@@ -362,15 +369,11 @@ export default function Home() {
         document.addEventListener('contextmenu', handleContextMenu);
         
         // On first load, check if there's a saved game.
-        const savedState = localStorage.getItem(`gameState_${username}`);
-        if(savedState) {
-            try {
-                const parsedState = JSON.parse(savedState);
-                if(parsedState.machineState && parsedState.machineState !== 'off') {
-                    setMachineState(parsedState.machineState);
-                }
-            } catch(e) {
-                // corrupted save, ignore.
+        const savedState = loadGameState(username);
+        if(savedState.machineState && savedState.machineState !== 'off') {
+            setMachineState(savedState.machineState);
+            if (savedState.machineState !== 'off' && savedState.machineState !== 'login') {
+                setSoundEvent('fan');
             }
         }
 
@@ -432,7 +435,7 @@ export default function Home() {
                     </div>
                 );
             case 'desktop':
-                return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} username={username} onReboot={handleReboot} />;
+                return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} username={username} onReboot={handleReboot} setMachineState={setMachineState} />;
             default:
                 return null;
         }
@@ -444,7 +447,7 @@ export default function Home() {
                 id="viewport" 
                 className="absolute bg-background origin-top-left"
             >
-                <div className={cn("absolute inset-0 bg-red-600/80 pointer-events-none z-[9998]", machineState === 'desktop' ? 'animate-scream' : 'hidden')} style={{ animationIterationCount: machineState === 'desktop' ? 'infinite' : 1, animationDuration: '1s' }} />
+                <div className={cn("absolute inset-0 bg-red-600/80 pointer-events-none z-[9998]", machineState === 'desktop' ? 'animate-scream' : 'hidden')} style={{ animationIterationCount: 'infinite', animationDuration: '1s' }} />
                 <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
                 {renderState()}
             </div>
