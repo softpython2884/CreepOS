@@ -3,8 +3,8 @@
 
 import { useEffect, useRef, useState }from 'react';
 
-export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'stopScream' | 'email' | null;
-export type MusicEvent = 'calm' | 'epic' | 'alarm' | 'none';
+export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'stopScream' | 'email' | 'error' | null;
+export type MusicEvent = 'calm' | 'calm2' | 'epic' | 'alarm' | 'creepy' | 'cinematic' | 'none';
 
 interface AudioManagerProps {
   soundEvent: SoundEvent;
@@ -18,16 +18,20 @@ const sounds: Record<NonNullable<Exclude<SoundEvent, 'stopScream'>>, { src: stri
     scream: { src: '/action.mp3', volume: 0.8 },
     glitch: { src: ['/glitch-sound-scary-mp3.mp3', '/error-glitch.mp3', '/glitch-sound-effect_FugN82U.mp3'], volume: 0.4 },
     click: { src: '/clicksoundeffect.mp3', volume: 0.6 },
-    email: { src: '/clicksoundeffect.mp3', volume: 0.5 }, // Using click as a placeholder for mail.mp3
+    email: { src: '/mail.mp3', volume: 0.5 },
     close: { src: '/clicksoundeffect.mp3', volume: 0.4 },
     bsod: { src: '/bluescreen.mp3', volume: 0.5 },
     fan: { src: '/ventil.mp3', volume: 0.4, loop: true },
+    error: { src: '/error-011.mp3', volume: 0.5 },
 };
 
 const musicTracks: Record<Exclude<MusicEvent, 'none'>, { src: string; volume: number; loop?: boolean }> = {
     calm: { src: '/trkl.mp3', volume: 0.3, loop: true },
+    calm2: { src: '/music2.mp3', volume: 0.3, loop: true },
     epic: { src: '/start.mp3', volume: 0.4, loop: true },
     alarm: { src: '/alarm.mp3', volume: 0.6, loop: true },
+    creepy: { src: '/30s-creepyBG.mp3', volume: 0.5 },
+    cinematic: { src: '/present30s.mp3', volume: 0.5 },
 };
 
 const SFX_PLAYER_COUNT = 5;
