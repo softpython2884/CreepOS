@@ -104,13 +104,24 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const getCurrentPc = useCallback(() => {
+      return network.find(pc => pc.ip === connectedIp);
+  }, [network, connectedIp]);
+  
+  const allExecutables = useMemo(() => {
+    const playerPcFs = initialNetworkData.find(p => p.id === 'player-pc')?.fileSystem;
+    if (!playerPcFs) return [];
+    const binFolder = personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder');
+    return binFolder?.children?.filter(f => f.type === 'file' && (f.name.endsWith('.bin') || f.name.endsWith('.exe'))) || [];
+  }, [username]);
+
   useEffect(() => {
-    const pc = network.find(p => p.ip === connectedIp);
+    const pc = getCurrentPc();
     if (pc) {
       const userForFs = connectedIp === '127.0.0.1' ? username : pc.auth.user;
       setFileSystem(personalizeFileSystem(pc.fileSystem, userForFs));
     }
-  }, [connectedIp, network, username]);
+  }, [connectedIp, network, username, getCurrentPc]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -121,17 +132,6 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
-
-    const getCurrentPc = () => {
-        return network.find(pc => pc.ip === connectedIp);
-    }
-    
-    const allExecutables = useMemo(() => {
-      const playerPcFs = initialNetworkData.find(p => p.id === 'player-pc')?.fileSystem;
-      if (!playerPcFs) return [];
-      const binFolder = personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder');
-      return binFolder?.children?.filter(f => f.type === 'file' && (f.name.endsWith('.bin') || f.name.endsWith('.exe'))) || [];
-    }, [username]);
 
   const getPrompt = () => {
     const currentPc = getCurrentPc();
@@ -602,37 +602,54 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             break;
         }
         case 'rm': {
-            if(!checkAuth()) break;
-            
+            if (!checkAuth()) break;
+
             const fileArg = args[0];
             if (!fileArg) {
                 newHistory.push({ type: 'output', content: 'rm: missing operand' });
                 break;
             }
             const filePath = resolvePath(fileArg);
-
             const fileNode = findNodeByPath(filePath, fileSystem);
 
             if (!fileNode) {
                 newHistory.push({ type: 'output', content: `rm: cannot remove '${fileArg}': No such file or directory` });
                 break;
             }
-
             if (fileNode.type === 'folder') {
                 newHistory.push({ type: 'output', content: `rm: cannot remove '${fileArg}': Is a directory` });
                 break;
             }
             
             if (fileNode.name === 'XserverOS.sys') {
-                newHistory.push({ type: 'output', content: `rm: cannot remove '${fileArg}': Operation not permitted. This is a critical system file.` });
-                if (connectedIp !== '127.0.0.1') {
-                    addRemoteLog(`SECURITY: Denied attempt to remove critical system file XserverOS.sys by ${username}.`);
+                const isLocal = connectedIp === '127.0.0.1';
+                newHistory.push({ type: 'output', content: `WARNING: This is a critical system file. Deleting it will cause system instability.` });
+                newHistory.push({ type: 'output', content: `Deletion of ${fileArg} will proceed.` });
+
+                if (isLocal) {
+                    addLog(`CRITICAL: XserverOS.sys deleted from local machine. System rebooting.`);
+                    setTimeout(onReboot, 2000);
+                } else {
+                    addRemoteLog(`CRITICAL: XserverOS.sys deleted by ${username}. System crashing.`);
+                    disconnect(true);
                 }
+
+                setNetwork(prevNetwork => prevNetwork.map(pc => {
+                    if (pc.ip === connectedIp) {
+                        const newFs = updateNodeByPath(pc.fileSystem, filePath, () => null);
+                        return { ...pc, fileSystem: newFs };
+                    }
+                    return pc;
+                }));
+
                 break;
             }
 
             if (fileNode.isSystemFile) {
                 newHistory.push({ type: 'output', content: `rm: cannot remove '${fileArg}': Permission denied` });
+                if (connectedIp !== '127.0.0.1') {
+                    addRemoteLog(`SECURITY: Denied attempt to remove system file ${fileNode.name} by ${username}.`);
+                }
                 break;
             }
             
