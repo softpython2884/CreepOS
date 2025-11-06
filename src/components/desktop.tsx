@@ -141,7 +141,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         });
 
         const newPlayerPc = { ...playerPc, fileSystem: newFileSystem };
-        const newNetwork = [...newNetwork];
+        const newNetwork = [...prevNetwork];
         newNetwork[playerPcIndex] = newPlayerPc;
         return newNetwork;
     });
