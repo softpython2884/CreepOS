@@ -121,7 +121,6 @@ export default function Terminal({
   const [connectedIp, setConnectedIp] = useState<string>('127.0.0.1');
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [currentDirectory, setCurrentDirectory] = useState(['home', username]);
-  const [fileSystem, setFileSystem] = useState<FileSystemNode[]>([]);
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -129,6 +128,15 @@ export default function Terminal({
   const getCurrentPc = useCallback(() => {
       return network.find(pc => pc.ip === connectedIp);
   }, [network, connectedIp]);
+
+  const fileSystem = useMemo(() => {
+      const pc = getCurrentPc();
+      if (pc) {
+          const userForFs = connectedIp === '127.0.0.1' ? username : pc.auth.user;
+          return personalizeFileSystem(pc.fileSystem, userForFs);
+      }
+      return [];
+  }, [getCurrentPc, connectedIp, username]);
   
   const allExecutables = useMemo(() => {
     const playerPcFs = initialNetworkData.find(p => p.id === 'player-pc')?.fileSystem;
@@ -136,14 +144,6 @@ export default function Terminal({
     const binFolder = personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder');
     return binFolder?.children?.filter(f => f.type === 'file' && (f.name.endsWith('.bin') || f.name.endsWith('.exe'))) || [];
   }, [username]);
-
-  useEffect(() => {
-    const pc = getCurrentPc();
-    if (pc) {
-      const userForFs = connectedIp === '127.0.0.1' ? username : pc.auth.user;
-      setFileSystem(personalizeFileSystem(pc.fileSystem, userForFs));
-    }
-  }, [connectedIp, network, username, getCurrentPc]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -388,14 +388,7 @@ export default function Terminal({
             return;
         }
     
-        // Refresh PC state before check
-        let currentTargetPC: PC | undefined;
-        setNetwork(currentNetwork => {
-            currentTargetPC = currentNetwork.find(pc => pc.ip === connectedIp);
-            return currentNetwork;
-        });
-        await new Promise(resolve => setTimeout(resolve, 0)); // Wait for state to hopefully update
-
+        const currentTargetPC = getCurrentPc();
         if (!currentTargetPC) {
             handleOutput('Critical error: Target system disconnected.');
             return;
@@ -443,8 +436,11 @@ export default function Terminal({
     // --- Special cases for non-auth commands on remote systems ---
     if (command.toLowerCase() === 'porthack') {
         let targetPC: PC | undefined;
-        setNetwork(cn => { targetPC = cn.find(p => p.ip === connectedIp); return cn; });
-        await new Promise(r => setTimeout(r,0));
+        setNetwork(currentNetwork => {
+            targetPC = currentNetwork.find(p => p.ip === connectedIp);
+            return currentNetwork;
+        });
+        await new Promise(resolve => setTimeout(resolve, 0)); // Wait for state to hopefully update
 
 
         if (connectedIp === '127.0.0.1') {
@@ -539,7 +535,10 @@ export default function Terminal({
                     }
                     break;
                 case 'probe':
-                    setNetwork(cn => { targetPC = cn.find(p => p.ip === connectedIp); return cn; });
+                    setNetwork(currentNetwork => {
+                        targetPC = currentNetwork.find(p => p.ip === connectedIp);
+                        return currentNetwork;
+                    });
                     await new Promise(r => setTimeout(r,0));
 
                     if (connectedIp === '127.0.0.1' || !targetPC) {
@@ -924,7 +923,10 @@ export default function Terminal({
         case 'solve': {
             const solution = args[0];
             let targetPC: PC | undefined;
-            setNetwork(cn => { targetPC = cn.find(p => p.ip === connectedIp); return cn; });
+            setNetwork(currentNetwork => {
+                targetPC = currentNetwork.find(p => p.ip === connectedIp);
+                return currentNetwork;
+            });
             await new Promise(r => setTimeout(r,0));
 
             if (connectedIp === '127.0.0.1' || !targetPC) {
@@ -1101,3 +1103,5 @@ export default function Terminal({
     </div>
   );
 }
+
+    

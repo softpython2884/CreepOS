@@ -20,7 +20,7 @@ import WebBrowser from './apps/web-browser';
 import { ShieldAlert, ShieldCheck, Mail, AlertTriangle, Skull } from 'lucide-react';
 import { Progress } from './ui/progress';
 import TracerTerminal, { traceCommands, decryptCommands, isolationCommands } from './tracer-terminal';
-import { saveGameState, loadGameState } from '@/lib/save-manager';
+import { saveGameState, loadGameState, deleteGameState } from '@/lib/save-manager';
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser';
 
@@ -327,12 +327,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             onHack: handleHackedPc,
             onReboot,
             addLog,
-            onIncreaseDanger,
+            onIncreaseDanger: handleIncreaseDanger,
             onStartTrace: handleStartTrace,
             onStopTrace: handleStopTrace,
             saveGameState: () => saveGameState(username, { network, hackedPcs, machineState: 'desktop' }),
             resetGame: () => {
-                saveGameState(username, { network: initialNetwork, hackedPcs: new Set(['player-pc']), machineState: 'off' });
+                deleteGameState(username);
                 onReboot();
             }
         } 
@@ -546,3 +546,5 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     </main>
   );
 }
+
+    
