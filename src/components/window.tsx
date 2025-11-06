@@ -13,7 +13,7 @@ interface WindowProps {
   isCorrupted?: boolean;
 }
 
-export default function Window({ title, onClose, children, width, height, isCorrupted = false }: WindowProps) {
+const WindowComponent = ({ title, onClose, children, width, height, isCorrupted = false }: WindowProps) => {
   
   return (
     <div
@@ -42,3 +42,6 @@ export default function Window({ title, onClose, children, width, height, isCorr
     </div>
   );
 }
+
+const Window = React.memo(WindowComponent);
+export default Window;
