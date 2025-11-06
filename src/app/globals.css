@@ -86,6 +86,33 @@
     --input: 0 80% 15%;
     --ring: 0 80% 70%;
   }
+  
+  .traced {
+    --background: 356 100% 6%;
+    --foreground: 356 100% 90%;
+
+    --card: 356 100% 8%;
+    --card-foreground: 356 100% 90%;
+
+    --popover: 356 100% 6%;
+    --popover-foreground: 356 100% 90%;
+
+    --primary: 356 100% 15%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 356 100% 10%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 356 100% 10%;
+    --muted-foreground: 356 100% 70%;
+
+    --accent: 356 100% 70%;
+    --accent-foreground: 356 100% 8%;
+    
+    --border: 356 100% 20%;
+    --input: 356 100% 20%;
+    --ring: 356 100% 70%;
+  }
 }
 
 @layer base {

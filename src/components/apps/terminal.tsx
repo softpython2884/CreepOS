@@ -14,6 +14,7 @@ interface HistoryItem {
 
 interface TerminalProps {
     username: string;
+    instanceId: number;
     onSoundEvent?: (event: 'click') => void;
     onOpenFileEditor: (path: string[], content: string) => void;
     network: PC[];
@@ -23,6 +24,8 @@ interface TerminalProps {
     onReboot: () => void;
     addLog: (message: string) => void;
     onIncreaseDanger: (amount: number) => void;
+    onStartTrace: (targetName: string, time: number, sourceInstanceId: number) => void;
+    onStopTrace: () => void;
 }
 
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
@@ -86,7 +89,21 @@ const personalizeFileSystem = (nodes: FileSystemNode[], user: string): FileSyste
     return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, user));
 };
 
-export default function Terminal({ username, onSoundEvent, onOpenFileEditor, network, setNetwork, hackedPcs, onHack, onReboot, addLog, onIncreaseDanger }: TerminalProps) {
+export default function Terminal({ 
+    username, 
+    instanceId,
+    onSoundEvent, 
+    onOpenFileEditor, 
+    network, 
+    setNetwork, 
+    hackedPcs, 
+    onHack, 
+    onReboot, 
+    addLog, 
+    onIncreaseDanger,
+    onStartTrace,
+    onStopTrace 
+}: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
     { type: 'output', content: "Type 'help' for a list of commands." }
@@ -205,6 +222,8 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
           setHistory(prev => [...prev, { type: 'output', content: 'Cannot disconnect from local machine.' }]);
           return;
       }
+
+      onStopTrace();
 
       const logFile = findNodeByPath(['logs', 'access.log'], currentPc.fileSystem);
       const hasLogs = logFile && logFile.content && (logFile.content.includes('successful') || logFile.content.includes('disabled') || logFile.content.includes('opened'));
@@ -350,6 +369,15 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
         return true;
     }
 
+    const checkAndTriggerTrace = () => {
+        const pc = getCurrentPc();
+        if (pc && pc.traceTime > 0) {
+            onStartTrace(pc.name, pc.traceTime, instanceId);
+            return true;
+        }
+        return false;
+    }
+
     const handlePortHack = async (portNumber: number, portName: string) => {
       const targetPC = getCurrentPc();
       if (connectedIp === '127.0.0.1' || !targetPC) {
@@ -375,6 +403,8 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
         setHistory(prev => [...prev, { type: 'output', content: `Port ${portNumber} is already open.` }]);
         return;
       }
+      
+      checkAndTriggerTrace();
 
       setHistory(prev => [...prev, { type: 'output', content: `Running ${portName} exploit...` }]);
       await runProgressBar(3000);
@@ -407,6 +437,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             setHistory(prev => [...prev, { type: 'output', content: `ERROR: Active proxy detected. Connection bounced.` }]);
             addRemoteLog(`HACK: PortHack failed. Reason: Proxy active.`);
         } else {
+            checkAndTriggerTrace();
             setHistory(prev => [...prev, { type: 'output', content: `Initiating PortHack sequence...` }]);
             await runProgressBar(5000);
             const openPorts = targetPC.ports.filter(p => p.isOpen).length;
@@ -470,6 +501,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             } else if (!targetPC.firewall.enabled) {
                 handleOutput('Firewall is not active.');
             } else {
+                checkAndTriggerTrace();
                 await runAnalyzeMinigame(targetPC.firewall.solution || 'UNKNOWN');
                 handleOutput(`Firewall analysis complete. Solution fragment acquired.`);
                 addRemoteLog(`HACK: Firewall analysis by ${username} revealed solution: ${targetPC.firewall.solution}`);
@@ -485,6 +517,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
                     `Security Probe results for ${targetPC.ip}:`,
                     `  Firewall: ${targetPC.firewall.enabled ? `ACTIVE (Complexity: ${targetPC.firewall.complexity})` : 'INACTIVE'}`,
                     `  Proxy: ${targetPC.proxy.enabled ? `ACTIVE (Level: ${targetPC.proxy.level})` : 'INACTIVE'}`,
+                    `  Trace Time: ${targetPC.traceTime > 0 ? `${targetPC.traceTime}s` : 'N/A'}`,
                     `  Ports required for PortHack: ${targetPC.requiredPorts}`
                 ];
 
@@ -506,6 +539,7 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
             } else if (!targetPC.proxy.enabled) {
                 handleOutput('Proxy is not active.');
             } else {
+                checkAndTriggerTrace();
                 const requiredNodes = targetPC.proxy.level;
                 const availableNodes = hackedPcs.size;
                 
@@ -850,13 +884,16 @@ export default function Terminal({ username, onSoundEvent, onOpenFileEditor, net
                 handleOutput('solve: Must be connected to a remote system.');
             } else if (!targetPC.firewall.enabled) {
                 handleOutput('Firewall is not active.');
-            } else if (targetPC.firewall.solution === solution) {
-                setNetwork(network.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
-                handleOutput('Firewall disabled.');
-                addRemoteLog(`HACK: Firewall disabled by ${username} with solution: ${solution}.`);
             } else {
-                 handleOutput('Incorrect solution.');
-                 addRemoteLog(`HACK: Incorrect firewall solution '${solution}' attempt by ${username}.`);
+                checkAndTriggerTrace();
+                if (targetPC.firewall.solution === solution) {
+                    setNetwork(network.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
+                    handleOutput('Firewall disabled.');
+                    addRemoteLog(`HACK: Firewall disabled by ${username} with solution: ${solution}.`);
+                } else {
+                     handleOutput('Incorrect solution.');
+                     addRemoteLog(`HACK: Incorrect firewall solution '${solution}' attempt by ${username}.`);
+                }
             }
             break;
         }

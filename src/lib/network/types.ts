@@ -47,5 +47,3 @@ export interface PC {
     domain?: string;
     websiteContent?: string;
 }
-
-    

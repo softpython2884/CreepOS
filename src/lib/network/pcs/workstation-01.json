@@ -19,7 +19,6 @@
         { "port": 22, "service": "SSH", "isOpen": false }
     ],
     "traceability": 15,
-    "remoteLogs": [],
     "fileSystem": [
         {
             "id": "remote-docs",

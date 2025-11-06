@@ -17,7 +17,7 @@ import LiveLogs from './apps/live-logs';
 import NetworkMap from './apps/network-map';
 import EmailClient, { type Email } from './apps/email-client';
 import WebBrowser from './apps/web-browser';
-import { ShieldAlert, ShieldCheck, Mail } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Mail, AlertTriangle } from 'lucide-react';
 import { Progress } from './ui/progress';
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser';
@@ -39,6 +39,7 @@ type OpenApp = {
   x: number;
   y: number;
   nodeRef: React.RefObject<HTMLDivElement>;
+  isSourceOfTrace?: boolean;
 };
 
 type EditingFile = {
@@ -98,6 +99,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const [hackedPcs, setHackedPcs] = useState<Set<string>>(new Set(['player-pc']));
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
   const [dangerLevel, setDangerLevel] = useState(0);
+
+  // Trace state
+  const [isTraced, setIsTraced] = useState(false);
+  const [traceTimeLeft, setTraceTimeLeft] = useState(0);
+  const [traceTarget, setTraceTarget] = useState({ name: '', time: 0 });
+
   const [emails, setEmails] = useState<Email[]>([
       {
         id: 'welcome-email',
@@ -137,6 +144,48 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         return newNetwork;
     });
   }, [username]);
+
+  const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
+    if (isTraced) return; // Don't start a new trace if one is active
+    
+    addLog(`DANGER: Trace initiated from ${targetName}. You have ${time} seconds to disconnect.`);
+    onMusicEvent('alarm');
+    setIsTraced(true);
+    setTraceTimeLeft(time);
+    setTraceTarget({ name: targetName, time: time });
+
+    setOpenApps(prev => prev.map(app => 
+        app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
+    ));
+  }, [addLog, onMusicEvent, isTraced]);
+
+  const handleStopTrace = useCallback(() => {
+    if (!isTraced) return;
+    
+    addLog(`INFO: Trace averted. Disconnected from ${traceTarget.name}.`);
+    onMusicEvent('calm');
+    setIsTraced(false);
+    setTraceTimeLeft(0);
+    setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
+  }, [addLog, onMusicEvent, isTraced, traceTarget]);
+
+  useEffect(() => {
+    if (!isTraced || traceTimeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setTraceTimeLeft(prevTime => {
+        if (prevTime <= 1) {
+          clearInterval(timer);
+          addLog(`CRITICAL: Trace completed. System integrity compromised. Rebooting...`);
+          onReboot();
+          return 0;
+        }
+        return prevTime - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isTraced, traceTimeLeft, onReboot, addLog]);
 
   const handleHackedPc = (pcId: string, ip: string) => {
     addLog(`SUCCESS: Root access gained on ${ip}`);
@@ -200,7 +249,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       onSoundEvent('click');
   };
 
-  const handleSendEmail = useCallback((email: Omit<Email, 'id' | 'timestamp' | 'read' | 'folder'>) => {
+  const handleSendEmail = (email: Omit<Email, 'id' | 'timestamp' | 'read' | 'folder'>) => {
     const newEmail: Email = {
       ...email,
       id: `email-${Date.now()}`,
@@ -210,8 +259,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     };
     setEmails(prev => [...prev, newEmail]);
     addLog(`EMAIL: Sent email to ${email.recipient} with subject "${email.subject}"`);
-    // Here you can add logic to trigger story events based on the sent email
-  }, [addLog]);
+  };
 
   const getPlayerFileSystem = () => {
     const playerPc = network.find(p => p.id === 'player-pc');
@@ -250,6 +298,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             onReboot: onReboot,
             addLog: addLog,
             onIncreaseDanger: handleIncreaseDanger,
+            onStartTrace: handleStartTrace,
+            onStopTrace: handleStopTrace,
         } 
     },
     documents: { 
@@ -305,7 +355,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     }
   };
 
-  const openApp = useCallback((appId: AppId) => {
+  const openApp = useCallback((appId: AppId, sourceInstanceId?: number) => {
+    // Temp trigger for trace testing
+    if (appId === 'logs') {
+        handleStartTrace('Test System', 60, sourceInstanceId || 0);
+    }
+    
     const playerFs = getPlayerFileSystem();
     if (appId === 'documents' && playerFs.length === 0) return;
 
@@ -329,11 +384,16 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setActiveInstanceId(instanceId);
     setNextZIndex(prev => prev + 1);
     onSoundEvent('click');
-  }, [nextZIndex, onSoundEvent, appConfig, network]);
+  }, [nextZIndex, onSoundEvent, appConfig, getPlayerFileSystem, handleStartTrace]);
 
   const closeApp = useCallback((instanceId: number) => {
     onSoundEvent('close');
     setOpenApps(prev => {
+        const appToClose = prev.find(app => app.instanceId === instanceId);
+        if (appToClose?.isSourceOfTrace) {
+            handleStopTrace();
+        }
+
         const newApps = prev.filter(app => app.instanceId !== instanceId);
         if (activeInstanceId === instanceId) {
             if (newApps.length > 0) {
@@ -345,7 +405,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         }
         return newApps;
     });
-  }, [activeInstanceId, onSoundEvent]);
+  }, [activeInstanceId, onSoundEvent, handleStopTrace]);
   
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -365,45 +425,43 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setNextZIndex(prev => prev + 1);
   };
   
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
   return (
     <main 
       className={cn(
-        "h-full w-full font-code relative overflow-hidden flex flex-col justify-center items-center p-4",
+        "h-full w-full font-code relative overflow-hidden flex flex-col justify-center items-center p-4 transition-colors duration-500",
+        isTraced && "traced"
       )}
       style={{ backgroundImage: `linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)`, backgroundSize: `2rem 2rem` }}
     >
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
+      <div className={cn("absolute inset-0 bg-gradient-to-b from-transparent to-background/80 transition-opacity", isTraced && "bg-destructive/30 animate-pulse-slow")} />
       
+      {isTraced && (
+        <div className="absolute top-4 left-4 z-[9999] text-destructive font-code animate-pulse-slow">
+            <div className="flex items-center gap-4 p-4 bg-destructive/20 border-2 border-destructive rounded-lg shadow-2xl shadow-destructive/20">
+                <AlertTriangle className="h-16 w-16" />
+                <div>
+                    <h2 className="text-2xl font-bold tracking-widest">TRACE DETECTED</h2>
+                    <p className="text-5xl font-bold text-center mt-1">{formatTime(traceTimeLeft)}</p>
+                </div>
+            </div>
+        </div>
+      )}
+
       {openApps.map((app) => {
           const currentAppConfig = appConfig[app.appId];
           if (!currentAppConfig) return null;
           const AppComponent = currentAppConfig.component;
           
           let props = { ...currentAppConfig.props };
-          // This ensures that the components always have the latest state.
+          
           if (app.appId === 'terminal') {
-            props.network = network;
-            props.setNetwork = setNetwork;
-            props.hackedPcs = hackedPcs;
-            props.logs = logs;
-          }
-           if (app.appId === 'network-map') {
-            props.network = network;
-            props.hackedPcs = hackedPcs;
-          }
-          if (app.appId === 'logs') {
-            props.logs = logs;
-          }
-           if (app.appId === 'documents') {
-            props.fileSystem = getPlayerFileSystem();
-            props.onFileSystemUpdate = setPlayerFileSystem;
-          }
-          if (app.appId === 'email') {
-            props.emails = emails;
-            props.onSend = handleSendEmail;
-          }
-           if (app.appId === 'web-browser') {
-            props.network = network;
+            props.instanceId = app.instanceId;
           }
           
           return (
@@ -416,7 +474,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
                 onStart={() => bringToFront(app.instanceId)}
               >
                 <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
-                    <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height}>
+                    <Window title={currentAppConfig.title} onClose={() => closeApp(app.instanceId)} width={currentAppConfig.width} height={currentAppConfig.height} isCorrupted={app.isSourceOfTrace}>
                         <AppComponent {...props}/>
                     </Window>
                 </div>
@@ -459,7 +517,3 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     </main>
   );
 }
-
-    
-
-    
