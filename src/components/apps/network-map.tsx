@@ -3,7 +3,7 @@
 
 import React, { useMemo } from 'react';
 import { motion, useDragControls } from 'framer-motion';
-import { Server, Laptop, Smartphone, Link as LinkIcon, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Server, Laptop, Smartphone, Link as LinkIcon, ShieldCheck, ShieldAlert, KeyRound } from 'lucide-react';
 import { PC } from '@/lib/network/types';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -51,6 +51,7 @@ const Node = ({ pc, x, y, isHacked }: { pc: PC; x: number; y: number; isHacked: 
                         <p className="font-code">{pc.ip}</p>
                         {pc.isDangerous && <p className="text-destructive flex items-center gap-1"><ShieldAlert size={14}/> DANGEROUS</p>}
                         {isHacked && <p className="text-green-400 flex items-center gap-1"><ShieldCheck size={14}/> Access Granted</p>}
+                        {isHacked && <p className="text-accent flex items-center gap-1"><KeyRound size={14}/> {pc.auth.pass}</p>}
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
