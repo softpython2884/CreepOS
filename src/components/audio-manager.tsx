@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -14,7 +15,7 @@ interface AudioManagerProps {
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
 const sounds: Record<NonNullable<Exclude<SoundEvent, 'stopScream'>>, { src: string | string[]; volume: number; loop?: boolean }> = {
-    scream: { src: ['/action.mp3', '/NéoAttaque.mp3'], volume: 0.8 },
+    scream: { src: ['/action.mp3', '/NéoAttaque.mp3'], volume: 0.8, loop: true },
     glitch: { src: ['/glitch-sound-scary-mp3.mp3', '/error-glitch.mp3', '/glitch-sound-effect_FugN82U.mp3'], volume: 0.4 },
     click: { src: '/clicksoundeffect.mp3', volume: 0.6 },
     email: { src: '/mail.mp3', volume: 0.5 },
@@ -125,16 +126,17 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
     if (soundEvent === 'scream') {
         if (screamPlayerRef.current && screamPlayerRef.current.paused) {
             const sound = sounds.scream;
-            // Use action.mp3 by default for immediate sound
-            screamPlayerRef.current.src = Array.isArray(sound.src) ? sound.src[0] : sound.src;
+            const src = Array.isArray(sound.src) ? sound.src[Math.floor(Math.random() * sound.src.length)] : sound.src;
+            screamPlayerRef.current.src = src;
             screamPlayerRef.current.volume = sound.volume;
+            screamPlayerRef.current.loop = sound.loop || false;
             screamPlayerRef.current.play().catch(e => console.warn('Scream play failed', e));
         }
         onEnd(null);
         return;
     }
 
-    const sound = sounds[soundEvent];
+    const sound = sounds[soundEvent as NonNullable<Exclude<SoundEvent, 'scream' | 'stopScream'>>];
     if (!sound) return;
 
     const player = sfxPlayersRef.current.find(p => p.paused);
@@ -204,7 +206,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
                 calmPlaylistIndex.current = 0; // Reset and shuffle playlist
                 playNextCalmTrack();
             } else if (musicEvent !== 'none') {
-                const track = musicTracks[musicEvent];
+                const track = musicTracks[musicEvent as Exclude<MusicEvent, 'none' | 'calm'>];
                 musicPlayer.src = track.src;
                 musicPlayer.volume = track.volume;
                 musicPlayer.loop = track.loop ?? false;
