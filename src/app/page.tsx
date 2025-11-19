@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -6,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { User, Lock, Power, Monitor, Ratio, RefreshCw, Skull } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Desktop from '@/components/desktop';
-import AudioManager, { MusicEvent, SoundEvent } from '@/components/audio-manager';
+import AudioManager, { MusicEvent, SoundEvent, AlertEvent } from '@/components/audio-manager';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { loadGameState, deleteGameState } from '@/lib/save-manager';
@@ -362,6 +363,7 @@ export default function Home() {
     const [username] = useState('Operator');
     const [soundEvent, setSoundEvent] = useState<SoundEvent>(null);
     const [musicEvent, setMusicEvent] = useState<MusicEvent>('none');
+    const [alertEvent, setAlertEvent] = useState<AlertEvent | null>(null);
     const [aspectRatio, setAspectRatio] = useState(16/9);
     const [scale, setScale] = useState(1);
 
@@ -382,25 +384,24 @@ export default function Home() {
         }
     }
 
-
     const updateScale = useCallback(() => {
         const { innerWidth: windowWidth, innerHeight: windowHeight } = window;
         if (windowWidth === 0 || windowHeight === 0) return;
-
+    
         // Determine base viewport width, but cap it at 1920
         const viewportWidth = Math.min(windowWidth, 1920);
         const viewportHeight = viewportWidth / aspectRatio;
-
+    
         const scaleX = windowWidth / viewportWidth;
         const scaleY = windowHeight / viewportHeight;
-
+    
         // The final scale is the minimum of the two, ensuring it fits
         const calculatedScale = Math.min(scaleX, scaleY);
         setScale(calculatedScale);
-
+    
         const left = (windowWidth - viewportWidth * calculatedScale) / 2;
         const top = (windowHeight - viewportHeight * calculatedScale) / 2;
-
+    
         const root = document.documentElement;
         root.style.setProperty('--viewport-width', `${viewportWidth}px`);
         root.style.setProperty('--viewport-height', `${viewportHeight}px`);
@@ -451,6 +452,7 @@ export default function Home() {
     
     const handleReboot = () => {
         setMusicEvent('none');
+        setAlertEvent('stopAlert');
         setSoundEvent('fan');
         setMachineState('bios');
     }
@@ -508,7 +510,7 @@ export default function Home() {
                     onSoundEvent={setSoundEvent}
                 />;
             case 'desktop':
-                return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} username={username} onReboot={handleReboot} setMachineState={setMachineState} scale={scale}/>;
+                return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} onAlertEvent={setAlertEvent} username={username} onReboot={handleReboot} setMachineState={setMachineState} scale={scale}/>;
             default:
                 return null;
         }
@@ -521,7 +523,7 @@ export default function Home() {
                 className="absolute bg-background origin-top-left"
             >
                 {renderState()}
-                <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} onEnd={() => setSoundEvent(null)} />
+                <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} alertEvent={alertEvent} onSoundEnd={() => setSoundEvent(null)} />
             </div>
         </main>
     );

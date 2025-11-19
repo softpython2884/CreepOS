@@ -4,12 +4,14 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 export type SoundEvent = 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | null;
-export type MusicEvent = 'calm' | 'epic' | 'alarm' | 'creepy' | 'cinematic' | 'scream' | 'ringtone' | 'none';
+export type MusicEvent = 'calm' | 'epic' | 'cinematic' | 'none';
+export type AlertEvent = 'alarm' | 'scream' | 'ringtone' | 'stopAlert';
 
 interface AudioManagerProps {
   soundEvent: SoundEvent;
   musicEvent: MusicEvent;
-  onEnd: (event: SoundEvent | null) => void;
+  alertEvent: AlertEvent | null;
+  onSoundEnd: () => void;
 }
 
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
@@ -26,9 +28,11 @@ const sounds: Record<NonNullable<SoundEvent>, { src: string | string[]; volume: 
 
 const musicTracks: Record<Exclude<MusicEvent, 'none' | 'calm'>, { src: string; volume: number; loop?: boolean }> = {
     epic: { src: '/start.mp3', volume: 0.4, loop: true },
-    alarm: { src: '/alarm.mp3', volume: 0.6, loop: true },
-    creepy: { src: '/30s-creepyBG.mp3', volume: 0.5 },
     cinematic: { src: '/Néo.mp3', volume: 0.8, loop: false },
+};
+
+const alertTracks: Record<Exclude<AlertEvent, 'stopAlert'>, { src: string; volume: number; loop?: boolean }> = {
+    alarm: { src: '/alarm.mp3', volume: 0.6, loop: true },
     scream: { src: '/NéoAttaque.mp3', volume: 0.8, loop: true },
     ringtone: { src: '/call.mp3', volume: 0.7, loop: true },
 };
@@ -49,13 +53,14 @@ const selectSoundSource = (src: string | string[]): string => {
     return src;
 };
 
-export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioManagerProps) {
+export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSoundEnd }: AudioManagerProps) {
   const sfxPlayersRef = useRef<HTMLAudioElement[]>([]);
   const musicPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const loopingAlertPlayerRef = useRef<HTMLAudioElement | null>(null);
+
   const [isInitialized, setIsInitialized] = useState(false);
   const currentMusic = useRef<MusicEvent>('none');
   const calmPlaylistIndex = useRef(0);
-
 
   const playNextCalmTrack = useCallback(() => {
     if (!musicPlayerRef.current || currentMusic.current !== 'calm') return;
@@ -78,30 +83,33 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
   }, []);
 
   useEffect(() => {
-    if (sfxPlayersRef.current.length === 0) {
+    // Initialize all audio players
+    if (!isInitialized) {
         for (let i = 0; i < SFX_PLAYER_COUNT; i++) {
-            const audio = new Audio();
-            sfxPlayersRef.current.push(audio);
+            sfxPlayersRef.current.push(new Audio());
         }
-    }
-    if (!musicPlayerRef.current) {
-        const player = new Audio();
-        player.onended = () => {
+        
+        const musicPlayer = new Audio();
+        musicPlayer.onended = () => {
             if (currentMusic.current === 'calm') {
                 playNextCalmTrack();
             }
         };
-        musicPlayerRef.current = player;
+        musicPlayerRef.current = musicPlayer;
+
+        loopingAlertPlayerRef.current = new Audio();
     }
 
     const enableAudio = async () => {
         if (isInitialized) return;
         try {
+            // A single user interaction can unlock all audio contexts
             const audio = new Audio(SILENT_WAV);
             await audio.play();
             setIsInitialized(true);
+            console.log("Audio context unlocked.");
         } catch (e) {
-            // Autoplay might still be blocked
+            console.warn("Audio context unlock failed.", e);
         }
     };
     window.addEventListener('click', enableAudio, { once: true });
@@ -113,20 +121,16 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
     }
   }, [isInitialized, playNextCalmTrack]);
 
+  // Handle one-shot sound effects
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized || !soundEvent) return;
 
-    if (soundEvent === null) {
-      onEnd(null);
-      return;
-    }
-    
     const sound = sounds[soundEvent];
     if (!sound) {
-        onEnd(soundEvent);
+        onSoundEnd();
         return;
     }
-    
+
     const sfxPlayer = sfxPlayersRef.current.find(p => p.paused);
 
     if (sfxPlayer) {
@@ -144,15 +148,12 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
                 console.warn(`Could not play sound (${soundEvent}):`, error);
             }
         });
-        
-        onEnd(null); // Reset event immediately
-    } else {
-        onEnd(soundEvent);
     }
+    onSoundEnd(); // Reset event immediately
 
-  }, [soundEvent, isInitialized, onEnd]);
+  }, [soundEvent, isInitialized, onSoundEnd]);
 
-
+  // Handle background music
   useEffect(() => {
     if (!isInitialized || !musicPlayerRef.current) return;
 
@@ -182,23 +183,48 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
 
         fadeOutAndStop(() => {
             if (musicEvent === 'calm') {
-                calmPlaylistIndex.current = 0; // Reset and shuffle playlist
+                calmPlaylistIndex.current = 0;
                 playNextCalmTrack();
             } else if (musicEvent !== 'none') {
                 const track = musicTracks[musicEvent as Exclude<MusicEvent, 'none' | 'calm'>];
-                musicPlayer.src = track.src;
-                musicPlayer.volume = track.volume;
-                musicPlayer.loop = track.loop ?? false;
-                musicPlayer.play().catch(e => {
-                     if ((e as Error).name !== 'AbortError') {
-                        console.warn(`Music play failed for ${musicEvent}:`, e);
-                    }
-                });
+                if (track) {
+                    musicPlayer.src = track.src;
+                    musicPlayer.volume = track.volume;
+                    musicPlayer.loop = track.loop ?? false;
+                    musicPlayer.play().catch(e => {
+                         if ((e as Error).name !== 'AbortError') {
+                            console.warn(`Music play failed for ${musicEvent}:`, e);
+                        }
+                    });
+                }
             }
         });
     }
 
   }, [musicEvent, isInitialized, playNextCalmTrack]);
+
+  // Handle looping alert sounds
+  useEffect(() => {
+    if (!isInitialized || !loopingAlertPlayerRef.current) return;
+    
+    const alertPlayer = loopingAlertPlayerRef.current;
+
+    if (alertEvent === 'stopAlert') {
+        if (!alertPlayer.paused) {
+            alertPlayer.pause();
+            alertPlayer.currentTime = 0;
+        }
+    } else if (alertEvent) {
+        const track = alertTracks[alertEvent];
+        if (track) {
+            alertPlayer.src = track.src;
+            alertPlayer.volume = track.volume;
+            alertPlayer.loop = track.loop ?? true;
+            alertPlayer.play().catch(e => console.warn(`Alert sound ${alertEvent} play failed`, e));
+        }
+    }
+  }, [alertEvent, isInitialized]);
+
 
   return null;
 }

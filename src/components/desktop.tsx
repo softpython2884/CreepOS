@@ -8,7 +8,7 @@ import Terminal from '@/components/apps/terminal';
 import DocumentFolder from '@/components/apps/document-folder';
 import TextEditor from '@/components/apps/text-editor';
 import { cn } from '@/lib/utils';
-import { SoundEvent, MusicEvent } from './audio-manager';
+import { SoundEvent, MusicEvent, AlertEvent } from './audio-manager';
 import { type FileSystemNode } from '@/lib/network/types';
 import Draggable from 'react-draggable';
 import { network as initialNetwork } from '@/lib/network';
@@ -63,6 +63,7 @@ type CallState = 'idle' | 'incoming' | 'active';
 interface DesktopProps {
   onSoundEvent: (event: SoundEvent) => void;
   onMusicEvent: (event: MusicEvent) => void;
+  onAlertEvent: (event: AlertEvent | null) => void;
   username: string;
   onReboot: () => void;
   setMachineState: (state: string) => void;
@@ -103,7 +104,7 @@ const updateNodeByPath = (
 };
 
 
-export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot, setMachineState, scale }: DesktopProps) {
+export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, username, onReboot, setMachineState, scale }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [nextZIndex, setNextZIndex] = useState(10);
@@ -150,135 +151,16 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   ]);
 
   const gameState = { network, hackedPcs, machineState: 'desktop' };
-
-  // --- CALL SYSTEM LOGIC ---
-  const triggerCall = useCallback((script: CallScript) => {
-    if (callState !== 'idle') return;
-
-    callScriptRef.current = script;
-    currentNodeIdRef.current = script.startNode;
-    setActiveCall({
-      interlocutor: script.interlocutor,
-      isSecure: script.isSecure,
-      messages: [], // Messages will be populated on answer
-      choices: [],
-    });
-    setCallState('incoming');
-    onMusicEvent('ringtone');
-  }, [callState, onMusicEvent]);
-
-  const answerCall = () => {
-    const script = callScriptRef.current;
-    if (!script || callState !== 'incoming') return;
-    
-    onMusicEvent('calm'); // Stop ringtone and return to calm music
-    const startNode = script.nodes[script.startNode];
-    
-    setActiveCall(prev => prev ? ({
-      ...prev,
-      messages: [startNode.message],
-      choices: startNode.choices || [],
-    }) : null);
-    setCallState('active');
-    onSoundEvent('click');
-  };
-
-  const declineCall = () => {
-    onMusicEvent('calm'); // Stop ringtone
-    endCall(false); // End call without UI sound
-  };
-
-  const endCall = (withSound = true) => {
-    setCallState('idle');
-    setActiveCall(null);
-    callScriptRef.current = null;
-    currentNodeIdRef.current = null;
-    if (withSound) {
-        onSoundEvent('close');
-    }
-  }
-
-  const advanceCall = (choiceId: string) => {
-    const script = callScriptRef.current;
-    if (!script || !activeCall) return;
-
-    const currentNodeId = currentNodeIdRef.current;
-    const currentNode = script.nodes[currentNodeId!];
-    
-    const chosenChoice = currentNode.choices?.find(c => c.id === choiceId);
-    if (!chosenChoice) return;
-
-    // Add player choice to history
-    const playerMessage: CallMessage = {
-        speaker: 'Operator',
-        text: chosenChoice.text
-    };
-
-    setActiveCall(prev => prev ? ({ ...prev, messages: [...prev.messages, playerMessage], choices: [] }) : null);
-
-    // Process consequences
-    if (chosenChoice.consequences?.danger) {
-        handleIncreaseDanger(chosenChoice.consequences.danger);
-    }
-    
-    const nextNodeId = chosenChoice.nextNode;
-    
-    setTimeout(() => {
-      const nextNode = script.nodes[nextNodeId];
-      if (!nextNode) {
-          // This should ideally not happen if scripts are well-formed, but it's a safe fallback.
-          setActiveCall(prev => prev ? ({ ...prev, isFinished: true }) : null);
-          return;
-      }
-      
-      currentNodeIdRef.current = nextNodeId;
-      setActiveCall(prev => prev ? ({
-          ...prev,
-          messages: [...prev.messages, nextNode.message],
-          choices: nextNode.choices || [],
-          isFinished: !nextNode.choices || nextNode.choices.length === 0,
-      }) : null);
-      onSoundEvent('email'); // sound for receiving a message
-    }, 1000); // Delay for realism
-  }
-
-  const handlePlayerChoice = (choiceId: string) => {
-    advanceCall(choiceId);
-  }
   
-  useEffect(() => {
-    // Expose test function to window
-    (window as any).startTestCall = () => triggerCall(testCallScript);
-    
-    return () => {
-      delete (window as any).startTestCall;
-    }
-  }, [triggerCall]);
-  // --- END CALL SYSTEM ---
-
-
-  useEffect(() => {
-    // Autosave interval
-    const saveInterval = setInterval(() => {
-        saveGameState(username, gameState);
-    }, 5000); // Save every 5 seconds
-
-    return () => clearInterval(saveInterval);
-  }, [network, hackedPcs, username, gameState]);
-
-    useEffect(() => {
-        if (dangerLevel >= 100) {
-            setMachineState('survival');
-            onMusicEvent('alarm');
-            setDangerLevel(0); // Reset for next time
-        }
-    }, [dangerLevel, setMachineState, onMusicEvent]);
-
   const addLog = useCallback((message: string) => {
     setLogs(prev => {
         const timestamp = new Date().toISOString();
         const formattedMessage = `${timestamp} - ${message}`;
-        return [...prev, formattedMessage];
+        const newLogs = [...prev, formattedMessage];
+        if (newLogs.length > 100) {
+            newLogs.shift(); // Keep logs from growing indefinitely
+        }
+        return newLogs;
     });
     
     setNetwork(currentNetwork => {
@@ -304,11 +186,146 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     });
   }, []);
 
+  const endCall = useCallback((withSound = true) => {
+    onAlertEvent('stopAlert');
+    setCallState('idle');
+    setActiveCall(null);
+    callScriptRef.current = null;
+    currentNodeIdRef.current = null;
+    if (withSound) {
+        onSoundEvent('close');
+    }
+  }, [onAlertEvent, onSoundEvent]);
+
+
+  const triggerCall = useCallback((script: CallScript) => {
+    if (callState !== 'idle') return;
+
+    callScriptRef.current = script;
+    currentNodeIdRef.current = script.startNode;
+    setActiveCall({
+      interlocutor: script.interlocutor,
+      isSecure: script.isSecure,
+      messages: [], 
+      choices: [],
+    });
+    setCallState('incoming');
+    onAlertEvent('ringtone');
+    addLog(`EVENT: Incoming call from ${script.interlocutor}`);
+  }, [callState, onAlertEvent, addLog]);
+
+  const answerCall = useCallback(() => {
+    const script = callScriptRef.current;
+    if (!script || callState !== 'incoming') return;
+    
+    onAlertEvent('stopAlert');
+    const startNode = script.nodes[script.startNode];
+    
+    setActiveCall(prev => prev ? ({
+      ...prev,
+      messages: [startNode.message],
+      choices: startNode.choices || [],
+    }) : null);
+    setCallState('active');
+    onSoundEvent('click');
+  }, [callState, onAlertEvent, onSoundEvent]);
+
+  const declineCall = useCallback(() => {
+    onAlertEvent('stopAlert');
+    addLog(`EVENT: Declined call from ${callScriptRef.current?.interlocutor}.`);
+    endCall(false);
+    // Logic to re-trigger the call after a delay has been removed as requested.
+  }, [onAlertEvent, addLog, endCall]);
+
+  const advanceCall = (choiceId: string) => {
+    const script = callScriptRef.current;
+    if (!script || !activeCall) return;
+
+    const currentNodeId = currentNodeIdRef.current;
+    if (!currentNodeId) return;
+    const currentNode = script.nodes[currentNodeId];
+    
+    const chosenChoice = currentNode.choices?.find(c => c.id === choiceId);
+    if (!chosenChoice) return;
+
+    // Add player choice to history
+    const playerMessage: CallMessage = {
+        speaker: 'Operator',
+        text: chosenChoice.text
+    };
+
+    setActiveCall(prev => prev ? ({ ...prev, messages: [...prev.messages, playerMessage], choices: [] }) : null);
+
+    // Process consequences
+    if (chosenChoice.consequences?.danger) {
+        handleIncreaseDanger(chosenChoice.consequences.danger);
+    }
+    
+    const nextNodeId = chosenChoice.nextNode;
+    
+    setTimeout(() => {
+      const nextNode = script.nodes[nextNodeId];
+      if (!nextNode) {
+          setActiveCall(prev => prev ? ({ ...prev, isFinished: true, choices: [] }) : null);
+          return;
+      }
+      
+      currentNodeIdRef.current = nextNodeId;
+      setActiveCall(prev => prev ? ({
+          ...prev,
+          messages: [...prev.messages, nextNode.message],
+          choices: nextNode.choices || [],
+          isFinished: !nextNode.choices || nextNode.choices.length === 0,
+      }) : null);
+      onSoundEvent('email'); // sound for receiving a message
+    }, 1000); // Delay for realism
+  }
+
+  const handlePlayerChoice = (choiceId: string) => {
+    advanceCall(choiceId);
+  }
+  
+  useEffect(() => {
+    (window as any).startTestCall = () => triggerCall(testCallScript);
+    
+    return () => {
+      delete (window as any).startTestCall;
+    }
+  }, [triggerCall]);
+
+
+  useEffect(() => {
+    const saveInterval = setInterval(() => {
+        saveGameState(username, gameState);
+    }, 5000); 
+
+    return () => clearInterval(saveInterval);
+  }, [network, hackedPcs, username, gameState]);
+
+    useEffect(() => {
+        if (dangerLevel >= 100) {
+            setMachineState('survival');
+            onAlertEvent('alarm');
+            setDangerLevel(0); // Reset for next time
+        }
+    }, [dangerLevel, setMachineState, onAlertEvent]);
+
+
+  const handleStopTrace = useCallback(() => {
+    if (!isTraced) return;
+    
+    addLog(`INFO: Trace averted. Disconnected from ${traceTarget.name}.`);
+    onAlertEvent('stopAlert');
+    setIsTraced(false);
+    setTraceTimeLeft(0);
+    setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
+  }, [addLog, onAlertEvent, isTraced, traceTarget]);
+
   const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
     if (isTraced) return; // Don't start a new trace if one is active
     
     addLog(`DANGER: Trace initiated from ${targetName}. You have ${time} seconds to disconnect.`);
-    onMusicEvent('scream');
+    onAlertEvent('scream');
     setIsTraced(true);
     setTraceTimeLeft(time);
     setTraceTarget({ name: targetName, time: time });
@@ -316,17 +333,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setOpenApps(prev => prev.map(app => 
         app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
     ));
-  }, [addLog, onMusicEvent, isTraced, onSoundEvent]);
+  }, [addLog, onAlertEvent, isTraced]);
 
-  const handleStopTrace = useCallback(() => {
-    if (!isTraced) return;
-    
-    addLog(`INFO: Trace averted. Disconnected from ${traceTarget.name}.`);
-    onMusicEvent('calm');
-    setIsTraced(false);
-    setTraceTimeLeft(0);
-    setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
-  }, [addLog, onMusicEvent, isTraced, traceTarget, onSoundEvent]);
 
  useEffect(() => {
     if (!isTraced) {
@@ -364,7 +372,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, hackedPcs, onMusicEvent, handleStopTrace]);
+}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, hackedPcs, handleStopTrace]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
@@ -395,7 +403,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const openApp = useCallback((appId: AppId, appProps?: any) => {
     const config = appConfig[appId];
     
-    // If app is singular and already open, just bring it to front
     if (config.isSingular) {
         const existingApp = openApps.find(app => app.appId === appId);
         if (existingApp) {
@@ -486,7 +493,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setEmails(prev => [...prev, newEmail]);
     addLog(`EMAIL: Sent email to ${email.recipient} with subject "${email.subject}"`);
     
-    // This was causing a re-render error. Wrapping in setTimeout defers the state update.
     setTimeout(() => {
         setEmailNotification(true);
         setTimeout(() => setEmailNotification(false), 2000);
