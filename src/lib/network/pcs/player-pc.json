@@ -1,5 +1,4 @@
 
-
 {
     "id": "player-pc",
     "name": "Omen",
@@ -19,26 +18,19 @@
             "type": "folder",
             "children": [
                 {
-                    "id": "folder-user",
-                    "name": "<user>",
+                    "id": "folder-docs",
+                    "name": "docs",
                     "type": "folder",
                     "children": [
-                        {
-                            "id": "folder-docs",
-                            "name": "docs",
-                            "type": "folder",
-                            "children": [
-                                { "id": "file-notes", "name": "notes.txt", "type": "file", "content": "My personal notes..." }
-                            ]
-                        },
-                        {
-                            "id": "folder-logs-user",
-                            "name": "logs",
-                            "type": "folder",
-                            "children": [
-                                { "id": "file-activity-log", "name": "activity.log", "type": "file", "content": "" }
-                            ]
-                        }
+                        { "id": "file-notes", "name": "notes.txt", "type": "file", "content": "My personal notes..." }
+                    ]
+                },
+                {
+                    "id": "folder-logs-user",
+                    "name": "logs",
+                    "type": "folder",
+                    "children": [
+                        { "id": "file-activity-log", "name": "activity.log", "type": "file", "content": "" }
                     ]
                 }
             ]
@@ -71,5 +63,3 @@
         }
     ]
 }
-
-    

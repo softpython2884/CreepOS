@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -23,7 +21,7 @@ const personalizeFileSystem = (nodes: FileSystemNode[], user: string): FileSyste
 };
 
 export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSoundEvent, username }: DocumentFolderProps) {
-    const [currentPath, setCurrentPath] = useState<string[]>(['/']);
+    const [currentPath, setCurrentPath] = useState<string[]>([]);
     const [currentFolderItems, setCurrentFolderItems] = useState<FileSystemNode[]>([]);
     const [selectedFile, setSelectedFile] = useState<FileSystemNode | null>(null);
     const [lockedFolder, setLockedFolder] = useState<FileSystemNode | null>(null);
@@ -34,11 +32,11 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
 
     useEffect(() => {
         const getNodeFromPath = (nodes: FileSystemNode[], path: string[]): FileSystemNode[] => {
-            if (path.length === 1 && path[0] === '/') {
+            if (path.length === 0) {
                 return nodes;
             }
             let currentLevel = nodes;
-            for (let i = 1; i < path.length; i++) {
+            for (let i = 0; i < path.length; i++) {
                 const folderName = path[i];
                 const folder = currentLevel.find(f => f.name === folderName && f.type === 'folder');
                 if (folder && folder.children) {
@@ -71,7 +69,7 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
 
     const goBack = () => {
         onSoundEvent?.('click');
-        if (currentPath.length > 1) {
+        if (currentPath.length > 0) {
             const newPath = currentPath.slice(0, -1);
             setCurrentPath(newPath);
         }
@@ -109,10 +107,9 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
     };
 
     const getDisplayPath = () => {
-        const path = currentPath.join('/').replace('//', '/');
-        const homePath = `/home/${username}`;
-        if (path.startsWith(homePath)) {
-            return path.replace(homePath, '~');
+        const path = '/' + currentPath.join('/');
+        if (path.startsWith('/home')) {
+            return path.replace('/home', '~');
         }
         return path;
     }
@@ -139,7 +136,7 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
         <>
             <ScrollArea className="h-full bg-card">
                 <div className="p-2 flex items-center border-b">
-                    <Button variant="ghost" size="icon" onClick={goBack} disabled={currentPath.length <= 1 && currentPath[0] === '/'}>
+                    <Button variant="ghost" size="icon" onClick={goBack} disabled={currentPath.length === 0}>
                         <CornerUpLeft size={16} />
                     </Button>
                     <span className="ml-2 text-sm text-muted-foreground font-code">

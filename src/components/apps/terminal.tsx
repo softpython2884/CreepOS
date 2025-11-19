@@ -37,7 +37,7 @@ interface TerminalProps {
 }
 
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
-    if (path.length === 0) return null;
+    if (path.length === 0) return { name: '/', type: 'folder', children: nodes, id: 'root' };
 
     let currentLevel: FileSystemNode[] | undefined = nodes;
     let foundNode: FileSystemNode | null = null;
@@ -64,9 +64,10 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
 const updateNodeByPath = (
   nodes: FileSystemNode[],
   path: string[],
-  updater: (node: FileSystemNode) => FileSystemNode | null | 'NO_CHANGE'
+  updater: (node: FileSystemNode) => FileSystemNode | null
 ): FileSystemNode[] => {
     if (path.length === 0) return nodes;
+
     const nodeName = path[0];
 
     // If we're at the target node
@@ -75,7 +76,6 @@ const updateNodeByPath = (
         if (nodeIndex === -1) return nodes; // Node not found
 
         const updatedNode = updater(nodes[nodeIndex]);
-        if (updatedNode === 'NO_CHANGE') return nodes;
 
         const newNodes = [...nodes];
         if (updatedNode === null) {
@@ -87,15 +87,18 @@ const updateNodeByPath = (
     }
 
     // Recurse into the next folder in the path
-    return nodes.map(node => {
-        if (node.name === nodeName && node.type === 'folder' && node.children) {
-            return {
-                ...node,
-                children: updateNodeByPath(node.children, path.slice(1), updater),
-            };
-        }
-        return node;
-    });
+    const folderIndex = nodes.findIndex(node => node.name === nodeName && node.type === 'folder');
+    if (folderIndex === -1) return nodes;
+
+    const newNodes = [...nodes];
+    const folderToUpdate = newNodes[folderIndex];
+
+    newNodes[folderIndex] = {
+        ...folderToUpdate,
+        children: updateNodeByPath(folderToUpdate.children || [], path.slice(1), updater),
+    };
+    
+    return newNodes;
 };
 
 
@@ -159,7 +162,7 @@ export default function Terminal({
   // Network and FS state
   const [connectedIp, setConnectedIp] = useState<string>('127.0.0.1');
   const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [currentDirectory, setCurrentDirectory] = useState(['home', username]);
+  const [currentDirectory, setCurrentDirectory] = useState<string[]>([]);
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -171,11 +174,11 @@ export default function Terminal({
   const fileSystem = useMemo(() => {
       const pc = getCurrentPc();
       if (pc) {
-          const userForFs = connectedIp === '127.0.0.1' ? username : pc.auth.user;
+          const userForFs = pc.auth.user;
           return personalizeFileSystem(pc.fileSystem, userForFs);
       }
       return [];
-  }, [getCurrentPc, connectedIp, username]);
+  }, [getCurrentPc]);
   
   const allExecutables = useMemo(() => {
     const playerPcFs = initialNetworkData.find(p => p.id === 'player-pc')?.fileSystem;
@@ -201,7 +204,7 @@ export default function Terminal({
         return '';
     }
     if (machineState === 'survival') {
-        return `[DEFENSE_MODE] Operator@${getCurrentPc()?.name}$ `;
+        return `[DEFENSE_MODE] ${username}@Omen$ `;
     }
     const currentPc = getCurrentPc();
     const hostName = currentPc?.name || 'neo-system';
@@ -213,29 +216,29 @@ export default function Terminal({
         user = '(unauthenticated)';
     }
 
-    let path = currentDirectory.join('/');
-    if (connectedIp === '127.0.0.1' && currentDirectory.join('/').startsWith(`home/${username}`)) {
-        path = '~' + path.substring(`home/${username}`.length);
-    } else if (path === '' || !isAuthenticated) {
-        path = '/';
+    let path = '/' + currentDirectory.join('/');
+    if (path.startsWith('/home') && connectedIp === '127.0.0.1') {
+        path = '~' + path.substring(5);
     }
     
     return `${user}@${hostName}:${path}$ `;
   };
   
   const resolvePath = (pathArg: string): string[] => {
+    if (!pathArg) return [...currentDirectory];
+    
     let newPath: string[];
     
     const baseDir = (pathArg && pathArg.startsWith('/')) ? [] : [...currentDirectory];
     
-    const parts = (pathArg || '').split('/').filter(p => p);
+    const parts = (pathArg || '').split('/').filter(p => p && p !== '.');
     
     newPath = baseDir;
 
     parts.forEach(part => {
         if (part === '..') {
             if (newPath.length > 0) newPath.pop();
-        } else if (part && part !== '.') {
+        } else {
             newPath.push(part);
         }
     });
@@ -272,7 +275,7 @@ export default function Terminal({
                     if (node.type === 'file') {
                         return { ...node, content: (node.content || '') + logEntry + '\n' };
                     }
-                    return 'NO_CHANGE';
+                    return node;
                 });
                 return { ...pc, fileSystem: newFileSystem };
             }
@@ -303,7 +306,7 @@ export default function Terminal({
       
       setConnectedIp('127.0.0.1');
       setIsAuthenticated(true);
-      setCurrentDirectory(['home', username]);
+      setCurrentDirectory([]);
 
       if (isCrash) {
            setHistory(prev => [...prev, { type: 'output', content: `Connection to ${previousHostName} lost. Remote host crashed.`, onConfirm: () => {} }]);
@@ -567,10 +570,16 @@ export default function Terminal({
     };
 
     const isHackingTool = allExecutables.some(file => file.name.toLowerCase().startsWith(command.toLowerCase()));
-    if (isHackingTool && connectedIp !== '127.0.0.1') {
+    if (isHackingTool && command.toLowerCase() !== 'nano') {
         const executable = allExecutables.find(file => file.name.toLowerCase().startsWith(command.toLowerCase()));
         const cmdName = executable!.name.split('.')[0].toLowerCase();
         
+        if (connectedIp === '127.0.0.1' && cmdName !== 'scan' && cmdName !== 'forkbomb') {
+            handleOutput(`This tool must be run on a remote system.`);
+            setIsProcessing(false);
+            return;
+        }
+       
         let targetPC: PC | undefined = getCurrentPc();
         checkAndTriggerTrace(targetPC);
        
@@ -678,6 +687,27 @@ export default function Terminal({
             case 'sshbounce': await handlePortHack(22, 'SSHBounce'); break;
             case 'smtpoverflow': await handlePortHack(25, 'SMTPOverflow'); break;
             case 'webserverworm': await handlePortHack(80, 'WebServerWorm'); break;
+            case 'forkbomb':
+                if (connectedIp === '127.0.0.1') {
+                    handleOutput('SYSTEM CRASH IMMINENT. REBOOTING...');
+                    addLog(`CRITICAL: Forkbomb executed on local machine. System rebooting.`);
+                    setTimeout(onReboot, 1000);
+                } else {
+                    if (targetPC) {
+                        addRemoteLog(`CRITICAL: Forkbomb executed by ${username}. System crashing.`);
+                        
+                        setNetwork(currentNetwork => currentNetwork.map(pc => {
+                            if (pc.id === targetPC!.id) {
+                                const newFileSystem = updateNodeByPath(pc.fileSystem, ['sys', 'XserverOS.sys'], (node) => ({ ...node, content: 'SYSTEM KERNEL CORRUPTED' }));
+                                return { ...pc, fileSystem: newFileSystem };
+                            }
+                            return pc;
+                        }));
+
+                        disconnect(true);
+                    }
+                }
+                break;
         }
         setIsProcessing(false);
         return;
@@ -692,8 +722,9 @@ export default function Terminal({
                 '  cd <path>      - Change directory (auth required)',
                 '  cat <file>     - Display file content (auth required)',
                 '  echo <text>    - Display a line of text. Supports > and >> redirection.',
-                '  touch <file>   - Create an empty file (via nano)',
+                '  nano <file>    - Create or edit a text file (auth required)',
                 '  rm <file>      - Remove a file or clear its content (auth required)',
+                '  rm *           - Remove all files in the current directory (auth required)',
                 '  cp <src> <dest> - Copy a file (auth required)',
                 '  mv <src> <dest> - Move or rename a file (auth required)',
                 '  reboot         - Reboots the current system',
@@ -707,7 +738,7 @@ export default function Terminal({
                 '  login <user> <pass> - Authenticate to a connected system',
                 '  solve <solution> - Attempt to disable a firewall with a solution.',
                 '',
-                'Hacking tools (run from your machine):',
+                'Hacking tools (usually run from your machine on a remote target):',
             ];
 
             const availableTools = allExecutables.map(e => `  ${e.name.split('.')[0]}`.padEnd(17, ' ') + `- ${e.content}`).join('\n');
@@ -724,36 +755,16 @@ export default function Terminal({
         }
         case 'ls': {
             if(!checkAuth()) break;
-            const pathArg = args[0] || '.';
+            const pathArg = args[0] || '';
             const targetPath = resolvePath(pathArg);
+            const targetNode = findNodeByPath(targetPath, fileSystem);
             
-            let targetNode: { children?: FileSystemNode[] } | null = { children: fileSystem };
-            let currentPathResolved = true;
-
-            for(const part of targetPath) {
-                if (!targetNode?.children) {
-                    currentPathResolved = false;
-                    break;
-                }
-                const nextNode = targetNode.children.find(c => c.name === part && c.type === 'folder');
-                if (nextNode) {
-                    targetNode = nextNode;
-                } else {
-                    const fileNode = targetNode.children.find(c => c.name === part && c.type === 'file');
-                    if(fileNode && targetPath[targetPath.length-1] === part) {
-                        targetNode = null;
-                        handleOutput(fileNode.name);
-                    } else {
-                        currentPathResolved = false;
-                    }
-                    break;
-                }
-            }
-
-            if (currentPathResolved && targetNode && targetNode.children) {
-                const content = targetNode.children.map(node => `${node.name}${node.type === 'folder' ? '/' : ''}`).join('  ');
+            if (targetNode?.type === 'folder') {
+                const content = targetNode.children?.map(node => `${node.name}${node.type === 'folder' ? '/' : ''}`).join('  ');
                 handleOutput(content || "(empty)");
-            } else if (!currentPathResolved) {
+            } else if (targetNode?.type === 'file') {
+                 handleOutput(targetNode.name);
+            } else {
                  handleOutput(`ls: cannot access '${pathArg}': No such file or directory`);
             }
             break;
@@ -761,12 +772,9 @@ export default function Terminal({
         case 'cd': {
             if(!checkAuth()) break;
             const pathArg = args[0];
-            if (!pathArg || pathArg === '~' || pathArg === '~/') {
-                if (connectedIp === '127.0.0.1') {
-                    setCurrentDirectory(['home', username]);
-                } else {
-                    setCurrentDirectory([]); // Root for remote
-                }
+            if (!pathArg || pathArg === '~' || (pathArg === '~/')) {
+                const homeDir = (connectedIp === '127.0.0.1') ? ['home'] : [];
+                setCurrentDirectory(homeDir);
                 break;
             }
              if (pathArg === '/') {
@@ -775,20 +783,9 @@ export default function Terminal({
             }
             
             const newPath = resolvePath(pathArg);
-
-            let targetNode: FileSystemNode | null | { children?: FileSystemNode[] } = { children: fileSystem };
-            let isValid = true;
-            for(const part of newPath) {
-                const folder = targetNode.children?.find(c => c.name === part && c.type === 'folder');
-                if (folder) {
-                    targetNode = folder;
-                } else {
-                    isValid = false;
-                    break;
-                }
-            }
+            const targetNode = findNodeByPath(newPath, fileSystem);
             
-            if (isValid) {
+            if (targetNode && targetNode.type === 'folder') {
                 setCurrentDirectory(newPath);
             } else {
                 handleOutput(`cd: no such file or directory: ${pathArg}`);
@@ -821,11 +818,6 @@ export default function Terminal({
             handleOutput(args.join(' '));
             break;
         }
-        case 'touch': {
-            if(!checkAuth()) break;
-            handleOutput(`touch: This command is not fully implemented. Use 'nano' to create and edit files.`);
-            break;
-        }
         case 'nano':
             if (!checkAuth()) { setIsProcessing(false); return; }
             const pathArg = args[0];
@@ -838,29 +830,6 @@ export default function Terminal({
                     handleOutput(`nano: cannot edit directory '${pathArg}'`);
                 } else {
                      onOpenFileEditor(filePath, file?.content || '');
-                }
-            }
-            break;
-        case 'forkbomb':
-            if (!checkAuth()) { setIsProcessing(false); return; }
-            if (connectedIp === '127.0.0.1') {
-                handleOutput('SYSTEM CRASH IMMINENT. REBOOTING...');
-                addLog(`CRITICAL: Forkbomb executed on local machine. System rebooting.`);
-                setTimeout(onReboot, 1000);
-            } else {
-                let targetPC = getCurrentPc();
-                if (targetPC) {
-                    addRemoteLog(`CRITICAL: Forkbomb executed by ${username}. System crashing.`);
-                    
-                    setNetwork(currentNetwork => currentNetwork.map(pc => {
-                        if (pc.id === targetPC!.id) {
-                            const newFileSystem = updateNodeByPath(pc.fileSystem, ['sys', 'XserverOS.sys'], (node) => ({ ...node, content: 'SYSTEM KERNEL CORRUPTED' }));
-                            return { ...pc, fileSystem: newFileSystem };
-                        }
-                        return pc;
-                    }));
-
-                    disconnect(true);
                 }
             }
             break;
@@ -885,28 +854,18 @@ export default function Terminal({
                         if(confirmed) {
                              setNetwork(currentNetwork => currentNetwork.map(pc => {
                                 if (pc.ip === connectedIp) {
-                                    const personalizedPcFs = personalizeFileSystem(pc.fileSystem, username);
-                                    let parentDir = personalizedPcFs;
-                                    let currentPathToUpdate = currentDirectory;
+                                    const parentDirNode = findNodeByPath(currentDirectory, pc.fileSystem);
+                                    if (!parentDirNode || !parentDirNode.children) return pc;
 
-                                    // Find the correct directory in the *unpersonalized* FS
-                                    let parentDirInOriginalFs: FileSystemNode[] | undefined = pc.fileSystem;
-                                    for(const part of currentDirectory) {
-                                        if(!parentDirInOriginalFs) break;
-                                        const nextFolder = parentDirInOriginalFs.find(f => personalizeFileSystem([f], username)[0].name === part);
-                                        parentDirInOriginalFs = nextFolder?.children;
-                                    }
-                                    
-                                    const filesToRemove = parentDirInOriginalFs?.filter(f => f.type === 'file' && !f.isSystemFile) || [];
-                                    
-                                    if(filesToRemove.length === 0) {
+                                    const filesToRemove = parentDirNode.children.filter(f => f.type === 'file' && !f.isSystemFile);
+                                    if (filesToRemove.length === 0) {
                                         handleOutput("rm: no files to remove");
                                         return pc;
                                     }
                                     
                                     let newFs = pc.fileSystem;
                                     for(const file of filesToRemove) {
-                                        newFs = updateNodeByPath(newFs, [...currentPathToUpdate, file.name], () => null);
+                                        newFs = updateNodeByPath(newFs, [...currentDirectory, file.name], () => null);
                                     }
 
                                     handleOutput(`Removed ${filesToRemove.length} files.`);
@@ -941,30 +900,24 @@ export default function Terminal({
                 handleOutput(`WARNING: This is a critical system file. Deleting it will cause system instability.`);
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                if (connectedIp === '127.0.0.1') {
-                     setNetwork(currentNetwork => {
-                        return currentNetwork.map(pc => {
-                            if (pc.ip === connectedIp) {
-                                const newFs = updateNodeByPath(pc.fileSystem, filePath, () => null);
-                                return { ...pc, fileSystem: newFs };
-                            }
-                            return pc;
-                        });
+                setNetwork(currentNetwork => {
+                    return currentNetwork.map(pc => {
+                        if (pc.ip === connectedIp) {
+                            const newFs = updateNodeByPath(pc.fileSystem, filePath, () => null);
+                            return { ...pc, fileSystem: newFs };
+                        }
+                        return pc;
                     });
-                    setTimeout(() => {
+                });
+                
+                if (connectedIp === '127.0.0.1') {
+                   setTimeout(() => {
                        saveGameState();
                        addLog(`CRITICAL: XserverOS.sys deleted from local machine. Next reboot will fail.`);
                        handleOutput('Deletion of XserverOS.sys complete.');
                     }, 100);
                 } else {
                     addRemoteLog(`CRITICAL: XserverOS.sys deleted by ${username}. System crashing.`);
-                    setNetwork(currentNetwork => currentNetwork.map(pc => {
-                        if (pc.ip === connectedIp) {
-                            const newFs = updateNodeByPath(pc.fileSystem, filePath, () => null);
-                            return { ...pc, fileSystem: newFs };
-                        }
-                        return pc;
-                    }));
                     disconnect(true);
                 }
                 break;
@@ -1040,6 +993,12 @@ export default function Terminal({
                 finalDestDirPath = destPath.slice(0, -1);
             }
             
+            const destParentNode = findNodeByPath(finalDestDirPath, fileSystem);
+            if (!destParentNode || destParentNode.type !== 'folder') {
+                 handleOutput(`${command}: cannot create regular file '${destArg}': No such file or directory`);
+                 break;
+            }
+            
             if (finalDestDirPath.join('/') === sourcePath.slice(0,-1).join('/') && command === 'cp') {
                 if (destNode && destNode.type === 'file') {
                     // This is an overwrite, which addNodeByPath handles
@@ -1073,6 +1032,7 @@ export default function Terminal({
             break;
         }
         case 'connect': {
+            if (isProcessing) break;
             const targetIp = args[0];
 
             if (!targetIp) {
@@ -1147,22 +1107,6 @@ export default function Terminal({
             }
             break;
         }
-        case 'scan': {
-            const scanTarget = getCurrentPc();
-            if (scanTarget && scanTarget.links) {
-                const linkedPcs = scanTarget.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
-                if (linkedPcs.length > 0) {
-                    linkedPcs.forEach(pc => onDiscovered(pc.id));
-                    const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
-                    handleOutput(output);
-                } else {
-                    handleOutput('No linked devices found.');
-                }
-            } else {
-                handleOutput('Scan failed: could not determine current network segment.');
-            }
-            break;
-        }
         case 'danger':
             handleOutput(`Current danger level: ${dangerLevel}%`);
             break;
@@ -1217,12 +1161,7 @@ export default function Terminal({
         case '':
             break;
         default:
-            const isTool = allExecutables.some(exe => exe.name.toLowerCase().startsWith(command.toLowerCase()));
-            if(isTool) {
-                handleOutput(`This tool must be run on a remote system.`);
-            } else {
-                handleOutput(`command not found: ${command}`);
-            }
+            handleOutput(`command not found: ${command}`);
             break;
     }
 
@@ -1239,7 +1178,7 @@ export default function Terminal({
     // Command completion
     if (parts.length === 1) {
         const executables = allExecutables.map(f => f.name.split('.')[0].toLowerCase());
-        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'touch', 'rm', 'mv', 'cp', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan'];
+        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'rm', 'mv', 'cp', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan', 'nano'];
         const allCommands = [...new Set([...mainCommands, ...executables])];
         const possibilities = allCommands.filter(cmd => cmd.startsWith(lastPart));
 
@@ -1259,17 +1198,11 @@ export default function Terminal({
     const partialName = lastPart.substring(lastPart.lastIndexOf('/') + 1);
     
     const targetDir = resolvePath(pathPrefix || '.');
+    const targetNode = findNodeByPath(targetDir, fileSystem);
     
-    let currentLevel: FileSystemNode[] | undefined = fileSystem;
-    for (const part of targetDir) {
-        if (!currentLevel) break;
-        const next = currentLevel.find(n => n.name === part && n.type === 'folder');
-        currentLevel = next?.children;
-    }
+    if (!targetNode?.children) return;
 
-    if (!currentLevel) return;
-
-    const possibilities = currentLevel.filter(child => child.name.startsWith(partialName));
+    const possibilities = targetNode.children.filter(child => child.name.startsWith(partialName));
 
     if (possibilities.length === 1) {
         const completion = possibilities[0];
