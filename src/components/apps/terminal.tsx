@@ -161,7 +161,7 @@ export default function Terminal({
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved.", onConfirm: () => {} },
-    { type: 'output', content: "Type 'help' for a list of commands.", onConfirm: () => {} }
+    { type: 'output', content: "Tapez 'help' pour une liste de commandes.", onConfirm: () => {} }
   ]);
   const [input, setInput] = useState('');
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -291,7 +291,7 @@ export default function Terminal({
   const disconnect = (isCrash = false) => {
       const currentPc = getCurrentPc();
       if (!currentPc || connectedIp === '127.0.0.1') {
-          setHistory(prev => [...prev, { type: 'output', content: 'Cannot disconnect from local machine.', onConfirm: () => {} }]);
+          setHistory(prev => [...prev, { type: 'output', content: 'Impossible de se déconnecter de la machine locale.', onConfirm: () => {} }]);
           return;
       }
 
@@ -302,7 +302,7 @@ export default function Terminal({
 
       if (hasLogs && currentPc.traceability) {
         handleIncreaseDanger(currentPc.traceability);
-        addLog(`DANGER: Traces left on ${currentPc.ip}. Danger level increased by ${currentPc.traceability}%.`);
+        addLog(`DANGER: Traces laissées sur ${currentPc.ip}. Niveau de danger augmenté de ${currentPc.traceability}%.`);
       }
 
       const previousHostName = currentPc.name;
@@ -313,11 +313,11 @@ export default function Terminal({
       setCurrentDirectory([]);
 
       if (isCrash) {
-           setHistory(prev => [...prev, { type: 'output', content: `Connection to ${previousHostName} lost. Remote host crashed.`, onConfirm: () => {} }]);
-           addLog(`EVENT: Connection to ${previousIp} lost due to remote crash.`);
+           setHistory(prev => [...prev, { type: 'output', content: `Connexion à ${previousHostName} perdue. Hôte distant planté.`, onConfirm: () => {} }]);
+           addLog(`EVENT: Connexion à ${previousIp} perdue à cause d'un crash distant.`);
       } else {
-          setHistory(prev => [...prev, { type: 'output', content: `Disconnected from ${previousHostName}.`, onConfirm: () => {} }]);
-          addLog(`EVENT: Disconnected from ${previousIp}.`);
+          setHistory(prev => [...prev, { type: 'output', content: `Déconnecté de ${previousHostName}.`, onConfirm: () => {} }]);
+          addLog(`EVENT: Déconnecté de ${previousIp}.`);
       }
   }
 
@@ -355,7 +355,7 @@ export default function Terminal({
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
     const randomChar = () => chars[Math.floor(Math.random() * chars.length)];
 
-    setHistory(prev => [...prev, {type: 'output', content: 'Initiating deep scan...', onConfirm: () => {}}]);
+    setHistory(prev => [...prev, {type: 'output', content: 'Initiation du scan profond...', onConfirm: () => {}}]);
     await new Promise(resolve => setTimeout(resolve, 500));
     setHistory(prev => [...prev, {type: 'output', content: '', onConfirm: () => {}}]); // Placeholder for the animation
 
@@ -390,7 +390,7 @@ export default function Terminal({
     
     setHistory(prev => {
         const newHistory = [...prev];
-        newHistory[newHistory.length - 1] = { type: 'output', content: `Solution Fragment: [ ${solution} ]`, onConfirm: () => {} };
+        newHistory[newHistory.length - 1] = { type: 'output', content: `Fragment de solution : [ ${solution} ]`, onConfirm: () => {} };
         return newHistory;
     });
   };
@@ -414,7 +414,7 @@ export default function Terminal({
     };
 
     setIsProcessing(true);
-    addLog(`COMMAND: Executed '${fullCommand}' on ${connectedIp}`);
+    addLog(`COMMAND: Exécution de '${fullCommand}' sur ${connectedIp}`);
     setCommandHistory(prev => [fullCommand, ...prev]);
     setHistoryIndex(-1);
 
@@ -438,7 +438,7 @@ export default function Terminal({
     
     const handleOutput = (output: string) => {
         if ((redirect || append) && redirectPathArg) {
-            setHistory(prev => [...prev, { type: 'output', content: `error: Redirection not yet implemented for this command.`, onConfirm: () => {} }]);
+            setHistory(prev => [...prev, { type: 'output', content: `erreur : Redirection non implémentée pour cette commande.`, onConfirm: () => {} }]);
         } else {
             setHistory(prev => [...prev, { type: 'output', content: output, onConfirm: () => {} }]);
         }
@@ -446,7 +446,7 @@ export default function Terminal({
     
     const checkAuth = () => {
         if (!isAuthenticated) {
-            setHistory(prev => [...prev, { type: 'output', content: 'error: Permission denied. You are not authenticated.', onConfirm: () => {} }]);
+            setHistory(prev => [...prev, { type: 'output', content: 'erreur : Permission refusée. Vous n\'êtes pas authentifié.', onConfirm: () => {} }]);
             return false;
         }
         return true;
@@ -473,7 +473,7 @@ export default function Terminal({
 
     const handlePortHack = async (portNumber: number, portName: string) => {
         if (connectedIp === '127.0.0.1') {
-            handleOutput(`${portName}: Must be connected to a remote system.`);
+            handleOutput(`${portName}: Doit être connecté à un système distant.`);
             return;
         }
     
@@ -485,33 +485,33 @@ export default function Terminal({
         await new Promise(r => setTimeout(r,0)); // wait for state to propagate
         
         if (!currentTargetPC) {
-            handleOutput('Critical error: Target system disconnected.');
+            handleOutput('Erreur critique : Système cible déconnecté.');
             return;
         }
     
         if (currentTargetPC.firewall.enabled) {
-            handleOutput(`${portName} failed: Active firewall detected.`);
-            addRemoteLog(`${portName} failed on port ${portNumber}. Reason: Firewall active.`);
+            handleOutput(`${portName} échoué : Pare-feu actif détecté.`);
+            addRemoteLog(`${portName} échoué sur le port ${portNumber}. Raison : Pare-feu actif.`);
             return;
         }
         if (currentTargetPC.proxy.enabled) {
-            handleOutput(`${portName} failed: Active proxy detected.`);
-            addRemoteLog(`${portName} failed on port ${portNumber}. Reason: Proxy active.`);
+            handleOutput(`${portName} échoué : Proxy actif détecté.`);
+            addRemoteLog(`${portName} échoué sur le port ${portNumber}. Raison : Proxy actif.`);
             return;
         }
         const port = currentTargetPC.ports.find(p => p.port === portNumber);
         if (!port) {
-            handleOutput(`${portName} failed: Port ${portNumber} not found on this system.`);
+            handleOutput(`${portName} échoué : Port ${portNumber} non trouvé sur ce système.`);
             return;
         }
         if (port.isOpen) {
-            handleOutput(`Port ${portNumber} is already open.`);
+            handleOutput(`Port ${portNumber} est déjà ouvert.`);
             return;
         }
       
         checkAndTriggerTrace();
 
-        handleOutput(`Running ${portName} exploit...`);
+        handleOutput(`Exécution de l'exploit ${portName}...`);
         await runProgressBar(3000);
   
         setNetwork(currentNetwork => 
@@ -524,13 +524,13 @@ export default function Terminal({
             })
         );
   
-        handleOutput(`${port.service} port (${portNumber}) is now open.`);
-        addRemoteLog(`Port ${portNumber} (${port.service}) opened from ${PLAYER_PUBLIC_IP}.`);
+        handleOutput(`Le port ${port.service} (${portNumber}) est maintenant ouvert.`);
+        addRemoteLog(`Port ${portNumber} (${port.service}) ouvert depuis ${PLAYER_PUBLIC_IP}.`);
     };
 
     if (command.toLowerCase() === 'neo.bin') {
-        await runProgressBar(5000, 'Installing NÉO...');
-        handleOutput('Installation complete. Initializing...');
+        await runProgressBar(5000, 'Installation de NÉO...');
+        handleOutput('Installation terminée. Initialisation...');
         onNeoExecute();
         setIsProcessing(false);
         return;
@@ -542,7 +542,7 @@ export default function Terminal({
         const cmdName = executable!.name.split('.')[0].toLowerCase();
         
         if (connectedIp === '127.0.0.1' && cmdName !== 'scan' && cmdName !== 'forkbomb') {
-            handleOutput(`This tool must be run on a remote system.`);
+            handleOutput(`Cet outil doit être exécuté sur un système distant.`);
             setIsProcessing(false);
             return;
         }
@@ -558,96 +558,96 @@ export default function Terminal({
                     const linkedPcs = scanTarget.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
                     if (linkedPcs.length > 0) {
                         linkedPcs.forEach(pc => onDiscovered(pc.id));
-                        const output = ['Scanning network... Found linked devices:', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
+                        const output = ['Scan du réseau... Appareils liés trouvés :', ...linkedPcs.map(pc => `  - ${pc.name} (${pc.ip})`)].join('\n');
                         handleOutput(output);
                     } else {
-                        handleOutput('No linked devices found.');
+                        handleOutput('Aucun appareil lié trouvé.');
                     }
                 } else {
-                    handleOutput('Scan failed: could not determine current network segment.');
+                    handleOutput('Scan échoué : impossible de déterminer le segment réseau actuel.');
                 }
                 break;
             case 'probe':
                 if (!targetPC) {
-                    handleOutput('probe: Must be connected to a remote system.');
+                    handleOutput('probe : Doit être connecté à un système distant.');
                 } else {
-                    handleOutput(`Probing ${targetPC.ip}...`);
+                    handleOutput(`Sondage de ${targetPC.ip}...`);
                     await runProgressBar(2000);
                     const secInfo = [
-                        `Security Probe results for ${targetPC.ip}:`,
-                        `  Firewall: ${targetPC.firewall.enabled ? `ACTIVE (Complexity: ${targetPC.firewall.complexity})` : 'INACTIVE'}`,
-                        `  Proxy: ${targetPC.proxy.enabled ? `ACTIVE (Level: ${targetPC.proxy.level})` : 'INACTIVE'}`,
-                        `  Trace Time: ${targetPC.traceTime > 0 ? `${targetPC.traceTime}s` : 'N/A'}`,
-                        `  Ports required for PortHack: ${targetPC.requiredPorts}`
+                        `Résultats de la sonde de sécurité pour ${targetPC.ip}:`,
+                        `  Pare-feu: ${targetPC.firewall.enabled ? `ACTIF (Complexité: ${targetPC.firewall.complexity})` : 'INACTIF'}`,
+                        `  Proxy: ${targetPC.proxy.enabled ? `ACTIF (Niveau: ${targetPC.proxy.level})` : 'INACTIF'}`,
+                        `  Temps de traçage: ${targetPC.traceTime > 0 ? `${targetPC.traceTime}s` : 'N/A'}`,
+                        `  Ports requis pour PortHack: ${targetPC.requiredPorts}`
                     ];
 
                     if (targetPC.ports.length > 0) {
-                        secInfo.push('\n  Available Ports:');
+                        secInfo.push('\n  Ports disponibles:');
                         targetPC.ports.forEach(p => {
-                            secInfo.push(`    - ${p.port} (${p.service}): ${p.isOpen ? 'OPEN' : 'CLOSED'}`);
+                            secInfo.push(`    - ${p.port} (${p.service}): ${p.isOpen ? 'OUVERT' : 'FERMÉ'}`);
                         });
                     } else {
-                        secInfo.push('  No scannable ports detected.');
+                        secInfo.push('  Aucun port scannable détecté.');
                     }
-                    addRemoteLog(`INFO: System ${targetPC.ip} probed from ${PLAYER_PUBLIC_IP}.`);
+                    addRemoteLog(`INFO: Système ${targetPC.ip} sondé depuis ${PLAYER_PUBLIC_IP}.`);
                     handleOutput(secInfo.join('\n'));
                 }
                 break;
             case 'porthack':
                  if (!targetPC) {
-                    handleOutput('porthack: critical error, no target system.');
+                    handleOutput('porthack: erreur critique, pas de système cible.');
                 } else if (hackedPcs.has(targetPC.id)) {
-                    handleOutput(`porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}`);
+                    handleOutput(`porthack: Système ${targetPC.ip} déjà piraté. Mot de passe : ${targetPC.auth.pass}`);
                 } else if (targetPC.firewall.enabled) {
-                    handleOutput(`ERROR: Active firewall detected. Connection terminated.`);
-                    addRemoteLog(`PortHack failed. Reason: Firewall active.`);
+                    handleOutput(`ERREUR: Pare-feu actif détecté. Connexion terminée.`);
+                    addRemoteLog(`PortHack échoué. Raison : Pare-feu actif.`);
                 } else if (targetPC.proxy.enabled) {
-                    handleOutput(`ERROR: Active proxy detected. Connection bounced.`);
-                    addRemoteLog(`PortHack failed. Reason: Proxy active.`);
+                    handleOutput(`ERREUR: Proxy actif détecté. Connexion renvoyée.`);
+                    addRemoteLog(`PortHack échoué. Raison : Proxy actif.`);
                 } else {
-                    handleOutput(`Initiating PortHack sequence...`);
+                    handleOutput(`Lancement de la séquence PortHack...`);
                     await runProgressBar(5000);
                     const openPorts = targetPC.ports.filter(p => p.isOpen).length;
                     if (openPorts >= targetPC.requiredPorts) {
-                        handleOutput(`PortHack successful on ${targetPC.ip}. Firewall breached.\n  Password cracked: ${targetPC.auth.pass}`);
-                        addRemoteLog(`PortHack successful. Root access gained from ${PLAYER_PUBLIC_IP}.`);
+                        handleOutput(`PortHack réussi sur ${targetPC.ip}. Pare-feu percé.\n  Mot de passe craqué : ${targetPC.auth.pass}`);
+                        addRemoteLog(`PortHack réussi. Accès root obtenu depuis ${PLAYER_PUBLIC_IP}.`);
                         onHack(targetPC.id, targetPC.ip);
                     } else {
-                        handleOutput(`PortHack failed: ${targetPC.requiredPorts} open port(s) required. (${openPorts}/${targetPC.requiredPorts} open)`);
-                        addRemoteLog(`PortHack failed. Reason: Insufficient open ports.`);
+                        handleOutput(`PortHack échoué: ${targetPC.requiredPorts} port(s) ouvert(s) requis. (${openPorts}/${targetPC.requiredPorts} ouverts)`);
+                        addRemoteLog(`PortHack échoué. Raison : Ports ouverts insuffisants.`);
                     }
                 }
                 break;
             case 'analyze':
                 if (!targetPC) {
-                    handleOutput('analyze: Must be connected to a remote system.');
+                    handleOutput('analyze : Doit être connecté à un système distant.');
                 } else if (!targetPC.firewall.enabled) {
-                    handleOutput('Firewall is not active.');
+                    handleOutput('Le pare-feu n\'est pas actif.');
                 } else {
-                    await runAnalyzeMinigame(targetPC.firewall.solution || 'UNKNOWN');
-                    handleOutput(`Firewall analysis complete. Solution fragment acquired.`);
-                    addRemoteLog(`Firewall analysis from ${PLAYER_PUBLIC_IP} revealed solution: ${targetPC.firewall.solution}`);
+                    await runAnalyzeMinigame(targetPC.firewall.solution || 'INCONNU');
+                    handleOutput(`Analyse du pare-feu terminée. Fragment de solution acquis.`);
+                    addRemoteLog(`L'analyse du pare-feu depuis ${PLAYER_PUBLIC_IP} a révélé la solution : ${targetPC.firewall.solution}`);
                 }
                 break;
             case 'overload':
                 if (!targetPC) {
-                    handleOutput('overload: Must be connected to a remote system.');
+                    handleOutput('overload : Doit être connecté à un système distant.');
                 } else if (!targetPC.proxy.enabled) {
-                    handleOutput('Proxy is not active.');
+                    handleOutput('Le proxy n\'est pas actif.');
                 } else {
                     const requiredNodes = targetPC.proxy.level;
                     const availableNodes = hackedPcs.size;
                     
-                    handleOutput(`Overloading proxy... (Requires: ${requiredNodes} nodes, Have: ${availableNodes})`);
+                    handleOutput(`Surcharge du proxy... (Requis: ${requiredNodes} nœuds, Disponibles: ${availableNodes})`);
                     await runProgressBar(targetPC.proxy.level * 2000);
 
                     if (availableNodes >= requiredNodes) {
                         setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC!.id ? { ...pc, proxy: { ...pc.proxy, enabled: false } } : pc));
-                        handleOutput(`Proxy disabled on ${targetPC.ip}.`);
-                        addRemoteLog(`Proxy on ${targetPC.ip} disabled via overload from ${PLAYER_PUBLIC_IP}.`);
+                        handleOutput(`Proxy désactivé sur ${targetPC.ip}.`);
+                        addRemoteLog(`Proxy sur ${targetPC.ip} désactivé via surcharge depuis ${PLAYER_PUBLIC_IP}.`);
                     } else {
-                        handleOutput(`Overload failed. Insufficient nodes.`);
-                        addRemoteLog(`Proxy overload failed. Required ${requiredNodes} nodes, have ${availableNodes}.`);
+                        handleOutput(`Surcharge échouée. Nœuds insuffisants.`);
+                        addRemoteLog(`Surcharge du proxy échouée. Requis ${requiredNodes} nœuds, disponibles ${availableNodes}.`);
                     }
                 }
                 break;
@@ -657,16 +657,16 @@ export default function Terminal({
             case 'webserverworm': await handlePortHack(80, 'WebServerWorm'); break;
             case 'forkbomb':
                 if (connectedIp === '127.0.0.1') {
-                    handleOutput('SYSTEM CRASH IMMINENT. REBOOTING...');
-                    addLog(`CRITICAL: Forkbomb executed on local machine. System rebooting.`);
+                    handleOutput('CRASH SYSTÈME IMMINENT. REDÉMARRAGE...');
+                    addLog(`CRITIQUE: Forkbomb exécuté sur la machine locale. Redémarrage du système.`);
                     setTimeout(onReboot, 1000);
                 } else {
                     if (targetPC) {
-                        addRemoteLog(`CRITICAL: XserverOS.sys not found. System crashing.`);
+                        addRemoteLog(`CRITIQUE: XserverOS.sys non trouvé. Crash du système.`);
                         
                         setNetwork(currentNetwork => currentNetwork.map(pc => {
                             if (pc.id === targetPC!.id) {
-                                const newFileSystem = updateNodeByPath(pc.fileSystem, ['sys', 'XserverOS.sys'], (node) => ({ ...node, content: 'SYSTEM KERNEL CORRUPTED' }));
+                                const newFileSystem = updateNodeByPath(pc.fileSystem, ['sys', 'XserverOS.sys'], (node) => ({ ...node, content: 'NOYAU SYSTÈME CORROMPU' }));
                                 return { ...pc, fileSystem: newFileSystem };
                             }
                             return pc;
@@ -685,38 +685,38 @@ export default function Terminal({
     switch (command.toLowerCase()) {
         case 'help': {
             const commandList = [
-                '  help           - Show this help message',
-                '  ls [path]      - List files and directories (auth required)',
-                '  cd <path>      - Change directory (auth required)',
-                '  cat <file>     - Display file content (auth required)',
-                '  echo <text>    - Display a line of text. Supports > and >> redirection.',
-                '  nano <file>    - Create or edit a text file (auth required)',
-                '  rm <file>      - Remove a file or clear its content (auth required)',
-                '  rm *           - Remove all files in the current directory (auth required)',
-                '  cp <src> <dest> - Copy a file (auth required)',
-                '  mv <src> <dest> - Move or rename a file (auth required)',
-                '  reboot         - Reboots the current system',
-                '  save           - Save current game state (local only)',
-                '  reset-game --confirm - Deletes save data and reboots (local only)',
-                '  danger         - Shows current trace danger level',
+                '  help           - Affiche ce message d\'aide',
+                '  ls [path]      - Liste les fichiers et répertoires (auth requise)',
+                '  cd <path>      - Change de répertoire (auth requise)',
+                '  cat <file>     - Affiche le contenu d\'un fichier (auth requise)',
+                '  echo <text>    - Affiche une ligne de texte. Supporte > et >> redirection.',
+                '  nano <file>    - Crée ou édite un fichier texte (auth requise)',
+                '  rm <file>      - Supprime un fichier ou vide son contenu (auth requise)',
+                '  rm *           - Supprime tous les fichiers du répertoire actuel (auth requise)',
+                '  cp <src> <dest> - Copie un fichier (auth requise)',
+                '  mv <src> <dest> - Déplace ou renomme un fichier (auth requise)',
+                '  reboot         - Redémarre le système actuel',
+                '  save           - Sauvegarde l\'état actuel du jeu (local uniquement)',
+                '  reset-game --confirm - Supprime les données de sauvegarde et redémarre (local uniquement)',
+                '  danger         - Affiche le niveau de danger de traçage actuel',
                 '',
-                'Network commands:',
-                '  connect <ip>   - Connect to a remote system',
-                '  disconnect / dc- Disconnect from the current remote system',
-                '  login <user> <pass> - Authenticate to a connected system',
-                '  solve <solution> - Attempt to disable a firewall with a solution.',
+                'Commandes réseau:',
+                '  connect <ip>   - Se connecte à un système distant',
+                '  disconnect / dc- Se déconnecte du système distant actuel',
+                '  login <user> <pass> - S\'authentifie sur un système connecté',
+                '  solve <solution> - Tente de désactiver un pare-feu avec une solution.',
                 '',
-                'Hacking tools (usually run from your machine on a remote target):',
+                'Outils de piratage (généralement exécutés depuis votre machine sur une cible distante):',
             ];
 
             const availableTools = allExecutables.map(e => `  ${e.name.split('.')[0]}`.padEnd(17, ' ') + `- ${e.content}`).join('\n');
 
             const helpText = [
-                'Available commands:',
+                'Commandes disponibles:',
                 ...commandList,
                 availableTools,
                 '',
-                '  clear          - Clear the terminal screen',
+                '  clear          - Efface l\'écran du terminal',
             ].join('\n');
             handleOutput(helpText);
             break;
@@ -729,11 +729,11 @@ export default function Terminal({
             
             if (targetNode?.type === 'folder') {
                 const content = targetNode.children?.map(node => `${node.name}${node.type === 'folder' ? '/' : ''}`).join('  ');
-                handleOutput(content || "(empty)");
+                handleOutput(content || "(vide)");
             } else if (targetNode?.type === 'file') {
                  handleOutput(targetNode.name);
             } else {
-                 handleOutput(`ls: cannot access '${pathArg}': No such file or directory`);
+                 handleOutput(`ls: impossible d'accéder à '${pathArg}': Aucun fichier ou dossier de ce type`);
             }
             break;
         }
@@ -755,7 +755,7 @@ export default function Terminal({
             if (targetNode && targetNode.type === 'folder') {
                 setCurrentDirectory(newPath);
             } else {
-                handleOutput(`cd: no such file or directory: ${pathArg}`);
+                handleOutput(`cd: pas de tel fichier ou dossier: ${pathArg}`);
             }
             break;
         }
@@ -763,7 +763,7 @@ export default function Terminal({
             if(!checkAuth()) break;
             const filename = args.join(' ');
             if (!filename) {
-                handleOutput(`cat: missing file operand`);
+                handleOutput(`cat: opérande fichier manquant`);
                 break;
             }
             const path = resolvePath(filename);
@@ -773,10 +773,10 @@ export default function Terminal({
                 if (file.type === 'file') {
                     handleOutput(file.content || '');
                 } else {
-                    handleOutput(`cat: ${filename}: Is a directory`);
+                    handleOutput(`cat: ${filename}: Est un dossier`);
                 }
             } else {
-                handleOutput(`cat: ${filename}: No such file or directory`);
+                handleOutput(`cat: ${filename}: Aucun fichier ou dossier de ce type`);
             }
             break;
         }
@@ -789,12 +789,12 @@ export default function Terminal({
             if (!checkAuth()) { setIsProcessing(false); return; }
             const pathArg = args[0];
             if (!pathArg) {
-                handleOutput(`nano: missing file operand`);
+                handleOutput(`nano: opérande fichier manquant`);
             } else {
                 const filePath = resolvePath(pathArg);
                 const file = findNodeByPath(filePath, fileSystem);
                 if (file && file.type === 'folder') {
-                    handleOutput(`nano: cannot edit directory '${pathArg}'`);
+                    handleOutput(`nano: impossible d'éditer le dossier '${pathArg}'`);
                 } else {
                      onOpenFileEditor(filePath, file?.content || '');
                 }
@@ -805,14 +805,14 @@ export default function Terminal({
 
             const fileArg = args[0];
             if (!fileArg) {
-                handleOutput('rm: missing operand');
+                handleOutput('rm: opérande manquant');
                 break;
             }
 
             if (fileArg === '*') {
                 setHistory(prev => [...prev, {
                     type: 'confirmation',
-                    content: 'Are you sure you want to delete all files in this directory? (y/n)',
+                    content: 'Êtes-vous sûr de vouloir supprimer tous les fichiers de ce répertoire ? (y/n)',
                     onConfirm: async (confirmed) => {
                         setHistory(prevHist => [...prevHist, {type: 'command', content: confirmed ? 'y' : 'n', onConfirm: () => {}}]);
                         if (confirmed) {
@@ -836,7 +836,7 @@ export default function Terminal({
                                         const filePath = [...currentDirectory, file.name];
                                         if (file.name.endsWith('.log')) {
                                             filesCleared.push(file);
-                                            newFs = updateNodeByPath(newFs, filePath, (node) => ({ ...node, content: `Log cleared from ${PLAYER_PUBLIC_IP} at ${new Date().toISOString()}\n` }));
+                                            newFs = updateNodeByPath(newFs, filePath, (node) => ({ ...node, content: `Log effacé depuis ${PLAYER_PUBLIC_IP} le ${new Date().toISOString()}\n` }));
                                         } else {
                                             filesToRemove.push(file);
                                             newFs = updateNodeByPath(newFs, filePath, () => null);
@@ -853,22 +853,22 @@ export default function Terminal({
 
                             const newHistoryItems: HistoryItem[] = [];
                             if (filesToRemove.length > 0) {
-                                newHistoryItems.push({ type: 'output', content: `Removed ${filesToRemove.length} file(s).`, onConfirm: () => {} });
-                                addLog(`EVENT: Removed ${filesToRemove.length} files from ${connectedIp}:${'/' + currentDirectory.join('/')}`);
-                                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: ${filesToRemove.length} file(s) removed by user from ${PLAYER_PUBLIC_IP} in /${currentDirectory.join('/')}`);
+                                newHistoryItems.push({ type: 'output', content: `${filesToRemove.length} fichier(s) supprimé(s).`, onConfirm: () => {} });
+                                addLog(`EVENT: ${filesToRemove.length} fichiers supprimés de ${connectedIp}:${'/' + currentDirectory.join('/')}`);
+                                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: ${filesToRemove.length} fichier(s) supprimé(s) par l'utilisateur depuis ${PLAYER_PUBLIC_IP} dans /${currentDirectory.join('/')}`);
                             }
                             if (filesCleared.length > 0) {
-                                newHistoryItems.push({ type: 'output', content: `Cleared content of ${filesCleared.length} log file(s).`, onConfirm: () => {} });
-                                addLog(`EVENT: Cleared ${filesCleared.length} logs on ${connectedIp}`);
-                                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: ${filesCleared.length} log file(s) cleared by user from ${PLAYER_PUBLIC_IP}.`);
+                                newHistoryItems.push({ type: 'output', content: `Contenu de ${filesCleared.length} fichier(s) log effacé.`, onConfirm: () => {} });
+                                addLog(`EVENT: ${filesCleared.length} logs effacés sur ${connectedIp}`);
+                                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: ${filesCleared.length} fichier(s) log effacé(s) par l'utilisateur depuis ${PLAYER_PUBLIC_IP}.`);
                             }
                             if (filesToRemove.length === 0 && filesCleared.length === 0) {
-                                newHistoryItems.push({ type: 'output', content: "rm: no removable files found in this directory.", onConfirm: () => {} });
+                                newHistoryItems.push({ type: 'output', content: "rm: aucun fichier amovible trouvé dans ce répertoire.", onConfirm: () => {} });
                             }
                             setHistory(prev => [...prev, ...newHistoryItems]);
 
                         } else {
-                            setHistory(prev => [...prev, { type: 'output', content: 'Operation cancelled.', onConfirm: () => {} }]);
+                            setHistory(prev => [...prev, { type: 'output', content: 'Opération annulée.', onConfirm: () => {} }]);
                         }
                         setIsProcessing(false);
                     }
@@ -882,16 +882,16 @@ export default function Terminal({
             const fileNode = findNodeByPath(filePath, fileSystem);
 
             if (!fileNode) {
-                handleOutput(`rm: cannot remove '${fileArg}': No such file or directory`);
+                handleOutput(`rm: impossible de supprimer '${fileArg}': Aucun fichier ou dossier de ce type`);
                 break;
             }
             if (fileNode.type === 'folder') {
-                handleOutput(`rm: cannot remove '${fileArg}': Is a directory. Use rmdir (not implemented).`);
+                handleOutput(`rm: impossible de supprimer '${fileArg}': Est un dossier. Utilisez rmdir (non implémenté).`);
                 break;
             }
             
             if (fileNode.name === 'XserverOS.sys') {
-                handleOutput(`WARNING: This is a critical system file. Deleting it will cause system instability.`);
+                handleOutput(`ATTENTION: Ceci est un fichier système critique. Le supprimer causera une instabilité du système.`);
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
                 setNetwork(currentNetwork => {
@@ -907,26 +907,26 @@ export default function Terminal({
                 if (connectedIp === '127.0.0.1') {
                    setTimeout(() => {
                        saveGameState();
-                       addLog(`CRITICAL: XserverOS.sys deleted from local machine. Next reboot will fail.`);
-                       handleOutput('Deletion of XserverOS.sys complete.');
+                       addLog(`CRITIQUE: XserverOS.sys supprimé de la machine locale. Le prochain redémarrage échouera.`);
+                       handleOutput('Suppression de XserverOS.sys terminée.');
                     }, 100);
                 } else {
-                    addRemoteLog(`CRITICAL: XserverOS.sys not found. System crashing.`);
+                    addRemoteLog(`CRITIQUE: XserverOS.sys non trouvé. Crash du système.`);
                     disconnect(true);
                 }
                 break;
             }
 
             if (fileNode.isSystemFile) {
-                handleOutput(`rm: cannot remove '${fileArg}': Permission denied`);
+                handleOutput(`rm: impossible de supprimer '${fileArg}': Permission refusée`);
                 if (connectedIp !== '127.0.0.1') {
-                    addRemoteLog(`SECURITY: Denied attempt to remove system file ${fileNode.name} from ${PLAYER_PUBLIC_IP}.`);
+                    addRemoteLog(`SÉCURITÉ: Tentative de suppression du fichier système ${fileNode.name} depuis ${PLAYER_PUBLIC_IP} refusée.`);
                 }
                 break;
             }
             
             const isAccessLog = fileNode.name.endsWith('.log');
-            const updater = isAccessLog ? (node: FileSystemNode) => ({ ...node, content: `Log cleared from ${PLAYER_PUBLIC_IP} at ${new Date().toISOString()}\n` }) : () => null;
+            const updater = isAccessLog ? (node: FileSystemNode) => ({ ...node, content: `Log effacé depuis ${PLAYER_PUBLIC_IP} le ${new Date().toISOString()}\n` }) : () => null;
 
             setNetwork(currentNetwork => currentNetwork.map(pc => {
                 if (pc.ip === connectedIp) {
@@ -937,13 +937,13 @@ export default function Terminal({
             }));
 
             if(isAccessLog) {
-                handleOutput(`Cleared content of '${fileArg}'`);
-                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: Log file '${fileArg}' cleared by user from ${PLAYER_PUBLIC_IP}.`);
-                addLog(`EVENT: Log file '${fileArg}' on ${connectedIp} cleared.`);
+                handleOutput(`Contenu de '${fileArg}' effacé`);
+                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: Fichier log '${fileArg}' effacé par l'utilisateur depuis ${PLAYER_PUBLIC_IP}.`);
+                addLog(`EVENT: Fichier log '${fileArg}' sur ${connectedIp} effacé.`);
             } else {
-                handleOutput(`Removed '${fileArg}'`);
-                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: File removed by user from ${PLAYER_PUBLIC_IP}: ${filePath.join('/')}`);
-                addLog(`EVENT: File '${fileArg}' on ${connectedIp} removed.`);
+                handleOutput(`'${fileArg}' supprimé`);
+                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: Fichier supprimé par l'utilisateur depuis ${PLAYER_PUBLIC_IP}: ${filePath.join('/')}`);
+                addLog(`EVENT: Fichier '${fileArg}' sur ${connectedIp} supprimé.`);
             }
 
             break;
@@ -956,7 +956,7 @@ export default function Terminal({
             
             const [sourceArg, destArg] = args;
             if(!sourceArg || !destArg) {
-                handleOutput(`${command}: missing file operand`);
+                handleOutput(`${command}: opérande fichier manquant`);
                 break;
             }
             
@@ -966,7 +966,7 @@ export default function Terminal({
                 const sourceNode = findNodeByPath(sourcePath, fileSystem);
                 
                 if (!sourceNode || sourceNode.type !== 'folder' || !sourceNode.children) {
-                    handleOutput(`${command}: cannot stat '${sourceArg}': No such file or directory`);
+                    handleOutput(`${command}: impossible d'obtenir des informations sur '${sourceArg}': Aucun fichier ou dossier de ce type`);
                     break;
                 }
 
@@ -984,7 +984,7 @@ export default function Terminal({
                 const destNodeOnDestPC = findNodeByPath(destPath, destPC.fileSystem);
 
                 if (!destNodeOnDestPC || destNodeOnDestPC.type !== 'folder') {
-                    handleOutput(`${command}: destination '${destArg}' is not a directory`);
+                    handleOutput(`${command}: la destination '${destArg}' n'est pas un répertoire`);
                     break;
                 }
 
@@ -1010,8 +1010,8 @@ export default function Terminal({
                     return pc;
                 }));
 
-                handleOutput(`Copied ${copiedFiles.length} files to ${destArg}`);
-                addLog(`EVENT: Copied ${copiedFiles.length} files from ${connectedIp}:${sourceDirArg} to local:${destArg}`);
+                handleOutput(`${copiedFiles.length} fichiers copiés vers ${destArg}`);
+                addLog(`EVENT: ${copiedFiles.length} fichiers copiés de ${connectedIp}:${sourceDirArg} vers local:${destArg}`);
                 
                 break;
             }
@@ -1020,11 +1020,11 @@ export default function Terminal({
             const sourceNode = findNodeByPath(sourcePath, fileSystem);
 
             if(!sourceNode) {
-                handleOutput(`${command}: cannot stat '${sourceArg}': No such file or directory`);
+                handleOutput(`${command}: impossible d'obtenir des informations sur '${sourceArg}': Aucun fichier ou dossier de ce type`);
                 break;
             }
             if(sourceNode.type === 'folder') {
-                handleOutput(`${command}: cannot copy directories yet.`);
+                handleOutput(`${command}: impossible de copier des répertoires pour l'instant.`);
                 break;
             }
 
@@ -1045,7 +1045,7 @@ export default function Terminal({
             
             const destParentNode = findNodeByPath(finalDestDirPath, fileSystem);
             if (!destParentNode || destParentNode.type !== 'folder') {
-                 handleOutput(`${command}: cannot create regular file '${destArg}': No such file or directory`);
+                 handleOutput(`${command}: impossible de créer le fichier normal '${destArg}': Aucun fichier ou dossier de ce type`);
                  break;
             }
             
@@ -1053,7 +1053,7 @@ export default function Terminal({
                 if (destNode && destNode.type === 'file') {
                     // This is an overwrite, which addNodeByPath handles
                 } else if (findNodeByPath([...finalDestDirPath, newFileName], fileSystem)) {
-                     handleOutput(`${command}: cannot create file '${destArg}': File exists`);
+                     handleOutput(`${command}: impossible de créer le fichier '${destArg}': Le fichier existe`);
                      break;
                 }
             }
@@ -1086,18 +1086,18 @@ export default function Terminal({
             const targetIp = args[0];
 
             if (!targetIp) {
-                handleOutput('connect: missing target IP address');
+                handleOutput('connect: adresse IP cible manquante');
                 break;
             }
 
             const targetPC = network.find(pc => pc.ip === targetIp);
             
             if (!targetPC) {
-                handleOutput(`connect: unable to resolve host ${targetIp}`);
+                handleOutput(`connect: impossible de résoudre l'hôte ${targetIp}`);
                 break;
             }
              if (targetPC.ip === connectedIp) {
-                handleOutput(`connect: already connected to ${targetIp}`);
+                handleOutput(`connect: déjà connecté à ${targetIp}`);
                 break;
             }
             
@@ -1105,25 +1105,25 @@ export default function Terminal({
             setIsAuthenticated(false);
             setCurrentDirectory([]);
             onDiscovered(targetPC.id);
-            handleOutput(`Connection established to ${targetPC.name} (${targetPC.ip}).`);
-            handleOutput(`Use 'login' to authenticate.`);
-            addLog(`EVENT: Connection established to ${targetPC.name} (${targetPC.ip})`);
-            addRemoteLog(`Connection established from ${PLAYER_PUBLIC_IP}.`);
+            handleOutput(`Connexion établie à ${targetPC.name} (${targetPC.ip}).`);
+            handleOutput(`Utilisez 'login' pour vous authentifier.`);
+            addLog(`EVENT: Connexion établie à ${targetPC.name} (${targetPC.ip})`);
+            addRemoteLog(`Connexion établie depuis ${PLAYER_PUBLIC_IP}.`);
             break;
         }
         case 'login': {
             if (connectedIp === '127.0.0.1') {
-                handleOutput('login: cannot login to local machine.');
+                handleOutput('login: impossible de se connecter à la machine locale.');
                 break;
             }
             if (isAuthenticated) {
-                handleOutput('login: already authenticated.');
+                handleOutput('login: déjà authentifié.');
                 break;
             }
 
             const [userArg, passArg] = args;
             if (!userArg || !passArg) {
-                handleOutput('login: missing user or password operand.');
+                handleOutput('login: opérande utilisateur ou mot de passe manquant.');
                 break;
             }
             
@@ -1131,12 +1131,12 @@ export default function Terminal({
             if (targetPC && targetPC.auth.user === userArg && targetPC.auth.pass === passArg) {
                 setIsAuthenticated(true);
                 setCurrentDirectory([]);
-                handleOutput('Authentication successful.');
-                addRemoteLog(`AUTH: Login successful for user ${userArg} from ${PLAYER_PUBLIC_IP}.`);
-                addLog(`AUTH: Authenticated on ${targetPC.ip} as ${userArg}.`);
+                handleOutput('Authentification réussie.');
+                addRemoteLog(`AUTH: Connexion réussie pour l'utilisateur ${userArg} depuis ${PLAYER_PUBLIC_IP}.`);
+                addLog(`AUTH: Authentifié sur ${targetPC.ip} en tant que ${userArg}.`);
             } else {
-                handleOutput('Authentication failed.');
-                addRemoteLog(`AUTH: Failed login attempt with user ${userArg} from ${PLAYER_PUBLIC_IP}.`);
+                handleOutput('Authentification échouée.');
+                addRemoteLog(`AUTH: Tentative de connexion échouée pour l'utilisateur ${userArg} depuis ${PLAYER_PUBLIC_IP}.`);
             }
             break;
         }
@@ -1147,38 +1147,38 @@ export default function Terminal({
         }
         case 'reboot': {
             if (connectedIp === '127.0.0.1') {
-                 handleOutput('System is going down for reboot NOW!');
-                 addLog(`CRITICAL: Local system reboot initiated.`);
+                 handleOutput('Le système va redémarrer MAINTENANT !');
+                 addLog(`CRITIQUE: Redémarrage du système local initié.`);
                  setTimeout(onReboot, 1000);
             } else {
-                handleOutput(`Rebooting remote system...`);
-                addRemoteLog(`COMMAND: Reboot initiated from ${PLAYER_PUBLIC_IP}.`);
+                handleOutput(`Redémarrage du système distant...`);
+                addRemoteLog(`COMMANDE: Redémarrage initié depuis ${PLAYER_PUBLIC_IP}.`);
                 disconnect();
             }
             break;
         }
         case 'danger':
-            handleOutput(`Current danger level: ${dangerLevel}%`);
+            handleOutput(`Niveau de danger actuel : ${dangerLevel}%`);
             break;
         case 'save': {
             if (connectedIp !== '127.0.0.1') {
-                handleOutput('save: can only be run on local machine.');
+                handleOutput('save: ne peut être exécuté que sur la machine locale.');
                 break;
             }
             saveGameState();
-            handleOutput('Game state saved.');
+            handleOutput('État du jeu sauvegardé.');
             break;
         }
         case 'reset-game': {
             if (connectedIp !== '127.0.0.1') {
-                handleOutput('reset-game: can only be run on local machine.');
+                handleOutput('reset-game: ne peut être exécuté que sur la machine locale.');
                 break;
             }
             if (args[0] === '--confirm') {
                 resetGame();
-                handleOutput('Save data deleted. System will reboot.');
+                handleOutput('Données de sauvegarde supprimées. Le système va redémarrer.');
             } else {
-                handleOutput('This is a destructive action. Type `reset-game --confirm` to proceed.');
+                handleOutput('Ceci est une action destructive. Tapez `reset-game --confirm` pour continuer.');
             }
             break;
         }
@@ -1186,18 +1186,18 @@ export default function Terminal({
             const solution = args[0];
             const targetPC = getCurrentPc();
             if (connectedIp === '127.0.0.1' || !targetPC) {
-                handleOutput('solve: Must be connected to a remote system.');
+                handleOutput('solve : Doit être connecté à un système distant.');
             } else if (!targetPC.firewall.enabled) {
-                handleOutput('Firewall is not active.');
+                handleOutput('Le pare-feu n\'est pas actif.');
             } else {
                 checkAndTriggerTrace();
                 if (targetPC.firewall.solution === solution) {
                     setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
-                    handleOutput('Firewall disabled.');
-                    addRemoteLog(`Firewall disabled from ${PLAYER_PUBLIC_IP} with solution: ${solution}.`);
+                    handleOutput('Pare-feu désactivé.');
+                    addRemoteLog(`Pare-feu désactivé depuis ${PLAYER_PUBLIC_IP} avec la solution : ${solution}.`);
                 } else {
-                     handleOutput('Incorrect solution.');
-                     addRemoteLog(`Incorrect firewall solution '${solution}' attempt from ${PLAYER_PUBLIC_IP}.`);
+                     handleOutput('Solution incorrecte.');
+                     addRemoteLog(`Tentative de solution de pare-feu incorrecte '${solution}' depuis ${PLAYER_PUBLIC_IP}.`);
                 }
             }
             break;
@@ -1211,7 +1211,7 @@ export default function Terminal({
         case '':
             break;
         default:
-            handleOutput(`command not found: ${command}`);
+            handleOutput(`commande non trouvée: ${command}`);
             break;
     }
 

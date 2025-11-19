@@ -32,13 +32,13 @@ export const supervisorCall1: CallScript = {
     'question-response': {
         message: {
             speaker: 'Superviseur',
-            text: 'Pas de temps à perdre, Omen. Vos instructions sont dans le fichier welcome.txt sur votre bureau. Lisez-le. Terminé.',
+            text: 'Pas de temps à perdre, Omen. Vos instructions sont dans le fichier welcome.txt. Lisez-le. Terminé.',
         },
         consequences: {
             triggerEmail: {
-              sender: 'Supervisor@research-lab.net',
-              subject: 'Call scheduled',
-              body: "Je t'appelle dans 2 minutes. Met-toi en route, vas exécuter Néo. Reste près de ta machine.",
+              sender: 'Superviseur@recherche-lab.net',
+              subject: 'Appel programmé',
+              body: "Je vous rappelle dans 2 minutes. Mettez-vous en route, exécutez Néo. Restez près de votre machine.",
             },
           },
     },
@@ -50,9 +50,9 @@ export const supervisorCall1: CallScript = {
         consequences: {
             danger: 5,
             triggerEmail: {
-              sender: 'Supervisor@research-lab.net',
-              subject: 'Call scheduled',
-              body: "Je t'appelle dans 2 minutes. Met-toi en route, vas exécuter Néo. Reste près de ta machine.",
+              sender: 'Superviseur@recherche-lab.net',
+              subject: 'Appel programmé',
+              body: "Je vous rappelle dans 2 minutes. Mettez-vous en route, exécutez Néo. Restez près de votre machine.",
             },
         },
     },
@@ -63,9 +63,9 @@ export const supervisorCall1: CallScript = {
       },
       consequences: {
         triggerEmail: {
-          sender: 'Supervisor@research-lab.net',
-          subject: 'Call scheduled',
-          body: "Je t'appelle dans 2 minutes. Met-toi en route, vas exécuter Néo. Reste près de ta machine.",
+          sender: 'Superviseur@recherche-lab.net',
+          subject: 'Appel programmé',
+          body: "Je vous rappelle dans 2 minutes. Mettez-vous en route, exécutez Néo. Restez près de votre machine.",
         },
       },
     },

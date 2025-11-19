@@ -20,47 +20,40 @@
             ]
         },
         {
-            "id": "folder-home",
-            "name": "home",
+            "id": "folder-documents",
+            "name": "documents",
             "type": "folder",
             "children": [
-                {
-                    "id": "folder-omen",
-                    "name": "omen",
-                    "type": "folder",
-                    "children": [
-                        {
-                            "id": "folder-notes",
-                            "name": "notes",
-                            "type": "folder",
-                            "children": [
-                                { "id": "file-passwd-hint", "name": "passwd_hint.txt", "type": "file", "content": "The password for the tool server is simple... just count to four." }
-                            ]
-                        },
-                        {
-                            "id": "folder-journal",
-                            "name": "journal",
-                            "type": "folder",
-                            "children": [
-                                { "id": "file-journal-00", "name": "entry_00.txt", "type": "file", "content": "2025-05-10 — Jour 0\n\nNouvel appart, nouveau poste. Je suis curieux et un peu nerveux. J'ai passé 9 ans en Europe, assez pour savoir que les promesses sur le papier ne valent rien. On m'a demandé de venir sans poser de questions. On m'a aussi demandé de vivre près du centre. Ils ont dit : \"plein accès\". Je note tout.\n\n(Alex m'a dit de garder un œil sur mes logs ou mes mails)" }
-                            ]
-                        },
-                        {
-                            "id": "folder-logs-user",
-                            "name": "logs",
-                            "type": "folder",
-                            "children": [
-                                { "id": "file-activity-log", "name": "activity.log", "type": "file", "content": "" }
-                            ]
-                        },
-                         {
-                            "id": "file-welcome",
-                            "name": "welcome.txt",
-                            "type": "file",
-                            "content": "Bienvenue Dr. Omen.\n\nMerci d'avoir rejoint le Centre. Vous serez en résidence pendant 3 mois et travaillerez sur le projet \"NÉO\" (IA expérimentale — usage recherche). Pendant votre séjour : confidentialité totale, accès strict, surveillance automatisée.\n\nTutoriel rapide :\n1. Connectez-vous au 'Tool-Server' avec l'IP `36.30.30.44`. Le mot de passe est un simple décompte.\n2. Une fois authentifié (`login admin <mot_de_passe>`), copiez les outils de piratage sur votre machine locale avec la commande : `cp /bin/* /bin`\n3. Connectez-vous au 'neo-dev-node' (`connect 198.51.100.1`) et suivez les instructions sur le site pour télécharger NÉO.\n\nBon courage.\n— HR"
-                        }
-                    ]
+                 {
+                    "id": "file-welcome",
+                    "name": "welcome.txt",
+                    "type": "file",
+                    "content": "Bienvenue Dr. Omen.\n\nMerci d'avoir rejoint le Centre. Vous serez en résidence pendant 3 mois et travaillerez sur le projet \"NÉO\" (IA expérimentale — usage recherche). Pendant votre séjour : confidentialité totale, accès strict, surveillance automatisée.\n\nTutoriel rapide :\n1. Connectez-vous au 'Tool-Server' avec l'IP `36.30.30.44`.\n2. L'indice pour le mot de passe se trouve dans vos notes.\n3. Une fois authentifié (`login admin <mot_de_passe>`), copiez les outils de piratage sur votre machine avec : `cp /bin/* /bin`\n4. Connectez-vous au 'neo-dev-node' (`connect 198.51.100.1`) et suivez les instructions pour télécharger NÉO.\n\nBon courage.\n— RH"
                 }
+            ]
+        },
+        {
+            "id": "folder-notes",
+            "name": "notes",
+            "type": "folder",
+            "children": [
+                { "id": "file-passwd-hint", "name": "passwd_hint.txt", "type": "file", "content": "Le mot de passe pour le serveur d'outils est simple... il suffit de compter jusqu'à quatre." }
+            ]
+        },
+        {
+            "id": "folder-journal",
+            "name": "journal",
+            "type": "folder",
+            "children": [
+                { "id": "file-journal-00", "name": "entry_00.txt", "type": "file", "content": "2025-05-10 — Jour 0\n\nNouvel appart, nouveau poste. Je suis curieux et un peu nerveux. J'ai passé 9 ans en Europe, assez pour savoir que les promesses sur le papier ne valent rien. On m'a demandé de venir sans poser de questions. On m'a aussi demandé de vivre près du centre. Ils ont dit : \"plein accès\". Je note tout.\n\n(Alex m'a dit de garder un œil sur mes logs ou mes mails)" }
+            ]
+        },
+        {
+            "id": "folder-logs-user",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "file-activity-log", "name": "activity.log", "type": "file", "content": "" }
             ]
         },
         {

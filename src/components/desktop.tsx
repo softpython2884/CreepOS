@@ -8,7 +8,7 @@ import DocumentFolder from '@/components/apps/document-folder';
 import TextEditor from '@/components/apps/text-editor';
 import { cn } from '@/lib/utils';
 import { MusicEvent, AlertEvent } from './audio-manager';
-import { type FileSystemNode, SoundEvent } from '@/lib/network/types';
+import { type FileSystemNode } from '@/lib/network/types';
 import Draggable from 'react-draggable';
 import { network as initialNetwork } from '@/lib/network';
 import { type PC } from '@/lib/network/types';
@@ -61,7 +61,7 @@ type EditingFile = {
 type CallState = 'idle' | 'incoming' | 'active';
 
 interface DesktopProps {
-  onSoundEvent: (event: SoundEvent) => void;
+  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | null) => void;
   onMusicEvent: (event: MusicEvent) => void;
   onAlertEvent: (event: AlertEvent | null) => void;
   username: string;
@@ -138,21 +138,21 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       return savedState.emails;
     }
     return [
-      {
+       {
         id: 'welcome-email',
-        sender: 'HR@research-lab.net',
-        recipient: 'Dr.Omen@research-lab.net',
-        subject: 'Welcome to the Nexus Research Center',
-        body: `Dear Dr. Omen,\n\nOn behalf of the entire Nexus team, we are pleased to welcome you. Your contract is attached to this email.\n\nYour first assignment is to familiarize yourself with the NÉO system. You will find a welcome file in your home directory (/home/omen/welcome.txt) with initial instructions.\n\nWe look forward to your contributions.\n\nBest regards,\nNexus Human Resources`,
+        sender: 'RH@recherche-lab.net',
+        recipient: 'Dr.Omen@recherche-lab.net',
+        subject: 'Bienvenue au Centre de Recherche Nexus',
+        body: `Cher Dr. Omen,\n\nAu nom de toute l'équipe Nexus, nous sommes heureux de vous accueillir. Votre contrat est en pièce jointe de cet e-mail.\n\nVotre première mission est de vous familiariser avec le système NÉO. Vous trouverez un fichier d'accueil dans votre répertoire personnel (/documents/welcome.txt) avec les instructions initiales.\n\nNous attendons avec impatience vos contributions.\n\nCordialement,\nLes Ressources Humaines de Nexus`,
         timestamp: new Date(new Date().getTime() - 10 * 60000).toISOString(),
         folder: 'inbox',
       },
       {
         id: 'supervisor-email-initial',
-        sender: 'Supervisor@research-lab.net',
-        recipient: 'Dr.Omen@research-lab.net',
-        subject: 'Scheduled Call',
-        body: `Omen,\n\nI have scheduled a call with you for today to go over your objectives. Please be ready.\n\n- Supervisor`,
+        sender: 'Superviseur@recherche-lab.net',
+        recipient: 'Dr.Omen@recherche-lab.net',
+        subject: 'Appel programmé',
+        body: `Omen,\n\nJ'ai planifié un appel avec vous aujourd'hui pour passer en revue vos objectifs. Soyez prêt.\n\n- Superviseur`,
         timestamp: new Date(new Date().getTime() - 5 * 60000).toISOString(),
         folder: 'inbox',
       },
@@ -177,7 +177,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         if (playerPcIndex === -1) return currentNetwork;
 
         const playerPc = currentNetwork[playerPcIndex];
-        const logPath = ['home', 'omen', 'logs', 'activity.log'];
+        const logPath = ['logs', 'activity.log'];
 
         const newFileSystem = updateNodeByPath(playerPc.fileSystem, logPath, (node) => {
             if (node.type === 'file') {
@@ -198,7 +198,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => {
     const newEmail: Email = {
       id: `email-${Date.now()}`,
-      recipient: 'Dr.Omen@research-lab.net',
+      recipient: 'Dr.Omen@recherche-lab.net',
       folder: 'inbox',
       timestamp: new Date().toISOString(),
       ...emailDetails,
@@ -208,7 +208,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     onSoundEvent('email');
     setEmailNotification(true);
     setTimeout(() => setEmailNotification(false), 3000);
-    addLog(`EMAIL: Received email from ${emailDetails.sender} with subject "${emailDetails.subject}"`);
+    addLog(`EMAIL: Email reçu de ${emailDetails.sender} avec le sujet "${emailDetails.subject}"`);
   }, [addLog, onSoundEvent]);
 
 
@@ -248,7 +248,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     });
     setCallState('incoming');
     onAlertEvent('ringtone');
-    addLog(`EVENT: Incoming call from ${script.interlocutor}`);
+    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
   }, [callState, onAlertEvent, addLog]);
 
   const answerCall = useCallback(() => {
@@ -269,10 +269,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   }, [callState, onAlertEvent, onSoundEvent]);
 
   const declineCall = useCallback(() => {
-    addLog(`EVENT: Declined call from ${callScriptRef.current?.interlocutor}.`);
-    onAlertEvent('stopRingtone');
+    addLog(`EVENT: Appel refusé de ${callScriptRef.current?.interlocutor}.`);
     endCall();
-  }, [addLog, endCall, onAlertEvent]);
+  }, [addLog, endCall]);
 
   const advanceCall = (choiceId: string) => {
     const script = callScriptRef.current;
@@ -329,7 +328,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const handleStopTrace = useCallback(() => {
     if (!isTraced) return;
     
-    addLog(`INFO: Trace averted. Disconnected from ${traceTarget.name}.`);
+    addLog(`INFO: Trace évitée. Déconnecté de ${traceTarget.name}.`);
     onAlertEvent('stopScream');
     onMusicEvent('calm');
     setIsTraced(false);
@@ -340,7 +339,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
     if (isTraced) return;
     
-    addLog(`DANGER: Trace initiated from ${targetName}. You have ${time} seconds to disconnect.`);
+    addLog(`DANGER: Trace initiée depuis ${targetName}. Vous avez ${time} secondes pour vous déconnecter.`);
     onAlertEvent('scream');
     setIsTraced(true);
     setTraceTimeLeft(time);
@@ -401,7 +400,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
             const newTime = prevTime - 1;
             if (newTime <= 0) {
                 clearInterval(timer);
-                addLog(`CRITICAL: Trace completed. KERNEL DELETED.`);
+                addLog(`CRITICAL: Trace complétée. KERNEL SUPPRIMÉ.`);
 
                 const updatedNetwork = network.map(pc => {
                     if (pc.id === 'player-pc') {
@@ -431,7 +430,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
-    addLog(`SUCCESS: Root access gained on ${ip}`);
+    addLog(`SUCCÈS: Accès root obtenu sur ${ip}`);
     setHackedPcs(prev => new Set(prev).add(pcId));
   }
 
@@ -440,7 +439,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         const newSet = new Set(prev);
         if (!newSet.has(pcId)) {
             newSet.add(pcId);
-            addLog(`INFO: New device discovered and added to Network Map.`);
+            addLog(`INFO: Nouvel appareil découvert et ajouté à la Carte Réseau.`);
         }
         return newSet;
     });
@@ -448,7 +447,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const handleIncreaseDanger = (amount: number) => {
     setDangerLevel(prev => Math.min(prev + amount, 100));
-    addLog(`DANGER: Trace level increased by ${amount}%`);
+    addLog(`DANGER: Niveau de trace augmenté de ${amount}%`);
   }
 
   const handleOpenFileEditor = (path: string[], content: string) => {
@@ -489,7 +488,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
 
   const handleSaveFile = (path: string[], newContent: string) => {
-      addLog(`EVENT: File saved at /${path.join('/')}`);
+      addLog(`EVENT: Fichier sauvegardé à /${path.join('/')}`);
       
       setNetwork(prevNetwork => {
           return prevNetwork.map(pc => {
@@ -508,7 +507,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
                                   : node
                           );
                       } else {
-                          addLog(`EVENT: File created at /${path.join('/')}`);
+                          addLog(`EVENT: Fichier créé à /${path.join('/')}`);
                           const newFile: FileSystemNode = {
                               id: `file-${Date.now()}`,
                               name: fileName,
@@ -546,7 +545,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
     onSoundEvent('email');
     setEmails(prev => [...prev, newEmail]);
-    addLog(`EMAIL: Sent email to ${email.recipient} with subject "${email.subject}"`);
+    addLog(`EMAIL: Email envoyé à ${email.recipient} avec le sujet "${email.subject}"`);
     
     setTimeout(() => {
         setEmailNotification(true);
@@ -606,7 +605,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         } 
     },
     documents: { 
-        title: 'File Explorer', 
+        title: 'Explorateur de Fichiers', 
         component: DocumentFolder, 
         width: 700, 
         height: 500, 
@@ -621,7 +620,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         } 
     },
     logs: {
-      title: 'Live Logs',
+      title: 'Journaux en direct',
       component: LiveLogs,
       width: 600,
       height: 400,
@@ -631,7 +630,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       isSingular: true,
     },
     'network-map': {
-      title: 'Network Map',
+      title: 'Carte Réseau',
       component: NetworkMap,
       width: 800,
       height: 600,
@@ -642,19 +641,19 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       isSingular: true,
     },
     email: {
-      title: 'Email Client',
+      title: 'Client Email',
       component: EmailClient,
       width: 900,
       height: 600,
       props: {
         emails: emails,
         onSend: handleSendEmail,
-        currentUser: 'Dr.Omen@research-lab.net',
+        currentUser: 'Dr.Omen@recherche-lab.net',
       },
       isSingular: true,
     },
     'web-browser': {
-      title: 'Hypnet Explorer',
+      title: 'Explorateur Hypnet',
       component: WebBrowser,
       width: 1024,
       height: 768,
@@ -664,7 +663,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       isSingular: true,
     },
     'media-player': {
-      title: 'Media Player',
+      title: 'Lecteur Média',
       component: MediaPlayer,
       width: 450,
       height: 250,
@@ -740,7 +739,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
               <div className="flex items-center gap-4 p-4 bg-destructive/80 border-2 border-destructive-foreground rounded-lg shadow-2xl shadow-destructive/20">
                   <AlertTriangle className="h-16 w-16" />
                   <div>
-                      <h2 className="text-2xl font-bold tracking-widest">TRACE DETECTED</h2>
+                      <h2 className="text-2xl font-bold tracking-widest">TRACE DÉTECTÉE</h2>
                       <p className="text-5xl font-bold text-center mt-1">{formatTime(traceTimeLeft)}</p>
                   </div>
               </div>
@@ -786,7 +785,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
               >
                 <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
                     <Window 
-                      title={app.appId === 'media-player' ? app.props?.fileName || 'Media Player' : currentAppConfig.title} 
+                      title={app.appId === 'media-player' ? app.props?.fileName || 'Lecteur Média' : currentAppConfig.title} 
                       onClose={() => closeApp(app.instanceId)} 
                       width={currentAppConfig.width}
                       height={currentAppConfig.height}

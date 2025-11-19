@@ -45,7 +45,7 @@ export const directorCall: CallScript = {
           nextNode: 'connection-lost',
           consequences: {
             triggerEmail: {
-              sender: 'HR@research-lab.net',
+              sender: 'RH@recherche-lab.net',
               subject: 'Accueil & Contrat',
               body: "Veuillez trouver ci-joint votre contrat d'affectation au projet NÉO.\n\n<a href='/welcome.html' target='_blank' rel='noopener noreferrer' style='color: hsl(var(--accent)); text-decoration: underline;'>Consulter le contrat</a>",
             },
