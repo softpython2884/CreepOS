@@ -590,7 +590,8 @@ export default function Terminal({
        
         switch(cmdName) {
             case 'scan':
-                 const scanTarget = getCurrentPc();
+                if(!checkAuth()) { setIsProcessing(false); return; }
+                const scanTarget = getCurrentPc();
                 if (scanTarget && scanTarget.links) {
                     const linkedPcs = scanTarget.links.map(linkId => network.find(p => p.id === linkId)).filter(Boolean) as PC[];
                     if (linkedPcs.length > 0) {
