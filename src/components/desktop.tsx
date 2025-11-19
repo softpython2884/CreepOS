@@ -137,16 +137,25 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
 
   const [emails, setEmails] = useState<Email[]>([
-      {
-        id: 'welcome-email',
-        sender: 'NEO-SYSTEM',
-        recipient: username,
-        subject: 'Welcome, Operator',
-        body: 'Welcome to the SubSystem OS, Operator. Your terminal is now active. All system communications will be directed here. Await your first directive.\n\n- Néo',
-        timestamp: new Date().toISOString(),
-        folder: 'inbox',
-      },
-  ]);
+    {
+      id: 'welcome-email',
+      sender: 'HR@research-lab.net',
+      recipient: 'Dr.Omen@research-lab.net',
+      subject: 'Welcome to the Nexus Research Center',
+      body: `Dear Dr. Omen,\n\nOn behalf of the entire Nexus team, we are pleased to welcome you. Your contract is attached to this email.\n\nYour first assignment is to familiarize yourself with the NÉO system. You will find a welcome file in your home directory (/home/omen/welcome.txt) with initial instructions.\n\nWe look forward to your contributions.\n\nBest regards,\nNexus Human Resources`,
+      timestamp: new Date(new Date().getTime() - 10 * 60000).toISOString(),
+      folder: 'inbox',
+    },
+    {
+      id: 'supervisor-email',
+      sender: 'Supervisor@research-lab.net',
+      recipient: 'Dr.Omen@research-lab.net',
+      subject: 'Scheduled Call',
+      body: `Omen,\n\nI have scheduled a call with you for today to go over your objectives. Please be ready.\n\n- Supervisor`,
+      timestamp: new Date(new Date().getTime() - 5 * 60000).toISOString(),
+      folder: 'inbox',
+    },
+]);
 
   const gameState = { network, hackedPcs, machineState: 'desktop' };
   
@@ -166,7 +175,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         if (playerPcIndex === -1) return currentNetwork;
 
         const playerPc = currentNetwork[playerPcIndex];
-        const logPath = ['home', 'logs', 'activity.log'];
+        const logPath = ['home', 'omen', 'logs', 'activity.log'];
 
         const newFileSystem = updateNodeByPath(playerPc.fileSystem, logPath, (node) => {
             if (node.type === 'file') {
@@ -217,6 +226,13 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if (!script || callState !== 'incoming') return;
     
     onAlertEvent('stopRingtone');
+    
+    if (isTraced) {
+      onMusicEvent('scream');
+    } else {
+      onMusicEvent('calm');
+    }
+
     const startNode = script.nodes[script.startNode];
     
     setActiveCall(prev => prev ? ({
@@ -226,12 +242,17 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     }) : null);
     setCallState('active');
     onSoundEvent('click');
-  }, [callState, onAlertEvent, onSoundEvent]);
+  }, [callState, onAlertEvent, onSoundEvent, onMusicEvent, isTraced]);
 
   const declineCall = useCallback(() => {
     addLog(`EVENT: Declined call from ${callScriptRef.current?.interlocutor}.`);
+    if (isTraced) {
+      onMusicEvent('scream');
+    } else {
+      onMusicEvent('calm');
+    }
     endCall(false);
-  }, [addLog, endCall]);
+  }, [addLog, endCall, isTraced, onMusicEvent]);
 
   const advanceCall = (choiceId: string) => {
     const script = callScriptRef.current;
@@ -588,7 +609,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       props: {
         emails: emails,
         onSend: handleSendEmail,
-        currentUser: username,
+        currentUser: 'Dr.Omen@research-lab.net',
       },
       isSingular: true,
     },

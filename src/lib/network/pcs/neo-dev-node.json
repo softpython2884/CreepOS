@@ -1,0 +1,51 @@
+
+{
+    "id": "neo-dev-node",
+    "name": "neo-dev-node",
+    "ip": "198.51.100.1",
+    "type": "WebServer",
+    "domain": "neo.nexus",
+    "websiteContent": "<html><head><title>NEXUS - NÉO Download</title><style>body{background-color:#0A0A10;color:#E0E0E0;font-family:monospace;text-align:center;padding-top:15%}h1{color:#00FF7F;text-shadow:0 0 8px #00FF7F}p{font-size:1.2em}code{background:#1A1A2A;padding:4px;border:1px solid #00FF7F;border-radius:4px}</style></head><body><h1>NÉO - Experimental AI Framework</h1><p>Internal Development Node</p><br/><p>To download the latest build, use the following command in your terminal:</p><p><code>cp /bin/neo.bin /home/omen/bin</code></p></body></html>",
+    "links": ["corporate-proxy"],
+    "auth": {
+        "user": "dev",
+        "pass": "n3xu5_d3v_@cc3s5"
+    },
+    "firewall": {
+        "enabled": true,
+        "complexity": 7,
+        "solution": "FRAMEWORK_KEY"
+    },
+    "proxy": {
+        "enabled": true,
+        "level": 6
+    },
+    "isDangerous": true,
+    "traceTime": 20,
+    "requiredPorts": 3,
+    "traceability": 40,
+    "ports": [
+        { "port": 80, "service": "HTTP", "isOpen": true },
+        { "port": 22, "service": "SSH", "isOpen": false },
+        { "port": 21, "service": "FTP", "isOpen": false },
+        { "port": 3306, "service": "SQL", "isOpen": false }
+    ],
+    "fileSystem": [
+        {
+            "id": "dev-node-bin",
+            "name": "bin",
+            "type": "folder",
+            "children": [
+                { "id": "file-neo-bin", "name": "neo.bin", "type": "file", "content": "NÉO AI Core executable. Triggers narrative events.", "isSystemFile": true }
+            ]
+        },
+        {
+            "id": "dev-node-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "file-dev-node-access", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
+            ]
+        }
+    ]
+}

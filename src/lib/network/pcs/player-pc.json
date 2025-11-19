@@ -4,8 +4,8 @@
     "name": "Omen",
     "ip": "127.0.0.1",
     "type": "Desktop",
-    "links": ["holberton-gateway"],
     "auth": { "user": "Operator", "pass": "" },
+    "links": ["holberton-gateway"],
     "firewall": { "enabled": false, "complexity": 0 },
     "proxy": { "enabled": false, "level": 0 },
     "traceTime": 0,
@@ -18,18 +18,24 @@
             "type": "folder",
             "children": [
                 {
-                    "id": "folder-user",
-                    "name": "Operator",
+                    "id": "folder-omen",
+                    "name": "omen",
                     "type": "folder",
                     "children": [
                         {
-                            "id": "folder-docs",
-                            "name": "docs",
+                            "id": "folder-notes",
+                            "name": "notes",
                             "type": "folder",
                             "children": [
-                                { "id": "file-notes", "name": "notes.txt", "type": "file", "content": "My personal notes..." },
-                                { "id": "file-devyourself", "name": "devyourself.pm3", "type": "file", "content": "/devyourself.mp3" },
-                                { "id": "file-codeyourself", "name": "codeyourself.pm3", "type": "file", "content": "/codeyourself.mp3" }
+                                { "id": "file-passwd-hint", "name": "passwd_hint.txt", "type": "file", "content": "The password for the tool server is simple... just count to four." }
+                            ]
+                        },
+                        {
+                            "id": "folder-journal",
+                            "name": "journal",
+                            "type": "folder",
+                            "children": [
+                                { "id": "file-journal-00", "name": "entry_00.txt", "type": "file", "content": "2025-05-10 — Jour 0\n\nNouvel appart, nouveau poste. Je suis curieux et un peu nerveux. J'ai passé 9 ans en Europe, assez pour savoir que les promesses sur le papier ne valent rien. On m'a demandé de venir sans poser de questions. On m'a aussi demandé de vivre près du centre. Ils ont dit : \"plein accès\". Je note tout.\n\n(Alex m'a dit de garder un œil sur mes logs ou mes mails)" }
                             ]
                         },
                         {
@@ -39,6 +45,12 @@
                             "children": [
                                 { "id": "file-activity-log", "name": "activity.log", "type": "file", "content": "" }
                             ]
+                        },
+                         {
+                            "id": "file-welcome",
+                            "name": "welcome.txt",
+                            "type": "file",
+                            "content": "Bienvenue Dr. Omen.\n\nMerci d'avoir rejoint le Centre. Vous serez en résidence pendant 3 mois et travaillerez sur le projet \"NÉO\" (IA expérimentale — usage recherche). Pendant votre séjour : confidentialité totale, accès strict, surveillance automatisée.\n\nTutoriel rapide :\n1. Scannez le réseau (`scan`) pour trouver des machines.\n2. Connectez-vous (`connect <ip>`) au 'Tool-Server'.\n3. Une fois connecté, copiez les outils de piratage dans votre dossier `bin` local avec : `cp /bin/* /home/omen/bin`\n4. Connectez-vous au 'neo-dev-node' (`connect 198.51.100.1`) et suivez les instructions pour télécharger NÉO.\n\nBon courage.\n— HR"
                         }
                     ]
                 }
