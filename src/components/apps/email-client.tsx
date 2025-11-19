@@ -32,11 +32,6 @@ export default function EmailClient({ emails, onSend, currentUser }: EmailClient
   const [currentView, setCurrentView] = useState<View>('list');
   const [currentFolder, setCurrentFolder] = useState<'inbox' | 'sent'>('inbox');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
-  
-  // State for composing an email
-  const [composeRecipient, setComposeRecipient] = useState('');
-  const [composeSubject, setComposeSubject] = useState('');
-  const [composeBody, setComposeBody] = useState('');
 
   const filteredEmails = useMemo(() => {
     return emails
@@ -54,22 +49,19 @@ export default function EmailClient({ emails, onSend, currentUser }: EmailClient
   };
   
   const handleCompose = () => {
-    setComposeRecipient('');
-    setComposeSubject('');
-    setComposeBody('');
     setCurrentView('compose');
   };
   
-  const handleSend = () => {
-    if (!composeRecipient || !composeSubject || !composeBody) {
+  const handleSend = (recipient: string, subject: string, body: string) => {
+    if (!recipient || !subject || !body) {
       // Maybe show a toast or an error message here
       return;
     }
     onSend({
       sender: currentUser,
-      recipient: composeRecipient,
-      subject: composeSubject,
-      body: composeBody,
+      recipient: recipient,
+      subject: subject,
+      body: body,
     });
     setCurrentView('list');
     setCurrentFolder('sent');
@@ -137,40 +129,47 @@ export default function EmailClient({ emails, onSend, currentUser }: EmailClient
     </div>
   );
 
-  const ComposeView = () => (
-    <div className='h-full flex flex-col'>
-      <div className="p-2 border-b flex justify-between items-center">
-        <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentView('list')}>
-              <CornerUpLeft size={16} />
-            </Button>
-            <h2 className="text-lg font-semibold">Nouveau Message</h2>
+  const ComposeView = () => {
+    const [composeRecipient, setComposeRecipient] = useState('');
+    const [composeSubject, setComposeSubject] = useState('');
+    const [composeBody, setComposeBody] = useState('');
+
+    return (
+        <div className='h-full flex flex-col'>
+        <div className="p-2 border-b flex justify-between items-center">
+            <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentView('list')}>
+                <CornerUpLeft size={16} />
+                </Button>
+                <h2 className="text-lg font-semibold">Nouveau Message</h2>
+            </div>
+            <Button size="sm" onClick={() => handleSend(composeRecipient, composeSubject, composeBody)}><Send className="mr-2 h-4 w-4" />Envoyer</Button>
         </div>
-        <Button size="sm" onClick={handleSend}><Send className="mr-2 h-4 w-4" />Envoyer</Button>
-      </div>
-      <div className="p-4 flex flex-col gap-4">
-        <Input 
-          placeholder="Destinataire" 
-          value={composeRecipient}
-          onChange={(e) => setComposeRecipient(e.target.value)}
-          className="bg-secondary border-input"
-        />
-        <Input 
-          placeholder="Sujet" 
-          value={composeSubject}
-          onChange={(e) => setComposeSubject(e.target.value)}
-          className="bg-secondary border-input"
-        />
-        <Separator />
-        <Textarea 
-          placeholder="Votre message..." 
-          value={composeBody}
-          onChange={(e) => setComposeBody(e.target.value)}
-          className="flex-grow bg-secondary border-input resize-none h-[350px]"
-        />
-      </div>
-    </div>
-  );
+        <div className="p-4 flex flex-col gap-4">
+            <Input 
+            placeholder="Destinataire" 
+            value={composeRecipient}
+            onChange={(e) => setComposeRecipient(e.target.value)}
+            className="bg-secondary border-input"
+            autoFocus
+            />
+            <Input 
+            placeholder="Sujet" 
+            value={composeSubject}
+            onChange={(e) => setComposeSubject(e.target.value)}
+            className="bg-secondary border-input"
+            />
+            <Separator />
+            <Textarea 
+            placeholder="Votre message..." 
+            value={composeBody}
+            onChange={(e) => setComposeBody(e.target.value)}
+            className="flex-grow bg-secondary border-input resize-none h-[350px]"
+            />
+        </div>
+        </div>
+    );
+  };
 
   const renderView = () => {
     switch (currentView) {
