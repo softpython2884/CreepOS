@@ -138,12 +138,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       return savedState.emails;
     }
     return [
-       {
+      {
         id: 'welcome-email',
         sender: 'RH@recherche-lab.net',
         recipient: 'Dr.Omen@recherche-lab.net',
-        subject: 'Bienvenue au Centre de Recherche Nexus',
-        body: `Cher Dr. Omen,\n\nAu nom de toute l'équipe Nexus, nous sommes heureux de vous accueillir. Votre contrat est en pièce jointe de cet e-mail.\n\nVotre première mission est de vous familiariser avec le système NÉO. Vous trouverez un fichier d'accueil dans votre répertoire personnel (/documents/welcome.txt) avec les instructions initiales.\n\nNous attendons avec impatience vos contributions.\n\nCordialement,\nLes Ressources Humaines de Nexus`,
+        subject: 'Bienvenue et instructions',
+        body: `Cher Dr. Omen,\n\nAu nom de toute l'équipe Nexus, nous sommes heureux de vous accueillir.\n\nVotre première mission est de vous familiariser avec le système NÉO. Voici vos identifiants pour accéder au portail de téléchargement :\n\nSite : neo.nexus (accessible via le navigateur Hypnet)\nUtilisateur : dromen\nMot de passe : nexus-init-key\n\nConsultez le portail pour obtenir les instructions de déploiement de NÉO. Un superviseur vous contactera sous peu pour un briefing.\n\nCordialement,\nLes Ressources Humaines de Nexus`,
         timestamp: new Date(new Date().getTime() - 10 * 60000).toISOString(),
         folder: 'inbox',
       },

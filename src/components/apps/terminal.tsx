@@ -528,7 +528,7 @@ export default function Terminal({
         addRemoteLog(`Port ${portNumber} (${port.service}) ouvert depuis ${PLAYER_PUBLIC_IP}.`);
     };
 
-    if (command.toLowerCase() === 'neo.bin') {
+    if (command.toLowerCase() === 'neo') {
         await runProgressBar(5000, 'Installation de NÉO...');
         handleOutput('Installation terminée. Initialisation...');
         onNeoExecute();
@@ -1210,7 +1210,7 @@ export default function Terminal({
     // Command completion
     if (parts.length === 1) {
         const executables = allExecutables.map(f => f.name.split('.')[0].toLowerCase());
-        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'rm', 'mv', 'cp', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan', 'nano'];
+        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'rm', 'mv', 'cp', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan', 'nano', 'neo'];
         const allCommands = [...new Set([...mainCommands, ...executables])];
         const possibilities = allCommands.filter(cmd => cmd.startsWith(lastPart));
 

@@ -3,7 +3,7 @@
     "name": "Tool-Server",
     "ip": "36.30.30.44",
     "type": "Server",
-    "links": ["holberton-gateway"],
+    "links": [],
     "auth": { "user": "admin", "pass": "1234" },
     "firewall": { "enabled": false, "complexity": 0 },
     "proxy": { "enabled": false, "level": 0 },

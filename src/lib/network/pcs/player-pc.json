@@ -28,7 +28,7 @@
                     "id": "file-welcome",
                     "name": "welcome.txt",
                     "type": "file",
-                    "content": "Bienvenue Dr. Omen.\n\nMerci d'avoir rejoint le Centre. Vous serez en résidence pendant 3 mois et travaillerez sur le projet \"NÉO\" (IA expérimentale — usage recherche). Pendant votre séjour : confidentialité totale, accès strict, surveillance automatisée.\n\nTutoriel rapide :\n1. Connectez-vous au 'Tool-Server' avec l'IP `36.30.30.44`.\n2. L'indice pour le mot de passe se trouve dans vos notes (`cat /notes/passwd_hint.txt`).\n3. Une fois authentifié (`login admin <mot_de_passe>`), copiez les outils de piratage sur votre machine avec : `cp /bin/* local:/bin/`\n4. Connectez-vous au 'neo-dev-node' (`connect 198.51.100.1`) et suivez les instructions pour télécharger NÉO.\n\nBon courage.\n— RH"
+                    "content": "Bienvenue Dr. Omen,\n\nVotre première tâche est d'initialiser le framework de l'IA NÉO. Pour ce faire, vous devez télécharger le paquet principal depuis le portail de développement sécurisé.\n\n1. Consultez vos e-mails. Vous avez dû recevoir vos identifiants pour le portail.\n\n2. Ouvrez le navigateur Hypnet et rendez-vous sur le site : neo.nexus\n\n3. Authentifiez-vous sur le portail pour obtenir les instructions de téléchargement.\n\n4. Suivez les instructions du portail pour télécharger et lancer NÉO via le terminal.\n\nBon courage.\n— RH"
                 }
             ]
         },

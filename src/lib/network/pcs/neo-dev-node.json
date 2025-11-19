@@ -1,42 +1,36 @@
-
 {
     "id": "neo-dev-node",
     "name": "neo-dev-node",
     "ip": "198.51.100.1",
     "type": "WebServer",
     "domain": "neo.nexus",
-    "websiteContent": "<html><head><title>NEXUS - NÉO Download</title><style>body{background-color:#0A0A10;color:#E0E0E0;font-family:monospace;text-align:center;padding-top:15%}h1{color:#00FF7F;text-shadow:0 0 8px #00FF7F}p{font-size:1.2em}code{background:#1A1A2A;padding:4px;border:1px solid #00FF7F;border-radius:4px}</style></head><body><h1>NÉO - Experimental AI Framework</h1><p>Internal Development Node</p><br/><p>To download the latest build, use the following command in your terminal:</p><p><code>cp /bin/neo.bin /home/omen/bin</code></p></body></html>",
+    "websiteContent": "<html><head><title>NEXUS - NÉO Download</title><style>body{background-color:#0A0A10;color:#E0E0E0;font-family:monospace;padding:2rem;text-align:center;}h1{color:#00FF7F;text-shadow:0 0 8px #00FF7F}div{background:#1A1A2A;padding:2rem;border:1px solid #00FF7F;border-radius:4px;max-width:600px;margin:2rem auto;}code{display:block;background:#000;padding:1rem;margin-top:1rem;border-radius:4px;text-align:left;}input{background:#111;border:1px solid #00FF7F;color:#E0E0E0;padding:0.5rem;margin-right:0.5rem;}button{background:#00FF7F;border:none;color:#0A0A10;padding:0.5rem 1rem;cursor:pointer;font-weight:bold;}</style></head><body><h1>NÉO - Portail de Déploiement</h1><div id='login-container'><h2>Authentification Requise</h2><p>Veuillez entrer vos identifiants Nexus.</p><input id='user' placeholder='Utilisateur...'><input id='pass' type='password' placeholder='Mot de passe...'><button onclick='login()'>Connexion</button><p id='error' style='color:red;display:none;margin-top:1rem;'>Identifiants incorrects.</p></div><div id='content-container' style='display:none;'><h2>Téléchargement de NÉO</h2><p>Authentification réussie. Utilisez un terminal pour vous connecter au serveur et télécharger le paquet.</p><code><strong># Se connecter au serveur de déploiement</strong><br/>connect 198.51.100.1<br/><br/><strong># S'authentifier</strong><br/>login dev n3xu5_d3v_@cc3s5<br/><br/><strong># Copier le paquet NÉO sur votre machine locale</strong><br/>cp bin/lasted/neo.bin local:/bin/<br/><br/><strong># Se déconnecter et lancer l'initialisation</strong><br/>disconnect<br/>neo</code></div><script>function login(){const u=document.getElementById('user').value;const p=document.getElementById('pass').value;if(u==='dromen'&&p==='nexus-init-key'){document.getElementById('login-container').style.display='none';document.getElementById('content-container').style.display='block';}else{document.getElementById('error').style.display='block';}}</script></body></html>",
     "links": ["corporate-proxy"],
     "auth": {
         "user": "dev",
         "pass": "n3xu5_d3v_@cc3s5"
     },
-    "firewall": {
-        "enabled": true,
-        "complexity": 7,
-        "solution": "FRAMEWORK_KEY"
-    },
-    "proxy": {
-        "enabled": true,
-        "level": 6
-    },
-    "isDangerous": true,
-    "traceTime": 20,
-    "requiredPorts": 3,
-    "traceability": 40,
-    "ports": [
-        { "port": 80, "service": "HTTP", "isOpen": true },
-        { "port": 22, "service": "SSH", "isOpen": false },
-        { "port": 21, "service": "FTP", "isOpen": false },
-        { "port": 3306, "service": "SQL", "isOpen": false }
-    ],
+    "firewall": { "enabled": false, "complexity": 0 },
+    "proxy": { "enabled": false, "level": 0 },
+    "isDangerous": false,
+    "traceTime": 0,
+    "requiredPorts": 0,
+    "traceability": 10,
+    "ports": [],
     "fileSystem": [
         {
             "id": "dev-node-bin",
             "name": "bin",
             "type": "folder",
             "children": [
-                { "id": "file-neo-bin", "name": "neo.bin", "type": "file", "content": "NÉO AI Core executable. Triggers narrative events.", "isSystemFile": true }
+                {
+                    "id": "dev-node-lasted",
+                    "name": "lasted",
+                    "type": "folder",
+                    "children": [
+                        { "id": "file-neo-bin", "name": "neo.bin", "type": "file", "content": "NÉO AI Core executable. Triggers narrative events.", "isSystemFile": true }
+                    ]
+                }
             ]
         },
         {
