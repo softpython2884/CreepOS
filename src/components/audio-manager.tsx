@@ -42,13 +42,8 @@ const calmPlaylist = [
 
 const SFX_PLAYER_COUNT = 5;
 
-// Function to select a sound source with weighted probability
 const selectSoundSource = (src: string | string[]): string => {
     if (Array.isArray(src)) {
-        // Special case for ringtone: 95% chance for call.mp3, 5% for remixcall.mp3
-        if (src.includes('/call.mp3') && src.includes('/remixcall.mp3')) {
-            return Math.random() < 0.05 ? '/remixcall.mp3' : '/call.mp3';
-        }
         return src[Math.floor(Math.random() * src.length)];
     }
     return src;
@@ -123,7 +118,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         window.removeEventListener('click', enableAudio);
         window.removeEventListener('keydown', enableAudio);
     }
-  }, [isInitialized, playNextCalmTrack, onEnd]);
+  }, [isInitialized, playNextCalmTrack]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -157,7 +152,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
                  return;
             }
             
-            player.src = sound.src as string;
+            player.src = selectSoundSource(sound.src);
             player.volume = sound.volume;
             player.loop = sound.loop;
             player.play().catch(e => {

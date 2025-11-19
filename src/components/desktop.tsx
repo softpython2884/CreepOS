@@ -185,16 +185,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
 
   const declineCall = () => {
     onSoundEvent(null); // Stop ringtone
-    const script = callScriptRef.current;
-    
     endCall(false); // End call without UI sound
-
-    if (script) {
-        // Wait and recall
-        setTimeout(() => {
-            triggerCall(script);
-        }, 3000); // Recall after 3 seconds
-    }
   };
 
   const endCall = (withSound = true) => {
