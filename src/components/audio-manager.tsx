@@ -154,7 +154,9 @@ export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSou
     const musicPlayer = musicPlayerRef.current;
     
     // Do not change music if an alert is overriding it
-    if (alertEvent === 'scream' && musicEvent !== 'none') {
+    if (loopingAlertPlayerRef.current && !loopingAlertPlayerRef.current.paused && musicPausedByAlert.current) {
+        // If an overriding alert is playing, just store the intended music change
+        // It will be picked up when the alert stops.
         currentMusic.current = musicEvent;
         return;
     }
@@ -198,7 +200,7 @@ export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSou
         }
     });
 
-  }, [musicEvent, isInitialized, playNextCalmTrack, alertEvent]);
+  }, [musicEvent, isInitialized, playNextCalmTrack]);
 
   useEffect(() => {
     if (!isInitialized || !loopingAlertPlayerRef.current || !musicPlayerRef.current) return;
@@ -213,7 +215,17 @@ export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSou
         }
         // Resume music if it was paused by an alert
         if (musicPausedByAlert.current && musicPlayer.paused) {
-            musicPlayer.play().catch(e => console.warn("Music resume failed", e));
+            // Restore intended music state
+            const eventToPlay = currentMusic.current;
+            if (eventToPlay === 'calm') {
+                playNextCalmTrack();
+            } else if (eventToPlay !== 'none') {
+                const track = musicTracks[eventToPlay];
+                musicPlayer.src = track.src;
+                musicPlayer.volume = track.volume;
+                musicPlayer.loop = track.loop ?? false;
+                musicPlayer.play().catch(e => console.warn("Music resume failed", e));
+            }
             musicPausedByAlert.current = false;
         }
     } else if (alertEvent) {
@@ -229,9 +241,12 @@ export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSou
             alertPlayer.volume = track.volume;
             alertPlayer.loop = track.loop ?? true;
             alertPlayer.play().catch(e => console.warn(`Alert sound ${alertEvent} play failed`, e));
+        } else if (track && alertPlayer.paused) {
+            // If the correct track is loaded but paused, just play it.
+            alertPlayer.play().catch(e => console.warn(`Alert sound ${alertEvent} play failed`, e));
         }
     }
-  }, [alertEvent, isInitialized]);
+  }, [alertEvent, isInitialized, playNextCalmTrack]);
 
 
   return null;

@@ -188,6 +188,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const endCall = useCallback((withSound = true) => {
     onAlertEvent('stopAlert');
+    if (!isTraced) { // Do not change music if a trace is active
+        onMusicEvent('calm');
+    }
     setCallState('idle');
     setActiveCall(null);
     callScriptRef.current = null;
@@ -195,7 +198,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if (withSound) {
         onSoundEvent('close');
     }
-  }, [onAlertEvent, onSoundEvent]);
+  }, [onAlertEvent, onMusicEvent, onSoundEvent, isTraced]);
 
 
   const triggerCall = useCallback((script: CallScript) => {
@@ -232,10 +235,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const declineCall = useCallback(() => {
     onAlertEvent('stopAlert');
+    if (!isTraced) {
+      onMusicEvent('calm');
+    }
     addLog(`EVENT: Declined call from ${callScriptRef.current?.interlocutor}.`);
     endCall(false);
-    // Logic to re-trigger the call after a delay has been removed as requested.
-  }, [onAlertEvent, addLog, endCall]);
+  }, [onAlertEvent, onMusicEvent, addLog, endCall, isTraced]);
 
   const advanceCall = (choiceId: string) => {
     const script = callScriptRef.current;
@@ -316,10 +321,11 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     
     addLog(`INFO: Trace averted. Disconnected from ${traceTarget.name}.`);
     onAlertEvent('stopAlert');
+    onMusicEvent('calm');
     setIsTraced(false);
     setTraceTimeLeft(0);
     setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
-  }, [addLog, onAlertEvent, isTraced, traceTarget]);
+  }, [addLog, onAlertEvent, onMusicEvent, isTraced, traceTarget]);
 
   const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
     if (isTraced) return; // Don't start a new trace if one is active
