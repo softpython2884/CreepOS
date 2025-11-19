@@ -150,62 +150,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
 
   const gameState = { network, hackedPcs, machineState: 'desktop' };
 
-  useEffect(() => {
-    // Expose test function to window
-    (window as any).startTestCall = () => triggerCall(testCallScript);
-    
-    return () => {
-      delete (window as any).startTestCall;
-    }
-  }, [triggerCall]);
-
-  useEffect(() => {
-    // Autosave interval
-    const saveInterval = setInterval(() => {
-        saveGameState(username, gameState);
-    }, 5000); // Save every 5 seconds
-
-    return () => clearInterval(saveInterval);
-  }, [network, hackedPcs, username, gameState]);
-
-    useEffect(() => {
-        if (dangerLevel >= 100) {
-            setMachineState('survival');
-            onMusicEvent('alarm');
-            setDangerLevel(0); // Reset for next time
-        }
-    }, [dangerLevel, setMachineState, onMusicEvent]);
-
-  const addLog = useCallback((message: string) => {
-    setLogs(prev => {
-        const timestamp = new Date().toISOString();
-        const formattedMessage = `${timestamp} - ${message}`;
-        return [...prev, formattedMessage];
-    });
-    
-    setNetwork(currentNetwork => {
-        const playerPcIndex = currentNetwork.findIndex(p => p.id === 'player-pc');
-        if (playerPcIndex === -1) return currentNetwork;
-
-        const playerPc = currentNetwork[playerPcIndex];
-        const logPath = ['home', 'logs', 'activity.log'];
-
-        const newFileSystem = updateNodeByPath(playerPc.fileSystem, logPath, (node) => {
-            if (node.type === 'file') {
-                const timestamp = new Date().toISOString();
-                const formattedMessage = `${timestamp} - ${message}`;
-                return { ...node, content: (node.content || '') + formattedMessage + '\n' };
-            }
-            return node;
-        });
-
-        const newPlayerPc = { ...playerPc, fileSystem: newFileSystem };
-        const newNetwork = [...currentNetwork];
-        newNetwork[playerPcIndex] = newPlayerPc;
-        return newNetwork;
-    });
-  }, []);
-
   // --- CALL SYSTEM LOGIC ---
   const triggerCall = useCallback((script: CallScript) => {
     if (callState !== 'idle') return;
@@ -299,6 +243,61 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   }
   // --- END CALL SYSTEM ---
 
+  useEffect(() => {
+    // Expose test function to window
+    (window as any).startTestCall = () => triggerCall(testCallScript);
+    
+    return () => {
+      delete (window as any).startTestCall;
+    }
+  }, [triggerCall]);
+
+  useEffect(() => {
+    // Autosave interval
+    const saveInterval = setInterval(() => {
+        saveGameState(username, gameState);
+    }, 5000); // Save every 5 seconds
+
+    return () => clearInterval(saveInterval);
+  }, [network, hackedPcs, username, gameState]);
+
+    useEffect(() => {
+        if (dangerLevel >= 100) {
+            setMachineState('survival');
+            onMusicEvent('alarm');
+            setDangerLevel(0); // Reset for next time
+        }
+    }, [dangerLevel, setMachineState, onMusicEvent]);
+
+  const addLog = useCallback((message: string) => {
+    setLogs(prev => {
+        const timestamp = new Date().toISOString();
+        const formattedMessage = `${timestamp} - ${message}`;
+        return [...prev, formattedMessage];
+    });
+    
+    setNetwork(currentNetwork => {
+        const playerPcIndex = currentNetwork.findIndex(p => p.id === 'player-pc');
+        if (playerPcIndex === -1) return currentNetwork;
+
+        const playerPc = currentNetwork[playerPcIndex];
+        const logPath = ['home', 'logs', 'activity.log'];
+
+        const newFileSystem = updateNodeByPath(playerPc.fileSystem, logPath, (node) => {
+            if (node.type === 'file') {
+                const timestamp = new Date().toISOString();
+                const formattedMessage = `${timestamp} - ${message}`;
+                return { ...node, content: (node.content || '') + formattedMessage + '\n' };
+            }
+            return node;
+        });
+
+        const newPlayerPc = { ...playerPc, fileSystem: newFileSystem };
+        const newNetwork = [...currentNetwork];
+        newNetwork[playerPcIndex] = newPlayerPc;
+        return newNetwork;
+    });
+  }, []);
 
   const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
     if (isTraced) return; // Don't start a new trace if one is active
