@@ -1,9 +1,9 @@
 
 'use client';
 
-import React, { useMemo, useEffect } from 'react';
-import { motion, useAnimationControls } from 'framer-motion';
-import { Server, Laptop, Smartphone, Link as LinkIcon, ShieldCheck, ShieldAlert, KeyRound } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Server, Laptop, Smartphone, ShieldCheck, ShieldAlert, KeyRound } from 'lucide-react';
 import { PC } from '@/lib/network/types';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -33,7 +33,7 @@ const Node = ({ pc, x, y, isHacked }: { pc: PC; x: number; y: number; isHacked: 
             initial={{ x, y, scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.5, delay: Math.random() * 0.5 }}
-            className="absolute cursor-pointer"
+            className="absolute"
             style={{ x, y }}
         >
             <TooltipProvider>
@@ -76,21 +76,21 @@ const Link = ({ from, to }: { from: { x: number; y: number }; to: { x: number; y
 };
 
 export default function NetworkMap({ network, hackedPcs }: NetworkMapProps) {
-    const dragControls = useAnimationControls();
 
     const { nodes, links } = useMemo(() => {
         const nodePositions: { [key: string]: { x: number; y: number } } = {};
-        const width = 1200; // Increased canvas size
-        const height = 900;
+        const width = 800; // Corresponds to the window width
+        const height = 600; // Corresponds to the window height
         
         const playerNode = network.find(pc => pc.id === 'player-pc');
         const otherNodes = network.filter(pc => pc.id !== 'player-pc');
 
+        // Center the player node in the available space
         if (playerNode) {
             nodePositions[playerNode.id] = { x: width / 2 - 48, y: height / 2 - 48 };
         }
 
-        const radius = Math.min(width, height) / 2 - 120;
+        const radius = Math.min(width, height) / 2 - 80; // Adjusted radius
         const angleStep = (2 * Math.PI) / (otherNodes.length || 1);
 
         otherNodes.forEach((pc, i) => {
@@ -111,38 +111,11 @@ export default function NetworkMap({ network, hackedPcs }: NetworkMapProps) {
         return { nodes: nodePositions, links: allLinks };
     }, [network]);
 
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                dragControls.start({ x: 0, y: 0 }, { type: "spring", stiffness: 300, damping: 30 });
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [dragControls]);
-
 
     return (
-        <div className="h-full w-full bg-card/80 p-4 relative overflow-hidden cursor-move">
-             <motion.div 
-                className="relative w-[1200px] h-[900px]"
-                drag
-                animate={dragControls}
-                dragConstraints={{
-                    left: -800,
-                    right: 400,
-                    top: -400,
-                    bottom: 400,
-                }}
-             >
+        <div className="h-full w-full bg-card/80 p-4 flex justify-center items-center overflow-hidden">
+             <div className="relative w-[800px] h-[600px]">
                 <svg className="absolute inset-0 w-full h-full">
-                    <defs>
-                        <motion.linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="hsl(var(--primary))" />
-                            <stop offset="100%" stopColor="hsl(var(--accent))" />
-                        </motion.linearGradient>
-                    </defs>
                     {links.map((link, i) => {
                         const fromNode = nodes[link.source];
                         const toNode = nodes[link.target];
@@ -156,7 +129,7 @@ export default function NetworkMap({ network, hackedPcs }: NetworkMapProps) {
                     if (!pos) return null;
                     return <Node key={pc.id} pc={pc} x={pos.x} y={pos.y} isHacked={hackedPcs.has(pc.id)} />;
                 })}
-            </motion.div>
+            </div>
         </div>
     );
 }
