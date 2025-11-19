@@ -60,40 +60,44 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
     return foundNode;
 };
 
+
 const updateNodeByPath = (
   nodes: FileSystemNode[],
   path: string[],
   updater: (node: FileSystemNode) => FileSystemNode | null | 'NO_CHANGE'
 ): FileSystemNode[] => {
-  if (path.length === 0) return nodes;
-  const nodeName = path[0];
-  
-  if (path.length === 1) {
-      const nodeIndex = nodes.findIndex(n => n.name === nodeName);
-      if (nodeIndex !== -1) {
-          const updatedNode = updater(nodes[nodeIndex]);
-          if (updatedNode === 'NO_CHANGE') return nodes;
+    if (path.length === 0) return nodes;
+    const nodeName = path[0];
 
-          const newNodes = [...nodes];
-          if (updatedNode === null) {
-              newNodes.splice(nodeIndex, 1);
-          } else {
-              newNodes[nodeIndex] = updatedNode;
-          }
-          return newNodes;
-      }
-  }
+    // If we're at the target node
+    if (path.length === 1) {
+        const nodeIndex = nodes.findIndex(n => n.name === nodeName);
+        if (nodeIndex === -1) return nodes; // Node not found
 
-  return nodes.map(node => {
-      if (node.name === nodeName && node.type === 'folder' && node.children) {
-          return {
-              ...node,
-              children: updateNodeByPath(node.children, path.slice(1), updater),
-          };
-      }
-      return node;
-  });
+        const updatedNode = updater(nodes[nodeIndex]);
+        if (updatedNode === 'NO_CHANGE') return nodes;
+
+        const newNodes = [...nodes];
+        if (updatedNode === null) {
+            newNodes.splice(nodeIndex, 1); // Remove node
+        } else {
+            newNodes[nodeIndex] = updatedNode; // Update node
+        }
+        return newNodes;
+    }
+
+    // Recurse into the next folder in the path
+    return nodes.map(node => {
+        if (node.name === nodeName && node.type === 'folder' && node.children) {
+            return {
+                ...node,
+                children: updateNodeByPath(node.children, path.slice(1), updater),
+            };
+        }
+        return node;
+    });
 };
+
 
 const addNodeByPath = (nodes: FileSystemNode[], path: string[], newNode: FileSystemNode): FileSystemNode[] => {
     if (path.length === 0) {
