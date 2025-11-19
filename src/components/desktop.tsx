@@ -164,14 +164,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       choices: [],
     });
     setCallState('incoming');
-    onSoundEvent('ringtone');
-  }, [callState, onSoundEvent]);
+    onMusicEvent('ringtone');
+  }, [callState, onMusicEvent]);
 
   const answerCall = () => {
     const script = callScriptRef.current;
     if (!script || callState !== 'incoming') return;
     
-    onSoundEvent(null); // Stop ringtone
+    onMusicEvent('calm'); // Stop ringtone and return to calm music
     const startNode = script.nodes[script.startNode];
     
     setActiveCall(prev => prev ? ({
@@ -184,7 +184,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   };
 
   const declineCall = () => {
-    onSoundEvent(null); // Stop ringtone
+    onMusicEvent('calm'); // Stop ringtone
     endCall(false); // End call without UI sound
   };
 
@@ -308,8 +308,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     if (isTraced) return; // Don't start a new trace if one is active
     
     addLog(`DANGER: Trace initiated from ${targetName}. You have ${time} seconds to disconnect.`);
-    onMusicEvent('alarm');
-    onSoundEvent('scream');
+    onMusicEvent('scream');
     setIsTraced(true);
     setTraceTimeLeft(time);
     setTraceTarget({ name: targetName, time: time });
@@ -324,7 +323,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     
     addLog(`INFO: Trace averted. Disconnected from ${traceTarget.name}.`);
     onMusicEvent('calm');
-    onSoundEvent('stopScream');
     setIsTraced(false);
     setTraceTimeLeft(0);
     setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
@@ -332,7 +330,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
 
  useEffect(() => {
     if (!isTraced) {
-      onSoundEvent('stopScream');
       return;
     }
 

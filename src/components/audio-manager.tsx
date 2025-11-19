@@ -3,8 +3,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'stopScream' | 'email' | 'error' | 'ringtone' | null;
-export type MusicEvent = 'calm' | 'epic' | 'alarm' | 'creepy' | 'cinematic' | 'none';
+export type SoundEvent = 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | null;
+export type MusicEvent = 'calm' | 'epic' | 'alarm' | 'creepy' | 'cinematic' | 'scream' | 'ringtone' | 'none';
 
 interface AudioManagerProps {
   soundEvent: SoundEvent;
@@ -14,8 +14,7 @@ interface AudioManagerProps {
 
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
-const sounds: Record<NonNullable<Exclude<SoundEvent, 'stopScream'>>, { src: string | string[]; volume: number; loop?: boolean }> = {
-    scream: { src: '/NéoAttaque.mp3', volume: 0.8, loop: true },
+const sounds: Record<NonNullable<SoundEvent>, { src: string | string[]; volume: number; loop?: boolean }> = {
     glitch: { src: ['/glitch-sound-scary-mp3.mp3', '/error-glitch.mp3', '/glitch-sound-effect_FugN82U.mp3'], volume: 0.4 },
     click: { src: '/clicksoundeffect.mp3', volume: 0.6 },
     email: { src: '/email.mp3', volume: 0.5 },
@@ -23,7 +22,6 @@ const sounds: Record<NonNullable<Exclude<SoundEvent, 'stopScream'>>, { src: stri
     bsod: { src: '/bluescreen.mp3', volume: 0.5 },
     fan: { src: '/ventil.mp3', volume: 0.4, loop: true },
     error: { src: '/error-011.mp3', volume: 0.5 },
-    ringtone: { src: '/call.mp3', volume: 0.7, loop: true },
 };
 
 const musicTracks: Record<Exclude<MusicEvent, 'none' | 'calm'>, { src: string; volume: number; loop?: boolean }> = {
@@ -31,6 +29,8 @@ const musicTracks: Record<Exclude<MusicEvent, 'none' | 'calm'>, { src: string; v
     alarm: { src: '/alarm.mp3', volume: 0.6, loop: true },
     creepy: { src: '/30s-creepyBG.mp3', volume: 0.5 },
     cinematic: { src: '/Néo.mp3', volume: 0.8, loop: false },
+    scream: { src: '/NéoAttaque.mp3', volume: 0.8, loop: true },
+    ringtone: { src: '/call.mp3', volume: 0.7, loop: true },
 };
 
 const calmPlaylist = [
@@ -52,17 +52,14 @@ const selectSoundSource = (src: string | string[]): string => {
 export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioManagerProps) {
   const sfxPlayersRef = useRef<HTMLAudioElement[]>([]);
   const musicPlayerRef = useRef<HTMLAudioElement | null>(null);
-  const specialLoopPlayerRef = useRef<HTMLAudioElement | null>(null); // For scream, fan, ringtone
   const [isInitialized, setIsInitialized] = useState(false);
   const currentMusic = useRef<MusicEvent>('none');
   const calmPlaylistIndex = useRef(0);
-  const currentLoopingSound = useRef<SoundEvent>(null);
 
 
   const playNextCalmTrack = useCallback(() => {
     if (!musicPlayerRef.current || currentMusic.current !== 'calm') return;
     
-    // Shuffle playlist on first play
     if (calmPlaylistIndex.current === 0) {
         for (let i = calmPlaylist.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -73,7 +70,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
     const track = calmPlaylist[calmPlaylistIndex.current];
     musicPlayerRef.current.src = track.src;
     musicPlayerRef.current.volume = track.volume;
-    musicPlayerRef.current.loop = false; // Important for playlist
+    musicPlayerRef.current.loop = false;
     musicPlayerRef.current.play().catch(e => console.warn("Calm music play failed", e));
     
     calmPlaylistIndex.current = (calmPlaylistIndex.current + 1) % calmPlaylist.length;
@@ -95,10 +92,6 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
             }
         };
         musicPlayerRef.current = player;
-    }
-    if (!specialLoopPlayerRef.current) {
-        specialLoopPlayerRef.current = new Audio();
-        specialLoopPlayerRef.current.loop = true;
     }
 
     const enableAudio = async () => {
@@ -123,50 +116,17 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
   useEffect(() => {
     if (!isInitialized) return;
 
-    if (soundEvent === 'stopScream' || (soundEvent === null && currentLoopingSound.current)) {
-        if (specialLoopPlayerRef.current) {
-            specialLoopPlayerRef.current.pause();
-            specialLoopPlayerRef.current.currentTime = 0;
-            currentLoopingSound.current = null;
-        }
-        onEnd(soundEvent);
-        return;
-    }
-
-    if(soundEvent === null) {
+    if (soundEvent === null) {
       onEnd(null);
       return;
     }
     
     const sound = sounds[soundEvent];
-    if(!sound) {
+    if (!sound) {
         onEnd(soundEvent);
         return;
     }
-
-    if (sound.loop) {
-        const player = specialLoopPlayerRef.current;
-        if (player) {
-            if (currentLoopingSound.current === soundEvent && !player.paused) {
-                 onEnd(null);
-                 return;
-            }
-            
-            player.src = selectSoundSource(sound.src);
-            player.volume = sound.volume;
-            player.loop = sound.loop;
-            player.play().catch(e => {
-                if ((e as Error).name !== 'AbortError') {
-                    console.warn(`Loop sound ${soundEvent} play failed`, e)
-                }
-            });
-            currentLoopingSound.current = soundEvent;
-        }
-        onEnd(null);
-        return;
-    }
     
-    // Handle one-shot sounds
     const sfxPlayer = sfxPlayersRef.current.find(p => p.paused);
 
     if (sfxPlayer) {
