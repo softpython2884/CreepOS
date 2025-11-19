@@ -61,6 +61,8 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
   const [isInitialized, setIsInitialized] = useState(false);
   const currentMusic = useRef<MusicEvent>('none');
   const calmPlaylistIndex = useRef(0);
+  const currentLoopingSound = useRef<SoundEvent>(null);
+
 
   const playNextCalmTrack = useCallback(() => {
     if (!musicPlayerRef.current || currentMusic.current !== 'calm') return;
@@ -86,7 +88,9 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
   useEffect(() => {
     if (sfxPlayersRef.current.length === 0) {
         for (let i = 0; i < SFX_PLAYER_COUNT; i++) {
-            sfxPlayersRef.current.push(new Audio());
+            const audio = new Audio();
+            audio.addEventListener('ended', () => onEnd(null)); // General cleanup
+            sfxPlayersRef.current.push(audio);
         }
     }
     if (!musicPlayerRef.current) {
@@ -120,17 +124,18 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         window.removeEventListener('click', enableAudio);
         window.removeEventListener('keydown', enableAudio);
     }
-  }, [isInitialized, playNextCalmTrack]);
+  }, [isInitialized, playNextCalmTrack, onEnd]);
 
   useEffect(() => {
     if (!isInitialized) return;
 
-    if (soundEvent === 'stopScream') {
+    if (soundEvent === 'stopScream' || soundEvent === null) {
         if (specialLoopPlayerRef.current) {
             specialLoopPlayerRef.current.pause();
             specialLoopPlayerRef.current.currentTime = 0;
+            currentLoopingSound.current = null;
         }
-        onEnd(null);
+        onEnd(soundEvent); // Pass through null or stopScream
         return;
     }
     
@@ -138,27 +143,27 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
     if (soundEvent === 'ringtone' || soundEvent === 'scream' || soundEvent === 'fan') {
         const sound = sounds[soundEvent];
         if (player && sound.loop) {
+            // Prevent AbortError by not re-playing the same sound
+            if (currentLoopingSound.current === soundEvent && !player.paused) {
+                 onEnd(null); // Reset event immediately but do nothing
+                 return;
+            }
+            
             const src = selectSoundSource(sound.src);
             player.src = src;
             player.volume = sound.volume;
             player.loop = sound.loop;
-            player.play().catch(e => console.warn(`Loop sound ${soundEvent} play failed`, e));
+            player.play().catch(e => {
+                if ((e as Error).name !== 'AbortError') {
+                    console.warn(`Loop sound ${soundEvent} play failed`, e)
+                }
+            });
+            currentLoopingSound.current = soundEvent;
         }
         onEnd(null); // Reset event immediately
         return;
     }
     
-    // Stop looping sounds if event is null but not for stopping scream specifically
-    if(soundEvent === null) {
-        if (player) {
-            player.pause();
-            player.currentTime = 0;
-        }
-        onEnd(null);
-        return;
-    }
-
-
     // Handle one-shot sounds
     const sfxPlayer = sfxPlayersRef.current.find(p => p.paused);
 
@@ -171,11 +176,6 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         sfxPlayer.volume = sound.volume;
         sfxPlayer.loop = sound.loop || false;
         
-        sfxPlayer.onended = () => {
-            onEnd(soundEvent);
-            sfxPlayer.onended = null;
-        };
-        
         sfxPlayer.play().catch(error => {
             if ((error as Error).name !== 'AbortError') {
                 console.warn(`Could not play sound (${soundEvent}):`, error);
@@ -185,7 +185,6 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         
         onEnd(null); // Reset event immediately
     } else {
-      // If no player is available, just end the event
       onEnd(soundEvent);
     }
 
@@ -229,7 +228,11 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
                 musicPlayer.src = track.src;
                 musicPlayer.volume = track.volume;
                 musicPlayer.loop = track.loop ?? false;
-                musicPlayer.play().catch(e => console.warn("Music play failed", e));
+                musicPlayer.play().catch(e => {
+                     if ((e as Error).name !== 'AbortError') {
+                        console.warn(`Music play failed for ${musicEvent}:`, e);
+                    }
+                });
             }
         });
     }

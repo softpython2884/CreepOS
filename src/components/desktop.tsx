@@ -191,10 +191,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
 
     if (script) {
         // Wait and recall
-        const randomDelay = Math.random() * 2000 + 1000; // 1-3 seconds
         setTimeout(() => {
             triggerCall(script);
-        }, randomDelay);
+        }, 3000); // Recall after 3 seconds
     }
   };
 
@@ -713,7 +712,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       )}
 
       {callState === 'incoming' && activeCall && (
-        <div className="absolute top-4 right-4 z-50">
+        <div className="absolute top-4 right-4 z-[9999]">
             <IncomingCallView 
                 interlocutor={activeCall.interlocutor}
                 onAccept={answerCall}
@@ -723,7 +722,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       )}
 
       {callState === 'active' && activeCall && (
-        <div className="absolute top-4 right-4 z-50">
+        <div className="absolute top-4 right-4 z-[9999]">
             <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} onClose={() => endCall()} />
         </div>
       )}
