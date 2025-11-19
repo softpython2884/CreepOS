@@ -1,21 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Shield, ShieldOff, Wifi, WifiOff, Server, ServerOff, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SoundEvent } from './audio-manager';
-import { PC } from '@/lib/network/types';
-import { saveGameState } from '@/lib/save-manager';
+import { loadGameState, saveGameState } from '@/lib/save-manager';
 import Desktop from './desktop';
 
 interface SurvivalModeProps {
     onWin: () => void;
     onLose: () => void;
     onSoundEvent: (event: SoundEvent) => void;
-    username: string;
-    network: PC[];
-    setNetwork: (network: PC[]) => void;
-    hackedPcs: Set<string>;
 }
 
 const SURVIVAL_DURATION = 120; // 2 minutes
@@ -54,7 +49,7 @@ const updateNodeByPath = (
 };
 
 
-export default function SurvivalMode({ onWin, onLose, onSoundEvent, username, network, setNetwork, hackedPcs }: SurvivalModeProps) {
+export default function SurvivalMode({ onWin, onLose, onSoundEvent }: SurvivalModeProps) {
     const [timeLeft, setTimeLeft] = useState(SURVIVAL_DURATION);
     const [defenses, setDefenses] = useState({
         proxy: true,
@@ -62,19 +57,21 @@ export default function SurvivalMode({ onWin, onLose, onSoundEvent, username, ne
         ports: [80, 443, 22] // Example player ports
     });
     const [log, setLog] = useState<string[]>(['INTRUSION DETECTED. Locking down system...']);
-
-    const handleLose = () => {
-        const updatedNetwork = network.map(pc => {
+    const [username] = useState('Operator');
+    
+    // Memoize the handleLose function to avoid re-creating it on every render
+    const handleLose = useCallback(() => {
+        const gameState = loadGameState(username);
+        const updatedNetwork = gameState.network.map(pc => {
             if (pc.id === 'player-pc') {
                 const newFileSystem = updateNodeByPath(pc.fileSystem, ['sys', 'XserverOS.sys'], () => null);
                 return { ...pc, fileSystem: newFileSystem };
             }
             return pc;
         });
-        setNetwork(updatedNetwork);
-        saveGameState(username, { network: updatedNetwork, hackedPcs });
+        saveGameState(username, { ...gameState, network: updatedNetwork });
         onLose();
-    };
+    }, [onLose, username]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -122,8 +119,7 @@ export default function SurvivalMode({ onWin, onLose, onSoundEvent, username, ne
             clearInterval(timer);
             onSoundEvent('stopScream');
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [defenses.firewall, defenses.ports]);
+    }, [defenses.firewall, defenses.ports, onSoundEvent, onWin, handleLose]);
     
     const formatTime = (seconds: number) => {
         const minutes = Math.floor(seconds / 60);
@@ -131,19 +127,27 @@ export default function SurvivalMode({ onWin, onLose, onSoundEvent, username, ne
         return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     };
 
+    // Fake desktop props
+    const fakeDesktopProps = {
+        onSoundEvent: onSoundEvent,
+        onMusicEvent: () => {},
+        username: username,
+        onReboot: onLose,
+        setMachineState: () => {},
+    };
+
     return (
         <div className="w-full h-full flex items-center justify-center bg-black font-code">
             {/* Desktop is rendered in the background to allow terminal usage */}
             <div className="absolute inset-0 opacity-30">
                 <Desktop 
-                    onSoundEvent={onSoundEvent} 
-                    onMusicEvent={() => {}} 
-                    username={username} 
-                    onReboot={onLose} 
-                    setMachineState={() => {}} 
-                    playerDefenses={defenses}
-                    setPlayerDefenses={setDefenses}
-                    machineState='survival'
+                    {...fakeDesktopProps}
+                    // Pass survival-specific props to a custom prop on Desktop
+                    survivalProps={{
+                        playerDefenses: defenses,
+                        setPlayerDefenses: setDefenses,
+                        machineState: 'survival'
+                    }}
                 />
             </div>
             

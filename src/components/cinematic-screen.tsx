@@ -127,7 +127,7 @@ export default function CinematicScreen({ onComplete }: { onComplete: () => void
                         'text-3xl md:text-5xl font-bold tracking-[0.1em] transition-colors duration-1000 text-center mt-2',
                          titleCorrupted ? 'text-destructive/80 animate-glitch-long' : 'text-accent'
                     )}>
-                        : BREACH
+                        BREACH
                     </h2>
                 </div>
             )}

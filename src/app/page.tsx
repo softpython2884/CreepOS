@@ -491,10 +491,17 @@ export default function Home() {
                     </div>
                 );
             case 'survival':
-                return <SurvivalMode onWin={() => { setMachineState('desktop'); setMusicEvent('calm') }} onLose={() => {
-                    setSoundEvent('bsod');
-                    setMachineState('bsod');
-                }} onSoundEvent={setSoundEvent}/>;
+                return <SurvivalMode 
+                    onWin={() => { 
+                        setMachineState('desktop'); 
+                        setMusicEvent('calm'); 
+                    }} 
+                    onLose={() => {
+                        setSoundEvent('bsod');
+                        setMachineState('bsod');
+                    }} 
+                    onSoundEvent={setSoundEvent}
+                />;
             case 'desktop':
                 return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} username={username} onReboot={handleReboot} setMachineState={setMachineState} />;
             default:

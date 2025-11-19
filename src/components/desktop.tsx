@@ -20,6 +20,7 @@ import { ShieldAlert, ShieldCheck, Mail, AlertTriangle, Skull } from 'lucide-rea
 import { Progress } from './ui/progress';
 import TracerTerminal, { traceCommands, decryptCommands, isolationCommands } from './tracer-terminal';
 import { saveGameState, loadGameState, deleteGameState } from '@/lib/save-manager';
+import SurvivalMode from './survival-mode';
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser';
 
@@ -161,7 +162,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         if (playerPcIndex === -1) return currentNetwork;
 
         const playerPc = currentNetwork[playerPcIndex];
-        const logPath = ['home', username, 'logs', 'activity.log'];
+        const logPath = ['home', 'logs', 'activity.log'];
 
         const newFileSystem = updateNodeByPath(playerPc.fileSystem, logPath, (node) => {
             if (node.type === 'file') {
@@ -177,7 +178,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         newNetwork[playerPcIndex] = newPlayerPc;
         return newNetwork;
     });
-  }, [username]);
+  }, []);
 
   const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
     if (isTraced) return; // Don't start a new trace if one is active
@@ -394,8 +395,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             },
             dangerLevel,
             machineState: 'desktop', // Default state for desktop terminal
-            setPlayerDefenses,
-            playerDefenses
         } 
     },
     documents: { 
@@ -456,7 +455,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       component: Terminal,
       width: 700,
       height: 450,
-      props: { ...appConfig.terminal.props, machineState: 'survival' }
+      props: { ...appConfig.terminal.props, machineState: 'survival', setPlayerDefenses, playerDefenses }
   };
 
   const openApp = useCallback((appId: AppId, sourceInstanceId?: number) => {

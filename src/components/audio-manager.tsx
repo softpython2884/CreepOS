@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState }from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'stopScream' | 'email' | 'error' | null;
-export type MusicEvent = 'calm' | 'calm2' | 'epic' | 'alarm' | 'creepy' | 'cinematic' | 'devyourself' | 'none';
+export type MusicEvent = 'calm' | 'epic' | 'alarm' | 'creepy' | 'cinematic' | 'none';
 
 interface AudioManagerProps {
   soundEvent: SoundEvent;
@@ -14,7 +14,7 @@ interface AudioManagerProps {
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
 const sounds: Record<NonNullable<Exclude<SoundEvent, 'stopScream'>>, { src: string | string[]; volume: number; loop?: boolean }> = {
-    scream: { src: '/action.mp3', volume: 0.8 },
+    scream: { src: ['/action.mp3', '/NéoAttaque.mp3'], volume: 0.8 },
     glitch: { src: ['/glitch-sound-scary-mp3.mp3', '/error-glitch.mp3', '/glitch-sound-effect_FugN82U.mp3'], volume: 0.4 },
     click: { src: '/clicksoundeffect.mp3', volume: 0.6 },
     email: { src: '/mail.mp3', volume: 0.5 },
@@ -24,15 +24,21 @@ const sounds: Record<NonNullable<Exclude<SoundEvent, 'stopScream'>>, { src: stri
     error: { src: '/error-011.mp3', volume: 0.5 },
 };
 
-const musicTracks: Record<Exclude<MusicEvent, 'none'>, { src: string; volume: number; loop?: boolean }> = {
-    calm: { src: '/trkl.mp3', volume: 0.3, loop: true },
-    calm2: { src: '/music2.mp3', volume: 0.3, loop: true },
+const musicTracks: Record<Exclude<MusicEvent, 'none' | 'calm'>, { src: string; volume: number; loop?: boolean }> = {
     epic: { src: '/start.mp3', volume: 0.4, loop: true },
     alarm: { src: '/alarm.mp3', volume: 0.6, loop: true },
     creepy: { src: '/30s-creepyBG.mp3', volume: 0.5 },
     cinematic: { src: '/Néo.mp3', volume: 0.8, loop: false },
-    devyourself: { src: '/devyourself.mp3', volume: 0.5, loop: false },
 };
+
+const calmPlaylist = [
+    { src: '/trkl.mp3', volume: 0.3 },
+    { src: '/music2.mp3', volume: 0.3 },
+    { src: '/Néo-Principale.mp3', volume: 0.4 },
+    { src: '/Néo2.mp3', volume: 0.4 },
+    { src: '/devyourself.mp3', volume: 0.4 },
+    { src: '/codeyourself.mp3', volume: 0.4 },
+];
 
 const SFX_PLAYER_COUNT = 5;
 
@@ -42,6 +48,28 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
   const screamPlayerRef = useRef<HTMLAudioElement | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const currentMusic = useRef<MusicEvent>('none');
+  const calmPlaylistIndex = useRef(0);
+
+  const playNextCalmTrack = useCallback(() => {
+    if (!musicPlayerRef.current || currentMusic.current !== 'calm') return;
+    
+    // Shuffle playlist on first play
+    if (calmPlaylistIndex.current === 0) {
+        for (let i = calmPlaylist.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [calmPlaylist[i], calmPlaylist[j]] = [calmPlaylist[j], calmPlaylist[i]];
+        }
+    }
+    
+    const track = calmPlaylist[calmPlaylistIndex.current];
+    musicPlayerRef.current.src = track.src;
+    musicPlayerRef.current.volume = track.volume;
+    musicPlayerRef.current.loop = false; // Important for playlist
+    musicPlayerRef.current.play().catch(e => console.warn("Calm music play failed", e));
+    
+    calmPlaylistIndex.current = (calmPlaylistIndex.current + 1) % calmPlaylist.length;
+
+  }, []);
 
   useEffect(() => {
     if (sfxPlayersRef.current.length === 0) {
@@ -50,7 +78,13 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         }
     }
     if (!musicPlayerRef.current) {
-        musicPlayerRef.current = new Audio();
+        const player = new Audio();
+        player.onended = () => {
+            if (currentMusic.current === 'calm') {
+                playNextCalmTrack();
+            }
+        };
+        musicPlayerRef.current = player;
     }
     if (!screamPlayerRef.current) {
         screamPlayerRef.current = new Audio();
@@ -74,7 +108,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         window.removeEventListener('click', enableAudio);
         window.removeEventListener('keydown', enableAudio);
     }
-  }, [isInitialized]);
+  }, [isInitialized, playNextCalmTrack]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -93,6 +127,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
     if (soundEvent === 'scream') {
         if (screamPlayerRef.current && screamPlayerRef.current.paused) {
             const sound = sounds.scream;
+            // Use action.mp3 by default for immediate sound
             screamPlayerRef.current.src = Array.isArray(sound.src) ? sound.src[0] : sound.src;
             screamPlayerRef.current.volume = sound.volume;
             screamPlayerRef.current.play().catch(e => console.warn('Scream play failed', e));
@@ -167,7 +202,10 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         }
 
         fadeOutAndStop(() => {
-            if (musicEvent !== 'none') {
+            if (musicEvent === 'calm') {
+                calmPlaylistIndex.current = 0; // Reset and shuffle playlist
+                playNextCalmTrack();
+            } else if (musicEvent !== 'none') {
                 const track = musicTracks[musicEvent];
                 musicPlayer.src = track.src;
                 musicPlayer.volume = track.volume;
@@ -177,7 +215,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         });
     }
 
-  }, [musicEvent, isInitialized]);
+  }, [musicEvent, isInitialized, playNextCalmTrack]);
 
   return null;
 }
