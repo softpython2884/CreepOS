@@ -18,21 +18,28 @@
             "type": "folder",
             "children": [
                 {
-                    "id": "folder-docs",
-                    "name": "docs",
+                    "id": "folder-user",
+                    "name": "Operator",
                     "type": "folder",
                     "children": [
-                        { "id": "file-notes", "name": "notes.txt", "type": "file", "content": "My personal notes..." },
-                        { "id": "file-devyourself", "name": "devyourself.pm3", "type": "file", "content": "/devyourself.mp3" },
-                        { "id": "file-codeyourself", "name": "codeyourself.pm3", "type": "file", "content": "/codeyourself.mp3" }
-                    ]
-                },
-                {
-                    "id": "folder-logs-user",
-                    "name": "logs",
-                    "type": "folder",
-                    "children": [
-                        { "id": "file-activity-log", "name": "activity.log", "type": "file", "content": "" }
+                        {
+                            "id": "folder-docs",
+                            "name": "docs",
+                            "type": "folder",
+                            "children": [
+                                { "id": "file-notes", "name": "notes.txt", "type": "file", "content": "My personal notes..." },
+                                { "id": "file-devyourself", "name": "devyourself.pm3", "type": "file", "content": "/devyourself.mp3" },
+                                { "id": "file-codeyourself", "name": "codeyourself.pm3", "type": "file", "content": "/codeyourself.mp3" }
+                            ]
+                        },
+                        {
+                            "id": "folder-logs-user",
+                            "name": "logs",
+                            "type": "folder",
+                            "children": [
+                                { "id": "file-activity-log", "name": "activity.log", "type": "file", "content": "" }
+                            ]
+                        }
                     ]
                 }
             ]
@@ -50,17 +57,7 @@
             "name": "bin",
             "type": "folder",
             "children": [
-                { "id": "file-scan", "name": "scan.bin", "type": "file", "content": "Network scanning utility", "isSystemFile": true },
-                { "id": "file-probe", "name": "probe.bin", "type": "file", "content": "System security probe utility", "isSystemFile": true },
-                { "id": "file-porthack", "name": "porthack.bin", "type": "file", "content": "Port cracking utility", "isSystemFile": true },
-                { "id": "file-nano", "name": "nano.bin", "type": "file", "content": "Text editor executable", "isSystemFile": true },
-                { "id": "file-fw-analyzer", "name": "analyze.bin", "type": "file", "content": "Firewall analysis tool", "isSystemFile": true },
-                { "id": "file-overload", "name": "overload.bin", "type": "file", "content": "Proxy overload utility", "isSystemFile": true },
-                { "id": "file-ftpbounce", "name": "FTPBounce.bin", "type": "file", "content": "Port 21 (FTP) cracker.", "isSystemFile": true },
-                { "id": "file-sshbounce", "name": "SSHBounce.bin", "type": "file", "content": "Port 22 (SSH) cracker.", "isSystemFile": true },
-                { "id": "file-smtpoverflow", "name": "SMTPOverflow.bin", "type": "file", "content": "Port 25 (SMTP) cracker.", "isSystemFile": true },
-                { "id": "file-webserverworm", "name": "WebServerWorm.bin", "type": "file", "content": "Port 80 (HTTP) cracker.", "isSystemFile": true },
-                { "id": "file-forkbomb", "name": "forkbomb.bin", "type": "file", "content": "System crash utility.", "isSystemFile": true }
+                { "id": "file-nano", "name": "nano.bin", "type": "file", "content": "Text editor executable", "isSystemFile": true }
             ]
         }
     ]
