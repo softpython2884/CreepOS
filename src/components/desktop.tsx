@@ -376,7 +376,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, hackedPcs]);
+}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, hackedPcs, onMusicEvent, handleStopTrace]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
