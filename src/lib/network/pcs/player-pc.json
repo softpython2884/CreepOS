@@ -1,4 +1,3 @@
-
 {
     "id": "player-pc",
     "name": "Omen",
@@ -46,6 +45,14 @@
                                 { "id": "file-activity-log", "name": "activity.log", "type": "file", "content": "" }
                             ]
                         },
+                        {
+                            "id": "folder-bin",
+                            "name": "bin",
+                            "type": "folder",
+                            "children": [
+                                { "id": "file-nano", "name": "nano.bin", "type": "file", "content": "Text editor executable", "isSystemFile": true }
+                            ]
+                        },
                          {
                             "id": "file-welcome",
                             "name": "welcome.txt",
@@ -62,14 +69,6 @@
             "type": "folder",
             "children": [
                 { "id": "file-xserver", "name": "XserverOS.sys", "type": "file", "content": "SYSTEM KERNEL [ENCRYPTED]", "isSystemFile": true }
-            ]
-        },
-        {
-            "id": "folder-bin",
-            "name": "bin",
-            "type": "folder",
-            "children": [
-                { "id": "file-nano", "name": "nano.bin", "type": "file", "content": "Text editor executable", "isSystemFile": true }
             ]
         }
     ]

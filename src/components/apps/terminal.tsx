@@ -33,9 +33,8 @@ interface TerminalProps {
     resetGame: () => void;
     dangerLevel: number;
     machineState: string; // To know if we are in survival mode
-    setPlayerDefenses?: any;
-    playerDefenses?: any;
     receiveEmail: (email: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => void;
+    onNeoExecute: () => void;
 }
 
 const PLAYER_PUBLIC_IP = '184.72.238.110';
@@ -157,9 +156,8 @@ export default function Terminal({
     resetGame,
     dangerLevel,
     machineState,
-    setPlayerDefenses,
-    playerDefenses,
     receiveEmail,
+    onNeoExecute,
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved.", onConfirm: () => {} },
@@ -214,9 +212,7 @@ export default function Terminal({
     if (isAwaitingConfirmation) {
         return '';
     }
-    if (machineState === 'survival') {
-        return `[DEFENSE_MODE] ${username}@Omen$ `;
-    }
+
     const currentPc = getCurrentPc();
     const hostName = currentPc?.name || 'neo-system';
     
@@ -474,51 +470,6 @@ export default function Terminal({
         }
         return false;
     }
-    
-    if (machineState === 'survival') {
-        const [cmd, ...cmdArgs] = command.toLowerCase().split(' ');
-        switch(cmd) {
-            case 'help':
-                handleOutput('Available defense commands:\n  firewall --reboot\n  ports --open <port_number>');
-                break;
-            case 'firewall':
-                if (cmdArgs[0] === '--reboot') {
-                    if (playerDefenses.firewall) {
-                        handleOutput('Firewall is already active.');
-                    } else {
-                        await runProgressBar(3000, 'Rebooting firewall...');
-                        setPlayerDefenses((d: any) => ({...d, firewall: true}));
-                        handleOutput('Firewall online. Port-based attacks blocked.');
-                    }
-                } else {
-                    handleOutput('Usage: firewall --reboot');
-                }
-                break;
-            case 'ports':
-                if (cmdArgs[0] === '--open' && cmdArgs[1]) {
-                    const portToOpen = parseInt(cmdArgs[1]);
-                    if (isNaN(portToOpen)) {
-                        handleOutput('Invalid port number.');
-                        break;
-                    }
-                    if (playerDefenses.ports.includes(portToOpen)) {
-                        handleOutput(`Port ${portToOpen} is already open.`);
-                    } else {
-                        await runProgressBar(2000, `Opening port ${portToOpen}...`);
-                        setPlayerDefenses((d: any) => ({...d, ports: [...d.ports, portToOpen]}));
-                        handleOutput(`Port ${portToOpen} is now open.`);
-                    }
-                } else {
-                    handleOutput('Usage: ports --open <port_number>');
-                }
-                break;
-            default:
-                handleOutput(`Unknown defense command: ${cmd}`);
-        }
-        setIsProcessing(false);
-        return;
-    }
-
 
     const handlePortHack = async (portNumber: number, portName: string) => {
         if (connectedIp === '127.0.0.1') {
@@ -576,6 +527,14 @@ export default function Terminal({
         handleOutput(`${port.service} port (${portNumber}) is now open.`);
         addRemoteLog(`Port ${portNumber} (${port.service}) opened from ${PLAYER_PUBLIC_IP}.`);
     };
+
+    if (command.toLowerCase() === 'neo.bin') {
+        await runProgressBar(5000, 'Installing NÉO...');
+        handleOutput('Installation complete. Initializing...');
+        onNeoExecute();
+        setIsProcessing(false);
+        return;
+    }
 
     const isHackingTool = allExecutables.some(file => file.name.toLowerCase().startsWith(command.toLowerCase()));
     if (isHackingTool && command.toLowerCase() !== 'nano') {

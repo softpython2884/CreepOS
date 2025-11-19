@@ -7,7 +7,7 @@ import Terminal from '@/components/apps/terminal';
 import DocumentFolder from '@/components/apps/document-folder';
 import TextEditor from '@/components/apps/text-editor';
 import { cn } from '@/lib/utils';
-import { SoundEvent, MusicEvent, AlertEvent } from './audio-manager';
+import { MusicEvent, AlertEvent } from './audio-manager';
 import { type FileSystemNode } from '@/lib/network/types';
 import Draggable from 'react-draggable';
 import { network as initialNetwork } from '@/lib/network';
@@ -17,15 +17,16 @@ import NetworkMap from './apps/network-map';
 import EmailClient, { type Email } from './apps/email-client';
 import WebBrowser from './apps/web-browser';
 import MediaPlayer from './apps/media-player';
-import { ShieldAlert, ShieldCheck, Mail, AlertTriangle, Skull } from 'lucide-react';
-import { Progress } from './ui/progress';
-import TracerTerminal, { traceCommands, decryptCommands, isolationCommands } from './tracer-terminal';
+import { AlertTriangle, Skull } from 'lucide-react';
 import { saveGameState, loadGameState, deleteGameState } from '@/lib/save-manager';
 import SurvivalMode from './survival-mode';
 import CallView from './call-view';
 import IncomingCallView from './incoming-call-view';
 import { Call, CallMessage, CallChoice, CallScript } from '@/lib/call-system/types';
-import { testCallScript } from '@/lib/call-system/scripts/test-call';
+import { supervisorCall1 } from '@/lib/call-system/scripts/supervisor-call-1';
+import { directorCall } from '@/lib/call-system/scripts/director-call';
+import { neoIntroCall } from '@/lib/call-system/scripts/neo-intro-call';
+import { directorCallback } from '@/lib/call-system/scripts/director-callback';
 
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player';
@@ -122,6 +123,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [activeCall, setActiveCall] = useState<Call | null>(null);
   const callScriptRef = useRef<CallScript | null>(null);
   const currentNodeIdRef = useRef<string | null>(null);
+  const callQueueRef = useRef<(() => void)[]>([]);
 
   // Trace state
   const [isTraced, setIsTraced] = useState(false);
@@ -129,12 +131,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [traceTarget, setTraceTarget] = useState({ name: '', time: 0 });
   const [emailNotification, setEmailNotification] = useState(false);
   
-  // Survival mode state
-  const [playerDefenses, setPlayerDefenses] = useState({
-      firewall: true,
-      ports: [80, 443, 22]
-  });
-
 
   const [emails, setEmails] = useState<Email[]>(() => {
     const savedState = loadGameState(username);
@@ -195,8 +191,30 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     });
   }, []);
 
+  const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => {
+    const newEmail: Email = {
+      id: `email-${Date.now()}`,
+      recipient: 'Dr.Omen@research-lab.net',
+      folder: 'inbox',
+      timestamp: new Date().toISOString(),
+      ...emailDetails,
+    };
+
+    setEmails(prev => [...prev, newEmail]);
+    onSoundEvent('email');
+    setEmailNotification(true);
+    setTimeout(() => setEmailNotification(false), 3000);
+    addLog(`EMAIL: Received email from ${emailDetails.sender} with subject "${emailDetails.subject}"`);
+  }, [addLog, onSoundEvent]);
+
+
   const endCall = useCallback((withSound = true) => {
     onAlertEvent('stopRingtone');
+    if (isTraced) {
+      onMusicEvent('scream');
+    } else {
+      onMusicEvent('calm');
+    }
     setCallState('idle');
     setActiveCall(null);
     callScriptRef.current = null;
@@ -204,16 +222,20 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if (withSound) {
         onSoundEvent('close');
     }
-    if (isTraced) {
-      onMusicEvent('scream');
-    } else {
-      onMusicEvent('calm');
+    
+    // Process next call in queue if any
+    const nextCall = callQueueRef.current.shift();
+    if(nextCall) {
+        setTimeout(nextCall, 1000); // Small delay between calls
     }
-  }, [onAlertEvent, onSoundEvent, isTraced, onMusicEvent]);
+  }, [onAlertEvent, isTraced, onMusicEvent, onSoundEvent]);
 
 
   const triggerCall = useCallback((script: CallScript) => {
-    if (callState !== 'idle') return;
+    if (callState !== 'idle') {
+        callQueueRef.current.push(() => triggerCall(script));
+        return;
+    };
 
     callScriptRef.current = script;
     currentNodeIdRef.current = script.startNode;
@@ -261,7 +283,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     const chosenChoice = currentNode.choices?.find(c => c.id === choiceId);
     if (!chosenChoice) return;
 
-    // Add player choice to history
     const playerMessage: CallMessage = {
         speaker: 'Operator',
         text: chosenChoice.text
@@ -269,9 +290,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
     setActiveCall(prev => prev ? ({ ...prev, messages: [...prev.messages, playerMessage], choices: [] }) : null);
 
-    // Process consequences
     if (chosenChoice.consequences?.danger) {
         handleIncreaseDanger(chosenChoice.consequences.danger);
+    }
+    if (chosenChoice.consequences?.triggerEmail) {
+        receiveEmail(chosenChoice.consequences.triggerEmail);
+    }
+    if (chosenChoice.consequences?.endCallAndTrigger) {
+        setTimeout(() => triggerCall(chosenChoice.consequences!.endCallAndTrigger!), 1500);
     }
     
     const nextNodeId = chosenChoice.nextNode;
@@ -290,8 +316,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
           choices: nextNode.choices || [],
           isFinished: !nextNode.choices || nextNode.choices.length === 0,
       }) : null);
-      onSoundEvent('email'); // sound for receiving a message
-    }, 1000); // Delay for realism
+      onSoundEvent('email');
+    }, 1000);
   }
 
   const handlePlayerChoice = (choiceId: string) => {
@@ -310,10 +336,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   }, [addLog, onAlertEvent, onMusicEvent, isTraced, traceTarget]);
 
   const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
-    if (isTraced) return; // Don't start a new trace if one is active
+    if (isTraced) return;
     
     addLog(`DANGER: Trace initiated from ${targetName}. You have ${time} seconds to disconnect.`);
-    onAlertEvent('scream');
+    onMusicEvent('scream');
     setIsTraced(true);
     setTraceTimeLeft(time);
     setTraceTarget({ name: targetName, time: time });
@@ -321,13 +347,27 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     setOpenApps(prev => prev.map(app => 
         app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
     ));
-  }, [addLog, onAlertEvent, isTraced]);
+  }, [addLog, onMusicEvent, isTraced]);
 
+  // Initial supervisor call
   useEffect(() => {
-    (window as any).startTestCall = () => triggerCall(testCallScript);
-    
-    return () => {
-      delete (window as any).startTestCall;
+    const timer = setTimeout(() => {
+      triggerCall(supervisorCall1);
+    }, 13000);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); 
+
+  const handleNeoExecute = useCallback(() => {
+    callQueueRef.current = [
+      () => triggerCall(directorCall),
+      () => triggerCall(neoIntroCall),
+      () => triggerCall(directorCallback),
+    ];
+    const firstCall = callQueueRef.current.shift();
+    if(firstCall) {
+        firstCall();
     }
   }, [triggerCall]);
 
@@ -494,23 +534,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       onSoundEvent('click');
   };
 
-  const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => {
-    const newEmail: Email = {
-      id: `email-${Date.now()}`,
-      recipient: 'Dr.Omen@research-lab.net',
-      folder: 'inbox',
-      timestamp: new Date().toISOString(),
-      ...emailDetails,
-    };
-
-    setEmails(prev => [...prev, newEmail]);
-    onSoundEvent('email');
-    setEmailNotification(true);
-    setTimeout(() => setEmailNotification(false), 3000);
-    addLog(`EMAIL: Received email from ${emailDetails.sender} with subject "${emailDetails.subject}"`);
-  }, [addLog, onSoundEvent]);
-
-
   const handleSendEmail = (email: Omit<Email, 'id' | 'timestamp' | 'folder'>) => {
     const newEmail: Email = {
       ...email,
@@ -577,6 +600,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
             dangerLevel,
             machineState: 'desktop', // Default state for desktop terminal
             receiveEmail,
+            onNeoExecute: handleNeoExecute,
         } 
     },
     documents: { 
@@ -650,13 +674,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     }
   };
   
-  const survivalTerminalConfig = {
-      title: 'DEFENSE_TERMINAL',
-      component: Terminal,
-      width: 700,
-      height: 450,
-      props: { ...appConfig.terminal.props, machineState: 'survival', setPlayerDefenses, playerDefenses }
-  };
 
   const closeApp = useCallback((instanceId: number) => {
     onSoundEvent('close');
@@ -717,7 +734,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       <div className={cn("absolute inset-0 bg-gradient-to-b from-transparent to-background/80 transition-opacity", isTraced && "bg-destructive/30 animate-pulse-slow")} />
       
       {isTraced && (
-        <>
           <div className="absolute top-4 left-4 z-[9999] text-destructive-foreground font-code animate-pulse-slow">
               <div className="flex items-center gap-4 p-4 bg-destructive/80 border-2 border-destructive-foreground rounded-lg shadow-2xl shadow-destructive/20">
                   <AlertTriangle className="h-16 w-16" />
@@ -727,13 +743,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
                   </div>
               </div>
           </div>
-
-          <div className='absolute top-32 left-4 z-50 flex flex-col gap-2'>
-            <TracerTerminal title="INCOMING_TRACE::ID_77_A" commands={traceCommands} startDelay={0} />
-            <TracerTerminal title="ROUTE_ANALYSIS::ID_34_B" commands={decryptCommands} startDelay={1000} />
-            <TracerTerminal title="NODE_ISOLATION::ID_99_C" commands={isolationCommands} startDelay={2000} />
-          </div>
-        </>
       )}
 
       {callState === 'incoming' && activeCall && (
