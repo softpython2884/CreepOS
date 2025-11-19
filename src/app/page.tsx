@@ -384,16 +384,18 @@ export default function Home() {
 
 
     const updateScale = useCallback(() => {
-        const viewportBaseWidth = 1920;
-        const viewportWidth = viewportBaseWidth;
-        const viewportHeight = viewportWidth / aspectRatio;
-
         const { innerWidth: windowWidth, innerHeight: windowHeight } = window;
+        if (windowWidth === 0 || windowHeight === 0) return;
+
+        // Determine base viewport width, but cap it at 1920
+        const viewportWidth = Math.min(windowWidth, 1920);
+        const viewportHeight = viewportWidth / aspectRatio;
 
         const scaleX = windowWidth / viewportWidth;
         const scaleY = windowHeight / viewportHeight;
 
-        const calculatedScale = Math.min(scaleX, scaleY, 1); // Cap scale at 1
+        // The final scale is the minimum of the two, ensuring it fits
+        const calculatedScale = Math.min(scaleX, scaleY);
         setScale(calculatedScale);
 
         const left = (windowWidth - viewportWidth * calculatedScale) / 2;
