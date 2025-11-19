@@ -398,7 +398,7 @@ export default function Terminal({
     }
     
     if (fullCommand === '') {
-        setHistory([...history, { type: 'command', content: getPrompt() }]);
+        setHistory([...history, { type: 'command', content: getPrompt(), onConfirm: () => {} }]);
         return;
     };
 
@@ -407,7 +407,7 @@ export default function Terminal({
     setCommandHistory(prev => [fullCommand, ...prev]);
     setHistoryIndex(-1);
 
-    let newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${fullCommand}` }];
+    let newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${fullCommand}`, onConfirm: () => {} }];
     setHistory(newHistory);
     setInput('');
 
@@ -851,15 +851,11 @@ export default function Terminal({
                 handleOutput(`nano: missing file operand`);
             } else {
                 const filePath = resolvePath(pathArg);
-                if (connectedIp !== '127.0.0.1') {
-                    handleOutput(`nano: cannot edit files on remote systems yet.`);
+                const file = findNodeByPath(filePath, fileSystem);
+                if (file && file.type === 'folder') {
+                    handleOutput(`nano: cannot edit directory '${pathArg}'`);
                 } else {
-                    const file = findNodeByPath(filePath, fileSystem);
-                    if (file && file.type === 'folder') {
-                        handleOutput(`nano: cannot edit directory '${pathArg}'`);
-                    } else {
-                        onOpenFileEditor(filePath, file?.content || '');
-                    }
+                     onOpenFileEditor(filePath, file?.content || '');
                 }
             }
             break;
@@ -903,26 +899,38 @@ export default function Terminal({
                     content: 'Are you sure you want to delete all files in this directory? (y/n)',
                     onConfirm: (confirmed) => {
                         setIsProcessing(true);
-                        setHistory(prevHist => [...prevHist, {type: 'command', content: confirmed ? 'y' : 'n'}]);
+                        setHistory(prevHist => [...prevHist, {type: 'command', content: confirmed ? 'y' : 'n', onConfirm: () => {}}]);
                         if(confirmed) {
                              setNetwork(currentNetwork => currentNetwork.map(pc => {
                                 if (pc.ip === connectedIp) {
-                                    let fs = pc.fileSystem;
-                                    let targetDirChildren = findParentDirectory(resolvePath("."), fs);
+                                    const personalizedPcFs = personalizeFileSystem(pc.fileSystem, username);
+                                    let parentDir = personalizedPcFs;
+                                    let currentPathToUpdate = currentDirectory;
+
+                                    // Find the correct directory in the *unpersonalized* FS
+                                    let parentDirInOriginalFs: FileSystemNode[] | undefined = pc.fileSystem;
+                                    for(const part of currentDirectory) {
+                                        if(!parentDirInOriginalFs) break;
+                                        const nextFolder = parentDirInOriginalFs.find(f => personalizeFileSystem([f], username)[0].name === part);
+                                        parentDirInOriginalFs = nextFolder?.children;
+                                    }
                                     
-                                    const filesToRemove = targetDirChildren?.filter(f => f.type === 'file' && !f.isSystemFile) || [];
+                                    const filesToRemove = parentDirInOriginalFs?.filter(f => f.type === 'file' && !f.isSystemFile) || [];
+                                    
                                     if(filesToRemove.length === 0) {
                                         handleOutput("rm: no files to remove");
                                         return pc;
                                     }
-
+                                    
+                                    let newFs = pc.fileSystem;
                                     for(const file of filesToRemove) {
-                                        fs = updateNodeByPath(fs, [...currentDirectory, file.name], () => null);
+                                        newFs = updateNodeByPath(newFs, [...currentPathToUpdate, file.name], () => null);
                                     }
+
                                     handleOutput(`Removed ${filesToRemove.length} files.`);
                                     addLog(`EVENT: Removed ${filesToRemove.length} files from ${connectedIp}:${currentDirectory.join('/')}`);
 
-                                    return { ...pc, fileSystem: fs };
+                                    return { ...pc, fileSystem: newFs };
                                 }
                                 return pc;
                             }));
@@ -1013,11 +1021,10 @@ export default function Terminal({
         }
         case 'cp':
         case 'mv': {
-            if(!checkAuth() || connectedIp !== '127.0.0.1') {
-                handleOutput(`${command}: can only be used on the local file system.`);
+            if(!checkAuth()) {
                 break;
             }
-
+            
             const [sourceArg, destArg] = args;
             if(!sourceArg || !destArg) {
                 handleOutput(`${command}: missing file operand`);
@@ -1038,17 +1045,28 @@ export default function Terminal({
 
             let destPath = resolvePath(destArg);
             let destNode = findNodeByPath(destPath, fileSystem);
-            let finalDestPath = [...destPath];
-            let newFileName = sourceNode.name;
+            let finalDestDirPath: string[];
+            let newFileName: string;
 
             if (destNode && destNode.type === 'folder') {
                 // Destination is a directory, copy file inside it
-                finalDestPath.push(sourceNode.name);
+                finalDestDirPath = [...destPath];
+                newFileName = sourceNode.name;
             } else {
                 // Destination is a file path
                 newFileName = destPath[destPath.length - 1];
-                finalDestPath = destPath.slice(0, -1);
+                finalDestDirPath = destPath.slice(0, -1);
             }
+            
+            if (finalDestDirPath.join('/') === sourcePath.slice(0,-1).join('/') && command === 'cp') {
+                if (destNode && destNode.type === 'file') {
+                    // This is an overwrite, which addNodeByPath handles
+                } else if (findNodeByPath([...finalDestDirPath, newFileName], fileSystem)) {
+                     handleOutput(`${command}: cannot create file '${destArg}': File exists`);
+                     break;
+                }
+            }
+
 
             const copiedNode = {
                 ...JSON.parse(JSON.stringify(sourceNode)), // deep copy
@@ -1057,14 +1075,14 @@ export default function Terminal({
             };
             
             setNetwork(currentNetwork => currentNetwork.map(pc => {
-                if (pc.id === 'player-pc') {
+                if (pc.ip === connectedIp) {
                     let newFs = pc.fileSystem;
 
                     if (command === 'mv') {
                          newFs = updateNodeByPath(newFs, sourcePath, () => null);
                     }
                     
-                    newFs = addNodeByPath(newFs, finalDestPath, copiedNode);
+                    newFs = addNodeByPath(newFs, finalDestDirPath, copiedNode);
                     return {...pc, fileSystem: newFs};
                 }
                 return pc;
@@ -1221,7 +1239,7 @@ export default function Terminal({
         if (possibilities.length === 1) {
             setInput(possibilities[0] + ' ');
         } else if (possibilities.length > 1) {
-            const newHistory = [...history, { type: 'command', content: `${getPrompt()}${input}` }, { type: 'output', content: possibilities.join('  ') }];
+            const newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${input}`, onConfirm: () => {} }, { type: 'output', content: possibilities.join('  ') }];
             setHistory(newHistory);
         }
         return;
@@ -1251,7 +1269,7 @@ export default function Terminal({
         const newText = parts.slice(0, -1).join(' ') + (parts.length > 1 ? ' ' : '') + pathPrefix + completion.name;
         setInput(newText + (completion.type === 'folder' ? '/' : ' '));
     } else if (possibilities.length > 1) {
-        const newHistory = [...history, { type: 'command', content: `${getPrompt()}${input}` }, { type: 'output', content: possibilities.map(p => p.name).join('  ') }];
+        const newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${input}`, onConfirm: () => {} }, { type: 'output', content: possibilities.map(p => p.name).join('  ') }];
         setHistory(newHistory);
     }
   };

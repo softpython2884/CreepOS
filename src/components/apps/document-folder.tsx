@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FileText, Folder, CornerUpLeft, X, Lock } from 'lucide-react';
 import { type FileSystemNode } from '@/lib/network/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -17,6 +18,10 @@ interface DocumentFolderProps {
     username: string;
 }
 
+const personalizeFileSystem = (nodes: FileSystemNode[], user: string): FileSystemNode[] => {
+    return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, user));
+};
+
 export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSoundEvent, username }: DocumentFolderProps) {
     const [currentPath, setCurrentPath] = useState<string[]>(['/']);
     const [currentFolderItems, setCurrentFolderItems] = useState<FileSystemNode[]>([]);
@@ -24,6 +29,8 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
     const [lockedFolder, setLockedFolder] = useState<FileSystemNode | null>(null);
     const [password, setPassword] = useState('');
     const [passwordError, setPasswordError] = useState(false);
+
+    const personalizedFs = useMemo(() => personalizeFileSystem(fileSystem, username), [fileSystem, username]);
 
     useEffect(() => {
         const getNodeFromPath = (nodes: FileSystemNode[], path: string[]): FileSystemNode[] => {
@@ -42,8 +49,8 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
             }
             return currentLevel;
         };
-        setCurrentFolderItems(getNodeFromPath(fileSystem, currentPath));
-    }, [currentPath, fileSystem]);
+        setCurrentFolderItems(getNodeFromPath(personalizedFs, currentPath));
+    }, [currentPath, personalizedFs]);
 
 
     const openNode = (node: FileSystemNode) => {

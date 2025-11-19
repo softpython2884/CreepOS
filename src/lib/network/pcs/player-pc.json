@@ -2,7 +2,7 @@
 
 {
     "id": "player-pc",
-    "name": "Operator's Terminal",
+    "name": "Omen",
     "ip": "127.0.0.1",
     "type": "Desktop",
     "links": ["holberton-gateway"],
