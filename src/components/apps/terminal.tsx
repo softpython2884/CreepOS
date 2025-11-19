@@ -848,45 +848,69 @@ export default function Terminal({
             }
 
             if (fileArg === '*') {
-                setIsProcessing(false);
-                setIsAwaitingConfirmation(true);
                 setHistory(prev => [...prev, {
                     type: 'confirmation',
                     content: 'Are you sure you want to delete all files in this directory? (y/n)',
-                    onConfirm: (confirmed) => {
-                        setIsProcessing(true);
-                        setHistory(prevHist => [...prevHist, {type: 'command', content: confirmed ? 'y' : 'n', onConfirm: () => {}}]);
-                        if(confirmed) {
-                             setNetwork(currentNetwork => currentNetwork.map(pc => {
-                                if (pc.ip === connectedIp) {
-                                    const parentDirNode = findNodeByPath(currentDirectory, pc.fileSystem);
-                                    if (!parentDirNode || !parentDirNode.children) return pc;
+                    onConfirm: async (confirmed) => {
+                        setHistory(prevHist => [...prevHist, {type: 'command', content: confirmed ? 'y' : 'n'}]);
+                        if (confirmed) {
+                            let filesToRemove: FileSystemNode[] = [];
+                            let filesCleared: FileSystemNode[] = [];
 
-                                    const filesToRemove = parentDirNode.children.filter(f => f.type === 'file' && !f.isSystemFile);
-                                    if (filesToRemove.length === 0) {
-                                        handleOutput("rm: no files to remove");
-                                        return pc;
+                            setNetwork(currentNetwork => {
+                                const newNetwork = [...currentNetwork];
+                                const pcIndex = newNetwork.findIndex(pc => pc.ip === connectedIp);
+                                if (pcIndex === -1) return currentNetwork;
+
+                                const pcToUpdate = newNetwork[pcIndex];
+                                const parentDirNode = findNodeByPath(currentDirectory, pcToUpdate.fileSystem);
+                                if (!parentDirNode || !parentDirNode.children) return currentNetwork;
+                                
+                                let newFs = pcToUpdate.fileSystem;
+                                const childrenCopy = [...parentDirNode.children];
+
+                                for (const file of childrenCopy) {
+                                    if (file.type === 'file' && !file.isSystemFile) {
+                                        const filePath = [...currentDirectory, file.name];
+                                        if (file.name.endsWith('.log')) {
+                                            filesCleared.push(file);
+                                            newFs = updateNodeByPath(newFs, filePath, (node) => ({ ...node, content: `Log cleared from ${PLAYER_PUBLIC_IP} at ${new Date().toISOString()}\n` }));
+                                        } else {
+                                            filesToRemove.push(file);
+                                            newFs = updateNodeByPath(newFs, filePath, () => null);
+                                        }
                                     }
-                                    
-                                    let newFs = pc.fileSystem;
-                                    for(const file of filesToRemove) {
-                                        newFs = updateNodeByPath(newFs, [...currentDirectory, file.name], () => null);
-                                    }
-
-                                    handleOutput(`Removed ${filesToRemove.length} files.`);
-                                    addLog(`EVENT: Removed ${filesToRemove.length} files from ${connectedIp}:${currentDirectory.join('/')}`);
-
-                                    return { ...pc, fileSystem: newFs };
                                 }
-                                return pc;
-                            }));
+
+                                newNetwork[pcIndex] = { ...pcToUpdate, fileSystem: newFs };
+                                return newNetwork;
+                            });
+
+                            // Await state update before logging
+                            await new Promise(resolve => setTimeout(resolve, 0));
+
+                            if (filesToRemove.length > 0) {
+                                handleOutput(`Removed ${filesToRemove.length} file(s).`);
+                                addLog(`EVENT: Removed ${filesToRemove.length} files from ${connectedIp}:${'/' + currentDirectory.join('/')}`);
+                                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: ${filesToRemove.length} file(s) removed by user from ${PLAYER_PUBLIC_IP} in /${currentDirectory.join('/')}`);
+                            }
+                            if (filesCleared.length > 0) {
+                                handleOutput(`Cleared content of ${filesCleared.length} log file(s).`);
+                                addLog(`EVENT: Cleared ${filesCleared.length} logs on ${connectedIp}`);
+                                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: ${filesCleared.length} log file(s) cleared by user from ${PLAYER_PUBLIC_IP}.`);
+                            }
+                            if (filesToRemove.length === 0 && filesCleared.length === 0) {
+                                handleOutput("rm: no removable files found in this directory.");
+                            }
                         } else {
                             handleOutput('Operation cancelled.');
                         }
                         setIsProcessing(false);
                     }
                 }]);
-                return;
+                setIsProcessing(false); // Pause processing until confirmation
+                setIsAwaitingConfirmation(true);
+                return; // Important: exit handler to wait for user input
             }
 
             const filePath = resolvePath(fileArg);
@@ -936,7 +960,7 @@ export default function Terminal({
                 break;
             }
             
-            const isAccessLog = fileNode.name === 'access.log';
+            const isAccessLog = fileNode.name.endsWith('.log');
             const updater = isAccessLog ? (node: FileSystemNode) => ({ ...node, content: `Log cleared from ${PLAYER_PUBLIC_IP} at ${new Date().toISOString()}\n` }) : () => null;
 
             setNetwork(currentNetwork => currentNetwork.map(pc => {

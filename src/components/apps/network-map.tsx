@@ -1,8 +1,8 @@
 
 'use client';
 
-import React, { useMemo } from 'react';
-import { motion, useDragControls } from 'framer-motion';
+import React, { useMemo, useEffect } from 'react';
+import { motion, useAnimationControls } from 'framer-motion';
 import { Server, Laptop, Smartphone, Link as LinkIcon, ShieldCheck, ShieldAlert, KeyRound } from 'lucide-react';
 import { PC } from '@/lib/network/types';
 import { cn } from '@/lib/utils';
@@ -76,7 +76,8 @@ const Link = ({ from, to }: { from: { x: number; y: number }; to: { x: number; y
 };
 
 export default function NetworkMap({ network, hackedPcs }: NetworkMapProps) {
-    
+    const dragControls = useAnimationControls();
+
     const { nodes, links } = useMemo(() => {
         const nodePositions: { [key: string]: { x: number; y: number } } = {};
         const width = 1200; // Increased canvas size
@@ -110,14 +111,24 @@ export default function NetworkMap({ network, hackedPcs }: NetworkMapProps) {
         return { nodes: nodePositions, links: allLinks };
     }, [network]);
 
-    const dragControls = useDragControls();
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                dragControls.start({ x: 0, y: 0 }, { type: "spring", stiffness: 300, damping: 30 });
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [dragControls]);
+
 
     return (
-        <div className="h-full w-full bg-card/80 p-4 relative overflow-hidden cursor-move" onPointerDown={(e) => dragControls.start(e)}>
+        <div className="h-full w-full bg-card/80 p-4 relative overflow-hidden cursor-move">
              <motion.div 
                 className="relative w-[1200px] h-[900px]"
                 drag
-                dragControls={dragControls}
+                animate={dragControls}
                 dragConstraints={{
                     left: -800,
                     right: 400,
