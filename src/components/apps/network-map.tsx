@@ -27,6 +27,8 @@ const Node = ({ pc, x, y, isHacked }: { pc: PC; x: number; y: number; isHacked: 
         : pc.isDangerous
         ? "bg-destructive/20 border-destructive text-destructive"
         : "bg-secondary/50 border-border text-muted-foreground";
+    
+    const tooltipSide = y < 50 ? 'bottom' : 'top';
 
     return (
         <motion.div
@@ -47,7 +49,7 @@ const Node = ({ pc, x, y, isHacked }: { pc: PC; x: number; y: number; isHacked: 
                             <p className="text-xs font-bold truncate w-20 text-center">{pc.name}</p>
                         </div>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent side={tooltipSide}>
                         <p className="font-code">{pc.ip}</p>
                         {pc.isDangerous && <p className="text-destructive flex items-center gap-1"><ShieldAlert size={14}/> DANGEROUS</p>}
                         {isHacked && <p className="text-green-400 flex items-center gap-1"><ShieldCheck size={14}/> Access Granted</p>}
