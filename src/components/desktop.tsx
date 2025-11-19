@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useCallback, createRef, useEffect } from 'react';
@@ -185,6 +186,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const declineCall = () => {
     onSoundEvent(null); // Stop ringtone
     const script = callScriptRef.current;
+    
+    endCall(false); // End call without UI sound
+
     if (script) {
         // Wait and recall
         const randomDelay = Math.random() * 2000 + 1000; // 1-3 seconds
@@ -192,7 +196,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             triggerCall(script);
         }, randomDelay);
     }
-    endCall(false); // End call without UI sound
   };
 
   const endCall = (withSound = true) => {
@@ -229,22 +232,23 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     }
     
     const nextNodeId = chosenChoice.nextNode;
-    const nextNode = script.nodes[nextNodeId];
-
+    
     setTimeout(() => {
-        if (!nextNode) {
-            // End of script branch, but keep call active for closing message
-            setActiveCall(prev => prev ? ({ ...prev, choices: [], isFinished: true }) : null);
-            return;
-        }
-
-        currentNodeIdRef.current = nextNodeId;
-        setActiveCall(prev => prev ? ({
-            ...prev,
-            messages: [...prev.messages, nextNode.message],
-            choices: nextNode.choices || [],
-        }) : null);
-        onSoundEvent('email');
+      const nextNode = script.nodes[nextNodeId];
+      if (!nextNode) {
+          // This should ideally not happen if scripts are well-formed, but it's a safe fallback.
+          setActiveCall(prev => prev ? ({ ...prev, isFinished: true }) : null);
+          return;
+      }
+      
+      currentNodeIdRef.current = nextNodeId;
+      setActiveCall(prev => prev ? ({
+          ...prev,
+          messages: [...prev.messages, nextNode.message],
+          choices: nextNode.choices || [],
+          isFinished: !nextNode.choices || nextNode.choices.length === 0,
+      }) : null);
+      onSoundEvent('email'); // sound for receiving a message
     }, 1000); // Delay for realism
   }
 
@@ -315,7 +319,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     
     addLog(`DANGER: Trace initiated from ${targetName}. You have ${time} seconds to disconnect.`);
     onMusicEvent('alarm');
-    setIsScreaming(true);
+    onSoundEvent('scream');
     setIsTraced(true);
     setTraceTimeLeft(time);
     setTraceTarget({ name: targetName, time: time });
@@ -323,28 +327,22 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
     setOpenApps(prev => prev.map(app => 
         app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
     ));
-  }, [addLog, onMusicEvent, isTraced]);
+  }, [addLog, onMusicEvent, isTraced, onSoundEvent]);
 
   const handleStopTrace = useCallback(() => {
     if (!isTraced) return;
     
     addLog(`INFO: Trace averted. Disconnected from ${traceTarget.name}.`);
     onMusicEvent('calm');
-    if (isScreaming) {
-        onSoundEvent('stopScream');
-        setIsScreaming(false);
-    }
+    onSoundEvent('stopScream');
     setIsTraced(false);
     setTraceTimeLeft(0);
     setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
-  }, [addLog, onMusicEvent, isTraced, traceTarget, onSoundEvent, isScreaming]);
+  }, [addLog, onMusicEvent, isTraced, traceTarget, onSoundEvent]);
 
  useEffect(() => {
     if (!isTraced) {
-      if (isScreaming) {
-        onSoundEvent('stopScream');
-        setIsScreaming(false);
-      }
+      onSoundEvent('stopScream');
       return;
     }
 
@@ -374,16 +372,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
                 setMachineState('bsod');
                 return 0;
             }
-            if (newTime > 0 && !isScreaming) {
-                onSoundEvent('scream');
-                setIsScreaming(true);
-            }
             return newTime;
         });
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, addLog, isScreaming, onSoundEvent, network, username, setMachineState, hackedPcs]);
+}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, hackedPcs]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
@@ -719,7 +713,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       )}
 
       {callState === 'incoming' && activeCall && (
-        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center">
+        <div className="absolute top-4 right-4 z-50">
             <IncomingCallView 
                 interlocutor={activeCall.interlocutor}
                 onAccept={answerCall}

@@ -57,7 +57,7 @@ const selectSoundSource = (src: string | string[]): string => {
 export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioManagerProps) {
   const sfxPlayersRef = useRef<HTMLAudioElement[]>([]);
   const musicPlayerRef = useRef<HTMLAudioElement | null>(null);
-  const specialLoopPlayerRef = useRef<HTMLAudioElement | null>(null); // For scream and ringtone
+  const specialLoopPlayerRef = useRef<HTMLAudioElement | null>(null); // For scream, fan, ringtone
   const [isInitialized, setIsInitialized] = useState(false);
   const currentMusic = useRef<MusicEvent>('none');
   const calmPlaylistIndex = useRef(0);
@@ -133,19 +133,11 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         onEnd(null);
         return;
     }
-
-    if (soundEvent === null) {
-      onEnd(null);
-      return;
-    }
     
-    const sound = sounds[soundEvent];
-    if (!sound) return;
-
-    // Handle special looping sounds (scream, ringtone)
-    if (sound.loop) {
-        const player = specialLoopPlayerRef.current;
-        if (player) {
+    const player = specialLoopPlayerRef.current;
+    if (soundEvent === 'ringtone' || soundEvent === 'scream' || soundEvent === 'fan') {
+        const sound = sounds[soundEvent];
+        if (player && sound.loop) {
             const src = selectSoundSource(sound.src);
             player.src = src;
             player.volume = sound.volume;
@@ -155,22 +147,36 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         onEnd(null); // Reset event immediately
         return;
     }
+    
+    // Stop looping sounds if event is null but not for stopping scream specifically
+    if(soundEvent === null) {
+        if (player) {
+            player.pause();
+            player.currentTime = 0;
+        }
+        onEnd(null);
+        return;
+    }
+
 
     // Handle one-shot sounds
-    const player = sfxPlayersRef.current.find(p => p.paused);
+    const sfxPlayer = sfxPlayersRef.current.find(p => p.paused);
 
-    if (player) {
+    if (sfxPlayer) {
+        const sound = sounds[soundEvent];
+        if (!sound) return;
+
         const src = selectSoundSource(sound.src);
-        player.src = src;
-        player.volume = sound.volume;
-        player.loop = false;
+        sfxPlayer.src = src;
+        sfxPlayer.volume = sound.volume;
+        sfxPlayer.loop = sound.loop || false;
         
-        player.onended = () => {
+        sfxPlayer.onended = () => {
             onEnd(soundEvent);
-            player.onended = null;
+            sfxPlayer.onended = null;
         };
         
-        player.play().catch(error => {
+        sfxPlayer.play().catch(error => {
             if ((error as Error).name !== 'AbortError') {
                 console.warn(`Could not play sound (${soundEvent}):`, error);
             }

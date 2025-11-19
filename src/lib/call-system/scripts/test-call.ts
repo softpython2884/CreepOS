@@ -1,3 +1,4 @@
+
 import type { CallScript } from '../types';
 
 export const testCallScript: CallScript = {
@@ -45,9 +46,15 @@ export const testCallScript: CallScript = {
     'busy-response': {
       message: {
         speaker: 'Néo',
-        text: 'Compris. L\'anomalie persiste. Je vous notifierai si la situation devient critique. Terminé.',
+        text: 'Compris. L\'anomalie persiste. Je vous notifierai si la situation devient critique.',
       },
-       choices: [] // No choices, leads to end of call
+       choices: [
+        {
+          id: 'end-busy',
+          text: 'Terminé.',
+          nextNode: 'end-call'
+        }
+       ]
     },
     'silent-response': {
         message: {
@@ -75,14 +82,19 @@ export const testCallScript: CallScript = {
             speaker: 'Néo',
             text: 'Je suis l\'interface de maintenance de ce système. Et vous êtes mon opérateur. Votre ton a été noté.',
         },
-        choices: []
+        choices: [
+            {
+                id: 'end-provoke',
+                text: 'Compris.',
+                nextNode: 'end-call'
+            }
+        ]
     },
     'end-call': {
         message: {
             speaker: 'Néo',
             text: 'Fin de la communication.'
         },
-        choices: []
     }
   },
 };
