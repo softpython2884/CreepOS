@@ -36,6 +36,8 @@ interface TerminalProps {
     playerDefenses?: any;
 }
 
+const PLAYER_PUBLIC_IP = '184.72.238.110';
+
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
     if (path.length === 0) return { name: '/', type: 'folder', children: nodes, id: 'root' };
 
@@ -62,43 +64,50 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
 
 
 const updateNodeByPath = (
-  nodes: FileSystemNode[],
-  path: string[],
-  updater: (node: FileSystemNode) => FileSystemNode | null
-): FileSystemNode[] => {
+    nodes: FileSystemNode[],
+    path: string[],
+    updater: (node: FileSystemNode) => FileSystemNode | null
+  ): FileSystemNode[] => {
     if (path.length === 0) return nodes;
-
+  
     const nodeName = path[0];
-
-    // If we're at the target node
+    
+    // If we're at the target node (and it's in the root)
     if (path.length === 1) {
-        const nodeIndex = nodes.findIndex(n => n.name === nodeName);
-        if (nodeIndex === -1) return nodes; // Node not found
-
-        const updatedNode = updater(nodes[nodeIndex]);
-
-        const newNodes = [...nodes];
-        if (updatedNode === null) {
-            newNodes.splice(nodeIndex, 1); // Remove node
-        } else {
-            newNodes[nodeIndex] = updatedNode; // Update node
-        }
-        return newNodes;
+      const nodeIndex = nodes.findIndex(n => n.name === nodeName);
+      if (nodeIndex === -1) return nodes; // Node not found
+  
+      const updatedNode = updater(nodes[nodeIndex]);
+  
+      const newNodes = [...nodes];
+      if (updatedNode === null) {
+        newNodes.splice(nodeIndex, 1); // Remove node
+      } else {
+        newNodes[nodeIndex] = updatedNode; // Update node
+      }
+      return newNodes;
     }
-
+  
     // Recurse into the next folder in the path
     const folderIndex = nodes.findIndex(node => node.name === nodeName && node.type === 'folder');
-    if (folderIndex === -1) return nodes;
-
-    const newNodes = [...nodes];
-    const folderToUpdate = newNodes[folderIndex];
-
-    newNodes[folderIndex] = {
-        ...folderToUpdate,
-        children: updateNodeByPath(folderToUpdate.children || [], path.slice(1), updater),
-    };
+    if (folderIndex === -1) return nodes; // Path is invalid
+  
+    const folderToUpdate = nodes[folderIndex];
+    if (!folderToUpdate.children) return nodes; // Folder has no children to update
+  
+    const updatedChildren = updateNodeByPath(folderToUpdate.children, path.slice(1), updater);
     
-    return newNodes;
+    // If children array is different, it means an update happened
+    if (updatedChildren !== folderToUpdate.children) {
+        const newNodes = [...nodes];
+        newNodes[folderIndex] = {
+            ...folderToUpdate,
+            children: updatedChildren,
+        };
+        return newNodes;
+    }
+    
+    return nodes; // No changes
 };
 
 
@@ -528,12 +537,12 @@ export default function Terminal({
     
         if (currentTargetPC.firewall.enabled) {
             handleOutput(`${portName} failed: Active firewall detected.`);
-            addRemoteLog(`HACK: ${portName} failed on port ${portNumber}. Reason: Firewall active.`);
+            addRemoteLog(`${portName} failed on port ${portNumber}. Reason: Firewall active.`);
             return;
         }
         if (currentTargetPC.proxy.enabled) {
             handleOutput(`${portName} failed: Active proxy detected.`);
-            addRemoteLog(`HACK: ${portName} failed on port ${portNumber}. Reason: Proxy active.`);
+            addRemoteLog(`${portName} failed on port ${portNumber}. Reason: Proxy active.`);
             return;
         }
         const port = currentTargetPC.ports.find(p => p.port === portNumber);
@@ -562,7 +571,7 @@ export default function Terminal({
         );
   
         handleOutput(`${port.service} port (${portNumber}) is now open.`);
-        addRemoteLog(`HACK: Port ${portNumber} (${port.service}) opened by ${username}.`);
+        addRemoteLog(`Port ${portNumber} (${port.service}) opened from ${PLAYER_PUBLIC_IP}.`);
     };
 
     const isHackingTool = allExecutables.some(file => file.name.toLowerCase().startsWith(command.toLowerCase()));
@@ -617,7 +626,7 @@ export default function Terminal({
                     } else {
                         secInfo.push('  No scannable ports detected.');
                     }
-                    addRemoteLog(`INFO: System ${targetPC.ip} probed by ${username}.`);
+                    addRemoteLog(`INFO: System ${targetPC.ip} probed from ${PLAYER_PUBLIC_IP}.`);
                     handleOutput(secInfo.join('\n'));
                 }
                 break;
@@ -628,21 +637,21 @@ export default function Terminal({
                     handleOutput(`porthack: System ${targetPC.ip} already breached. Password: ${targetPC.auth.pass}`);
                 } else if (targetPC.firewall.enabled) {
                     handleOutput(`ERROR: Active firewall detected. Connection terminated.`);
-                    addRemoteLog(`HACK: PortHack failed. Reason: Firewall active.`);
+                    addRemoteLog(`PortHack failed. Reason: Firewall active.`);
                 } else if (targetPC.proxy.enabled) {
                     handleOutput(`ERROR: Active proxy detected. Connection bounced.`);
-                    addRemoteLog(`HACK: PortHack failed. Reason: Proxy active.`);
+                    addRemoteLog(`PortHack failed. Reason: Proxy active.`);
                 } else {
                     handleOutput(`Initiating PortHack sequence...`);
                     await runProgressBar(5000);
                     const openPorts = targetPC.ports.filter(p => p.isOpen).length;
                     if (openPorts >= targetPC.requiredPorts) {
                         handleOutput(`PortHack successful on ${targetPC.ip}. Firewall breached.\n  Password cracked: ${targetPC.auth.pass}`);
-                        addRemoteLog(`HACK: PortHack successful. Root access gained by ${username}.`);
+                        addRemoteLog(`PortHack successful. Root access gained from ${PLAYER_PUBLIC_IP}.`);
                         onHack(targetPC.id, targetPC.ip);
                     } else {
                         handleOutput(`PortHack failed: ${targetPC.requiredPorts} open port(s) required. (${openPorts}/${targetPC.requiredPorts} open)`);
-                        addRemoteLog(`HACK: PortHack failed. Reason: Insufficient open ports.`);
+                        addRemoteLog(`PortHack failed. Reason: Insufficient open ports.`);
                     }
                 }
                 break;
@@ -654,7 +663,7 @@ export default function Terminal({
                 } else {
                     await runAnalyzeMinigame(targetPC.firewall.solution || 'UNKNOWN');
                     handleOutput(`Firewall analysis complete. Solution fragment acquired.`);
-                    addRemoteLog(`HACK: Firewall analysis by ${username} revealed solution: ${targetPC.firewall.solution}`);
+                    addRemoteLog(`Firewall analysis from ${PLAYER_PUBLIC_IP} revealed solution: ${targetPC.firewall.solution}`);
                 }
                 break;
             case 'overload':
@@ -672,10 +681,10 @@ export default function Terminal({
                     if (availableNodes >= requiredNodes) {
                         setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC!.id ? { ...pc, proxy: { ...pc.proxy, enabled: false } } : pc));
                         handleOutput(`Proxy disabled on ${targetPC.ip}.`);
-                        addRemoteLog(`HACK: Proxy on ${targetPC.ip} disabled via overload by ${username}.`);
+                        addRemoteLog(`Proxy on ${targetPC.ip} disabled via overload from ${PLAYER_PUBLIC_IP}.`);
                     } else {
                         handleOutput(`Overload failed. Insufficient nodes.`);
-                        addRemoteLog(`HACK: Proxy overload failed. Required ${requiredNodes} nodes, have ${availableNodes}.`);
+                        addRemoteLog(`Proxy overload failed. Required ${requiredNodes} nodes, have ${availableNodes}.`);
                     }
                 }
                 break;
@@ -690,7 +699,7 @@ export default function Terminal({
                     setTimeout(onReboot, 1000);
                 } else {
                     if (targetPC) {
-                        addRemoteLog(`CRITICAL: Forkbomb executed by ${username}. System crashing.`);
+                        addRemoteLog(`CRITICAL: XserverOS.sys not found. System crashing.`);
                         
                         setNetwork(currentNetwork => currentNetwork.map(pc => {
                             if (pc.id === targetPC!.id) {
@@ -912,7 +921,7 @@ export default function Terminal({
                        handleOutput('Deletion of XserverOS.sys complete.');
                     }, 100);
                 } else {
-                    addRemoteLog(`CRITICAL: XserverOS.sys deleted by ${username}. System crashing.`);
+                    addRemoteLog(`CRITICAL: XserverOS.sys not found. System crashing.`);
                     disconnect(true);
                 }
                 break;
@@ -921,13 +930,13 @@ export default function Terminal({
             if (fileNode.isSystemFile) {
                 handleOutput(`rm: cannot remove '${fileArg}': Permission denied`);
                 if (connectedIp !== '127.0.0.1') {
-                    addRemoteLog(`SECURITY: Denied attempt to remove system file ${fileNode.name} by ${username}.`);
+                    addRemoteLog(`SECURITY: Denied attempt to remove system file ${fileNode.name} from ${PLAYER_PUBLIC_IP}.`);
                 }
                 break;
             }
             
             const isAccessLog = fileNode.name === 'access.log';
-            const updater = isAccessLog ? (node: FileSystemNode) => ({ ...node, content: `Log cleared by ${username} at ${new Date().toISOString()}\n` }) : () => null;
+            const updater = isAccessLog ? (node: FileSystemNode) => ({ ...node, content: `Log cleared from ${PLAYER_PUBLIC_IP} at ${new Date().toISOString()}\n` }) : () => null;
 
             setNetwork(currentNetwork => currentNetwork.map(pc => {
                 if (pc.ip === connectedIp) {
@@ -939,11 +948,11 @@ export default function Terminal({
 
             if(isAccessLog) {
                 handleOutput(`Cleared content of '${fileArg}'`);
-                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: Log file '${fileArg}' cleared by user ${username}.`);
+                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: Log file '${fileArg}' cleared by user from ${PLAYER_PUBLIC_IP}.`);
                 addLog(`EVENT: Log file '${fileArg}' on ${connectedIp} cleared.`);
             } else {
                 handleOutput(`Removed '${fileArg}'`);
-                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: File removed by user ${username}: ${filePath.join('/')}`);
+                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: File removed by user from ${PLAYER_PUBLIC_IP}: ${filePath.join('/')}`);
                 addLog(`EVENT: File '${fileArg}' on ${connectedIp} removed.`);
             }
 
@@ -1053,7 +1062,7 @@ export default function Terminal({
             handleOutput(`Connection established to ${targetPC.name} (${targetPC.ip}).`);
             handleOutput(`Use 'login' to authenticate.`);
             addLog(`EVENT: Connection established to ${targetPC.name} (${targetPC.ip})`);
-            addRemoteLog(`Connection established from unknown source.`);
+            addRemoteLog(`Connection established from ${PLAYER_PUBLIC_IP}.`);
             break;
         }
         case 'login': {
@@ -1077,11 +1086,11 @@ export default function Terminal({
                 setIsAuthenticated(true);
                 setCurrentDirectory([]);
                 handleOutput('Authentication successful.');
-                addRemoteLog(`AUTH: Login successful as user ${userArg}.`);
+                addRemoteLog(`AUTH: Login successful for user ${userArg} from ${PLAYER_PUBLIC_IP}.`);
                 addLog(`AUTH: Authenticated on ${targetPC.ip} as ${userArg}.`);
             } else {
                 handleOutput('Authentication failed.');
-                addRemoteLog(`AUTH: Failed login attempt with user ${userArg}.`);
+                addRemoteLog(`AUTH: Failed login attempt with user ${userArg} from ${PLAYER_PUBLIC_IP}.`);
             }
             break;
         }
@@ -1097,7 +1106,7 @@ export default function Terminal({
                  setTimeout(onReboot, 1000);
             } else {
                 handleOutput(`Rebooting remote system...`);
-                addRemoteLog(`COMMAND: Reboot initiated by user ${username}.`);
+                addRemoteLog(`COMMAND: Reboot initiated from ${PLAYER_PUBLIC_IP}.`);
                 disconnect();
             }
             break;
@@ -1139,10 +1148,10 @@ export default function Terminal({
                 if (targetPC.firewall.solution === solution) {
                     setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
                     handleOutput('Firewall disabled.');
-                    addRemoteLog(`HACK: Firewall disabled by ${username} with solution: ${solution}.`);
+                    addRemoteLog(`Firewall disabled from ${PLAYER_PUBLIC_IP} with solution: ${solution}.`);
                 } else {
                      handleOutput('Incorrect solution.');
-                     addRemoteLog(`HACK: Incorrect firewall solution '${solution}' attempt by ${username}.`);
+                     addRemoteLog(`Incorrect firewall solution '${solution}' attempt from ${PLAYER_PUBLIC_IP}.`);
                 }
             }
             break;
