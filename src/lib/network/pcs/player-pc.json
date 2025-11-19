@@ -5,7 +5,7 @@
     "ip": "127.0.0.1",
     "type": "Desktop",
     "links": ["holberton-gateway"],
-    "auth": { "user": "root", "pass": "" },
+    "auth": { "user": "Operator", "pass": "" },
     "firewall": { "enabled": false, "complexity": 0 },
     "proxy": { "enabled": false, "level": 0 },
     "traceTime": 0,

@@ -174,8 +174,7 @@ export default function Terminal({
   const fileSystem = useMemo(() => {
       const pc = getCurrentPc();
       if (pc) {
-          const userForFs = pc.auth.user;
-          return personalizeFileSystem(pc.fileSystem, userForFs);
+          return personalizeFileSystem(pc.fileSystem, pc.auth.user);
       }
       return [];
   }, [getCurrentPc]);
@@ -216,10 +215,7 @@ export default function Terminal({
         user = '(unauthenticated)';
     }
 
-    let path = '/' + currentDirectory.join('/');
-    if (path.startsWith('/home') && connectedIp === '127.0.0.1') {
-        path = '~' + path.substring(5);
-    }
+    const path = '/' + currentDirectory.join('/');
     
     return `${user}@${hostName}:${path}$ `;
   };
@@ -773,8 +769,7 @@ export default function Terminal({
             if(!checkAuth()) break;
             const pathArg = args[0];
             if (!pathArg || pathArg === '~' || (pathArg === '~/')) {
-                const homeDir = (connectedIp === '127.0.0.1') ? ['home'] : [];
-                setCurrentDirectory(homeDir);
+                setCurrentDirectory([]);
                 break;
             }
              if (pathArg === '/') {

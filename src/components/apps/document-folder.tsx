@@ -107,11 +107,7 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
     };
 
     const getDisplayPath = () => {
-        const path = '/' + currentPath.join('/');
-        if (path.startsWith('/home')) {
-            return path.replace('/home', '~');
-        }
-        return path;
+        return '/' + currentPath.join('/');
     }
 
     if (selectedFile) {
