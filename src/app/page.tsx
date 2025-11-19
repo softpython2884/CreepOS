@@ -363,6 +363,8 @@ export default function Home() {
     const [soundEvent, setSoundEvent] = useState<SoundEvent>(null);
     const [musicEvent, setMusicEvent] = useState<MusicEvent>('none');
     const [aspectRatio, setAspectRatio] = useState(16/9);
+    const [scale, setScale] = useState(1);
+
 
     const handleUserInteraction = () => {
         // Check if the intro has been played.
@@ -391,15 +393,16 @@ export default function Home() {
         const scaleX = windowWidth / viewportWidth;
         const scaleY = windowHeight / viewportHeight;
 
-        const scale = Math.min(scaleX, scaleY);
+        const calculatedScale = Math.min(scaleX, scaleY, 1); // Cap scale at 1
+        setScale(calculatedScale);
 
-        const left = (windowWidth - viewportWidth * scale) / 2;
-        const top = (windowHeight - viewportHeight * scale) / 2;
+        const left = (windowWidth - viewportWidth * calculatedScale) / 2;
+        const top = (windowHeight - viewportHeight * calculatedScale) / 2;
 
         const root = document.documentElement;
         root.style.setProperty('--viewport-width', `${viewportWidth}px`);
         root.style.setProperty('--viewport-height', `${viewportHeight}px`);
-        root.style.setProperty('--viewport-scale', scale.toString());
+        root.style.setProperty('--viewport-scale', calculatedScale.toString());
         root.style.setProperty('--viewport-left', `${left}px`);
         root.style.setProperty('--viewport-top', `${top}px`);
     }, [aspectRatio]);
@@ -503,7 +506,7 @@ export default function Home() {
                     onSoundEvent={setSoundEvent}
                 />;
             case 'desktop':
-                return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} username={username} onReboot={handleReboot} setMachineState={setMachineState} />;
+                return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} username={username} onReboot={handleReboot} setMachineState={setMachineState} scale={scale}/>;
             default:
                 return null;
         }

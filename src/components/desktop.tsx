@@ -58,6 +58,7 @@ interface DesktopProps {
   username: string;
   onReboot: () => void;
   setMachineState: (state: string) => void;
+  scale: number;
 }
 
 const updateNodeByPath = (
@@ -94,7 +95,7 @@ const updateNodeByPath = (
 };
 
 
-export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot, setMachineState }: DesktopProps) {
+export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot, setMachineState, scale }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [nextZIndex, setNextZIndex] = useState(10);
@@ -610,6 +611,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
                 bounds="parent"
                 nodeRef={app.nodeRef}
                 onStart={() => bringToFront(app.instanceId)}
+                scale={scale}
               >
                 <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
                     <Window 
@@ -627,7 +629,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       })}
 
       {editingFile && (
-          <Draggable handle=".handle" bounds="parent" nodeRef={nanoRef}>
+          <Draggable handle=".handle" bounds="parent" nodeRef={nanoRef} scale={scale}>
             <div ref={nanoRef} style={{ zIndex: nextZIndex + 1, position: 'absolute' }}>
               <Window title={`nano - /${editingFile.path.join('/')}`} onClose={() => setEditingFile(null)} width={800} height={600}>
                 <TextEditor 
