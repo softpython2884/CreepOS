@@ -23,7 +23,7 @@ const sounds: Record<NonNullable<Exclude<SoundEvent, 'stopScream'>>, { src: stri
     bsod: { src: '/bluescreen.mp3', volume: 0.5 },
     fan: { src: '/ventil.mp3', volume: 0.4, loop: true },
     error: { src: '/error-011.mp3', volume: 0.5 },
-    ringtone: { src: ['/call.mp3', '/remixcall.mp3'], volume: 0.7, loop: true },
+    ringtone: { src: '/call.mp3', volume: 0.7, loop: true },
 };
 
 const musicTracks: Record<Exclude<MusicEvent, 'none' | 'calm'>, { src: string; volume: number; loop?: boolean }> = {
@@ -134,7 +134,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
             specialLoopPlayerRef.current.currentTime = 0;
             currentLoopingSound.current = null;
         }
-        onEnd(soundEvent); // Pass through null or stopScream
+        onEnd(soundEvent);
         return;
     }
 
@@ -157,8 +157,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
                  return;
             }
             
-            const src = selectSoundSource(sound.src);
-            player.src = src;
+            player.src = sound.src as string;
             player.volume = sound.volume;
             player.loop = sound.loop;
             player.play().catch(e => {
@@ -181,6 +180,10 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         sfxPlayer.volume = sound.volume;
         sfxPlayer.loop = sound.loop || false;
         
+        sfxPlayer.onended = () => {
+            sfxPlayer.onended = null;
+        }
+        
         sfxPlayer.play().catch(error => {
             if ((error as Error).name !== 'AbortError') {
                 console.warn(`Could not play sound (${soundEvent}):`, error);
@@ -189,7 +192,6 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         
         onEnd(null); // Reset event immediately
     } else {
-        // If no player is available, we still need to call onEnd to clear the event
         onEnd(soundEvent);
     }
 
