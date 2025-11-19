@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useCallback, createRef, useEffect } from 'react';
@@ -22,7 +21,7 @@ import { ShieldAlert, ShieldCheck, Mail, AlertTriangle, Skull } from 'lucide-rea
 import { Progress } from './ui/progress';
 import TracerTerminal, { traceCommands, decryptCommands, isolationCommands } from './tracer-terminal';
 import { saveGameState, loadGameState, deleteGameState } from '@/lib/save-manager';
-import SurvivalMode from './survival-mode';
+import SurvivalMode from '@/components/survival-mode';
 import CallView from './call-view';
 import IncomingCallView from './incoming-call-view';
 import { Call, CallMessage, CallChoice, CallScript } from '@/lib/call-system/types';
@@ -128,7 +127,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [isTraced, setIsTraced] = useState(false);
   const [traceTimeLeft, setTraceTimeLeft] = useState(0);
   const [traceTarget, setTraceTarget] = useState({ name: '', time: 0 });
-  const [isScreaming, setIsScreaming] = useState(false);
   const [emailNotification, setEmailNotification] = useState(false);
   
   // Survival mode state
@@ -187,10 +185,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   }, []);
 
   const endCall = useCallback((withSound = true) => {
-    onAlertEvent('stopAlert');
-    if (!isTraced) { // Do not change music if a trace is active
-        onMusicEvent('calm');
-    }
+    onAlertEvent('stopRingtone');
     setCallState('idle');
     setActiveCall(null);
     callScriptRef.current = null;
@@ -198,7 +193,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if (withSound) {
         onSoundEvent('close');
     }
-  }, [onAlertEvent, onMusicEvent, onSoundEvent, isTraced]);
+  }, [onAlertEvent, onSoundEvent]);
 
 
   const triggerCall = useCallback((script: CallScript) => {
@@ -221,7 +216,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     const script = callScriptRef.current;
     if (!script || callState !== 'incoming') return;
     
-    onAlertEvent('stopAlert');
+    onAlertEvent('stopRingtone');
     const startNode = script.nodes[script.startNode];
     
     setActiveCall(prev => prev ? ({
@@ -234,13 +229,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   }, [callState, onAlertEvent, onSoundEvent]);
 
   const declineCall = useCallback(() => {
-    onAlertEvent('stopAlert');
-    if (!isTraced) {
-      onMusicEvent('calm');
-    }
     addLog(`EVENT: Declined call from ${callScriptRef.current?.interlocutor}.`);
     endCall(false);
-  }, [onAlertEvent, onMusicEvent, addLog, endCall, isTraced]);
+  }, [addLog, endCall]);
 
   const advanceCall = (choiceId: string) => {
     const script = callScriptRef.current;
@@ -290,6 +281,31 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     advanceCall(choiceId);
   }
   
+  const handleStopTrace = useCallback(() => {
+    if (!isTraced) return;
+    
+    addLog(`INFO: Trace averted. Disconnected from ${traceTarget.name}.`);
+    onAlertEvent('stopScream');
+    onMusicEvent('calm');
+    setIsTraced(false);
+    setTraceTimeLeft(0);
+    setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
+  }, [addLog, onAlertEvent, onMusicEvent, isTraced, traceTarget]);
+
+  const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
+    if (isTraced) return; // Don't start a new trace if one is active
+    
+    addLog(`DANGER: Trace initiated from ${targetName}. You have ${time} seconds to disconnect.`);
+    onAlertEvent('scream');
+    setIsTraced(true);
+    setTraceTimeLeft(time);
+    setTraceTarget({ name: targetName, time: time });
+
+    setOpenApps(prev => prev.map(app => 
+        app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
+    ));
+  }, [addLog, onAlertEvent, isTraced]);
+
   useEffect(() => {
     (window as any).startTestCall = () => triggerCall(testCallScript);
     
@@ -314,32 +330,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
             setDangerLevel(0); // Reset for next time
         }
     }, [dangerLevel, setMachineState, onAlertEvent]);
-
-
-  const handleStopTrace = useCallback(() => {
-    if (!isTraced) return;
-    
-    addLog(`INFO: Trace averted. Disconnected from ${traceTarget.name}.`);
-    onAlertEvent('stopAlert');
-    onMusicEvent('calm');
-    setIsTraced(false);
-    setTraceTimeLeft(0);
-    setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
-  }, [addLog, onAlertEvent, onMusicEvent, isTraced, traceTarget]);
-
-  const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
-    if (isTraced) return; // Don't start a new trace if one is active
-    
-    addLog(`DANGER: Trace initiated from ${targetName}. You have ${time} seconds to disconnect.`);
-    onAlertEvent('scream');
-    setIsTraced(true);
-    setTraceTimeLeft(time);
-    setTraceTarget({ name: targetName, time: time });
-
-    setOpenApps(prev => prev.map(app => 
-        app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
-    ));
-  }, [addLog, onAlertEvent, isTraced]);
 
 
  useEffect(() => {
@@ -519,7 +509,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         const updatedFileSystem = typeof newFileSystem === 'function' ? newFileSystem(playerPc.fileSystem) : newFileSystem;
         const newPlayerPc = { ...playerPc, fileSystem: updatedFileSystem };
 
-        const newNetwork = [...prevNetwork];
+        const newNetwork = [...newNetwork];
         newNetwork[playerPcIndex] = newPlayerPc;
         return newNetwork;
     });

@@ -1,17 +1,16 @@
-
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 export type SoundEvent = 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | null;
 export type MusicEvent = 'calm' | 'epic' | 'cinematic' | 'none';
-export type AlertEvent = 'alarm' | 'scream' | 'ringtone' | 'stopAlert';
+export type AlertEvent = 'scream' | 'ringtone' | 'alarm' | 'stopScream' | 'stopRingtone' | 'stopAlarm';
 
 interface AudioManagerProps {
   soundEvent: SoundEvent;
   musicEvent: MusicEvent;
   alertEvent: AlertEvent | null;
-  onSoundEnd: () => void;
+  onSoundEnd: (event: SoundEvent | null) => void;
 }
 
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
@@ -31,10 +30,10 @@ const musicTracks: Record<Exclude<MusicEvent, 'none' | 'calm'>, { src: string; v
     cinematic: { src: '/Néo.mp3', volume: 0.8, loop: false },
 };
 
-const alertTracks: Record<Exclude<AlertEvent, 'stopAlert'>, { src: string; volume: number; loop?: boolean }> = {
-    alarm: { src: '/alarm.mp3', volume: 0.6, loop: true },
+const alertSounds: Record<Extract<AlertEvent, 'scream' | 'ringtone' | 'alarm'>, { src: string; volume: number; loop?: boolean }> = {
     scream: { src: '/NéoAttaque.mp3', volume: 0.8, loop: true },
     ringtone: { src: '/call.mp3', volume: 0.7, loop: true },
+    alarm: { src: '/alarm.mp3', volume: 0.6, loop: true },
 };
 
 const calmPlaylist = [
@@ -56,12 +55,13 @@ const selectSoundSource = (src: string | string[]): string => {
 export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSoundEnd }: AudioManagerProps) {
   const sfxPlayersRef = useRef<HTMLAudioElement[]>([]);
   const musicPlayerRef = useRef<HTMLAudioElement | null>(null);
-  const loopingAlertPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const screamPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const alertPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   const [isInitialized, setIsInitialized] = useState(false);
   const currentMusic = useRef<MusicEvent>('none');
   const calmPlaylistIndex = useRef(0);
-  const musicPausedByAlert = useRef(false);
+  const musicPausedByScream = useRef(false);
 
   const playNextCalmTrack = useCallback(() => {
     if (!musicPlayerRef.current || currentMusic.current !== 'calm') return;
@@ -80,7 +80,6 @@ export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSou
     musicPlayerRef.current.play().catch(e => console.warn("Calm music play failed", e));
     
     calmPlaylistIndex.current = (calmPlaylistIndex.current + 1) % calmPlaylist.length;
-
   }, []);
 
   useEffect(() => {
@@ -95,7 +94,8 @@ export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSou
         };
         musicPlayerRef.current = musicPlayer;
 
-        loopingAlertPlayerRef.current = new Audio();
+        screamPlayerRef.current = new Audio();
+        alertPlayerRef.current = new Audio();
     }
 
     const enableAudio = async () => {
@@ -119,11 +119,11 @@ export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSou
   }, [isInitialized, playNextCalmTrack]);
 
   useEffect(() => {
-    if (!isInitialized || !soundEvent) return;
-
+    if (!isInitialized || soundEvent === null) return;
+    
     const sound = sounds[soundEvent];
     if (!sound) {
-        onSoundEnd();
+        onSoundEnd(null);
         return;
     }
 
@@ -143,7 +143,7 @@ export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSou
             }
         });
     }
-    onSoundEnd();
+    onSoundEnd(null);
 
   }, [soundEvent, isInitialized, onSoundEnd]);
 
@@ -153,14 +153,6 @@ export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSou
     
     const musicPlayer = musicPlayerRef.current;
     
-    // Do not change music if an alert is overriding it
-    if (loopingAlertPlayerRef.current && !loopingAlertPlayerRef.current.paused && musicPausedByAlert.current) {
-        // If an overriding alert is playing, just store the intended music change
-        // It will be picked up when the alert stops.
-        currentMusic.current = musicEvent;
-        return;
-    }
-
     const fadeOutAndStop = (callback: () => void) => {
         if (musicPlayer.paused || musicPlayer.volume === 0) {
             callback();
@@ -178,6 +170,12 @@ export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSou
                 callback();
             }
         }, 50);
+    }
+    
+    // Don't change music if a scream is active
+    if (musicPausedByScream.current) {
+        currentMusic.current = musicEvent;
+        return;
     }
 
     fadeOutAndStop(() => {
@@ -203,48 +201,61 @@ export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSou
   }, [musicEvent, isInitialized, playNextCalmTrack]);
 
   useEffect(() => {
-    if (!isInitialized || !loopingAlertPlayerRef.current || !musicPlayerRef.current) return;
+    if (!isInitialized || !screamPlayerRef.current || !alertPlayerRef.current || !musicPlayerRef.current) return;
     
-    const alertPlayer = loopingAlertPlayerRef.current;
+    const screamPlayer = screamPlayerRef.current;
+    const alertPlayer = alertPlayerRef.current;
     const musicPlayer = musicPlayerRef.current;
 
-    if (alertEvent === 'stopAlert') {
-        if (!alertPlayer.paused) {
-            alertPlayer.pause();
-            alertPlayer.currentTime = 0;
-        }
-        // Resume music if it was paused by an alert
-        if (musicPausedByAlert.current && musicPlayer.paused) {
-            // Restore intended music state
-            const eventToPlay = currentMusic.current;
-            if (eventToPlay === 'calm') {
-                playNextCalmTrack();
-            } else if (eventToPlay !== 'none') {
-                const track = musicTracks[eventToPlay];
-                musicPlayer.src = track.src;
-                musicPlayer.volume = track.volume;
-                musicPlayer.loop = track.loop ?? false;
-                musicPlayer.play().catch(e => console.warn("Music resume failed", e));
+    switch(alertEvent) {
+        case 'scream':
+            if (!musicPlayer.paused) {
+                musicPlayer.pause();
+                musicPausedByScream.current = true;
             }
-            musicPausedByAlert.current = false;
-        }
-    } else if (alertEvent) {
-        // Pause main music if scream is playing
-        if (alertEvent === 'scream' && !musicPlayer.paused) {
-            musicPlayer.pause();
-            musicPausedByAlert.current = true;
-        }
+            const screamTrack = alertSounds.scream;
+            screamPlayer.src = screamTrack.src;
+            screamPlayer.volume = screamTrack.volume;
+            screamPlayer.loop = screamTrack.loop ?? true;
+            screamPlayer.play().catch(e => console.warn('Scream play failed', e));
+            break;
+        
+        case 'ringtone':
+        case 'alarm':
+            const alertTrack = alertSounds[alertEvent];
+            alertPlayer.src = alertTrack.src;
+            alertPlayer.volume = alertTrack.volume;
+            alertPlayer.loop = alertTrack.loop ?? true;
+            alertPlayer.play().catch(e => console.warn(`${alertEvent} play failed`, e));
+            break;
+            
+        case 'stopScream':
+            if (!screamPlayer.paused) {
+                screamPlayer.pause();
+                screamPlayer.currentTime = 0;
+            }
+            if (musicPausedByScream.current) {
+                const eventToPlay = currentMusic.current;
+                 if (eventToPlay === 'calm') {
+                    playNextCalmTrack();
+                } else if (eventToPlay !== 'none') {
+                    const track = musicTracks[eventToPlay as Exclude<MusicEvent, 'none'|'calm'>];
+                    musicPlayer.src = track.src;
+                    musicPlayer.volume = track.volume;
+                    musicPlayer.loop = track.loop ?? false;
+                    musicPlayer.play().catch(e => console.warn("Music resume failed", e));
+                }
+                musicPausedByScream.current = false;
+            }
+            break;
 
-        const track = alertTracks[alertEvent];
-        if (track && alertPlayer.src !== new URL(track.src, window.location.href).href) {
-            alertPlayer.src = track.src;
-            alertPlayer.volume = track.volume;
-            alertPlayer.loop = track.loop ?? true;
-            alertPlayer.play().catch(e => console.warn(`Alert sound ${alertEvent} play failed`, e));
-        } else if (track && alertPlayer.paused) {
-            // If the correct track is loaded but paused, just play it.
-            alertPlayer.play().catch(e => console.warn(`Alert sound ${alertEvent} play failed`, e));
-        }
+        case 'stopRingtone':
+        case 'stopAlarm':
+            if (!alertPlayer.paused) {
+                alertPlayer.pause();
+                alertPlayer.currentTime = 0;
+            }
+            break;
     }
   }, [alertEvent, isInitialized, playNextCalmTrack]);
 
