@@ -45,7 +45,7 @@ export default function CinematicScreen({ onComplete }: { onComplete: () => void
     const [isTyping, setIsTyping] = useState(false);
     const [showTitleCard, setShowTitleCard] = useState(false);
     const [titleCorrupted, setTitleCorrupted] = useState(false);
-    const [titleShattered, setTitleShattered] = useState(false);
+    const [titleDisappearing, setTitleDisappearing] = useState(false);
 
     useEffect(() => {
         setCurrentLineIndex(0);
@@ -60,7 +60,7 @@ export default function CinematicScreen({ onComplete }: { onComplete: () => void
                 setShowTitleCard(true);
                 // Title card animation sequence
                 setTimeout(() => setTitleCorrupted(true), 2000); // Glitch and turn red after 2s
-                setTimeout(() => setTitleShattered(true), 4000); // Shatter after 4s
+                setTimeout(() => setTitleDisappearing(true), 4000); // Disappear with glitch after 4s
                 setTimeout(onComplete, 5500); // Complete cinematic after shatter
             }, 1000);
             return;
@@ -114,19 +114,18 @@ export default function CinematicScreen({ onComplete }: { onComplete: () => void
             
             {showTitleCard && (
                 <div className={cn(
-                    'transition-opacity duration-500',
-                    showTitleCard ? 'opacity-100' : 'opacity-0',
-                    titleShattered && 'animate-shatter'
+                    'transition-opacity duration-500 animate-in fade-in',
+                    titleDisappearing && 'animate-out fade-out duration-1000'
                 )}>
                     <h1 className={cn(
                         'text-5xl md:text-7xl font-bold tracking-[0.3em] transition-colors duration-1000',
-                        titleCorrupted ? 'text-destructive animate-glitch-long' : 'text-white'
+                        titleCorrupted ? 'text-destructive animate-vibration' : 'text-white'
                     )}>
                         NEO-SYSTEM
                     </h1>
                     <h2 className={cn(
                         'text-3xl md:text-5xl font-bold tracking-[0.1em] transition-colors duration-1000 text-center mt-2',
-                         titleCorrupted ? 'text-destructive/80 animate-vibration' : 'text-accent'
+                         titleCorrupted ? 'text-destructive/80 animate-glitch-long' : 'text-accent'
                     )}>
                         : BREACH
                     </h2>
