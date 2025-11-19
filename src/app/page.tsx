@@ -12,8 +12,9 @@ import { Progress } from '@/components/ui/progress';
 import { loadGameState, deleteGameState } from '@/lib/save-manager';
 import { network as initialNetworkData } from '@/lib/network';
 import SurvivalMode from '@/components/survival-mode';
+import CinematicScreen from '@/components/cinematic-screen';
 
-type MachineState = 'off' | 'bios' | 'booting' | 'login' | 'desktop' | 'recovery' | 'bsod' | 'survival';
+type MachineState = 'cinematic' | 'off' | 'bios' | 'booting' | 'login' | 'desktop' | 'recovery' | 'bsod' | 'survival';
 
 const biosLines = [
     'NEO-SYSTEM BIOS v1.0.3',
@@ -221,8 +222,8 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
     
     return (
         <div className="w-full h-full flex items-center justify-center bg-background font-code animate-in fade-in">
-            <form onSubmit={handleLogin} className="w-[400px] text-foreground border-2 border-accent/50 p-1 bg-card/30">
-                <div className="border border-accent/30 p-6">
+            <div className="w-[400px] text-foreground border-2 border-accent/50 p-1 bg-card/30">
+                <form onSubmit={handleLogin} className="border border-accent/30 p-6">
                     <div className="text-center mb-6">
                         <h1 className="text-xl font-bold text-accent tracking-[0.2em]">NEO-SYSTEM</h1>
                         <p className="text-sm text-accent/70">AUTHENTIFICATION REQUISE</p>
@@ -256,8 +257,8 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
                     </div>
 
                     {error && <p className="mt-4 text-sm text-destructive text-center animate-in fade-in">ERREUR: Authentification échouée.</p>}
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     );
 };
@@ -348,11 +349,27 @@ const BsodScreen = ({ onReboot }: { onReboot: () => void }) => {
 
 
 export default function Home() {
-    const [machineState, setMachineState] = useState<MachineState>('off');
+    const [machineState, setMachineState] = useState<MachineState>('cinematic');
     const [username] = useState('Operator');
     const [soundEvent, setSoundEvent] = useState<SoundEvent>(null);
     const [musicEvent, setMusicEvent] = useState<MusicEvent>('none');
     const [aspectRatio, setAspectRatio] = useState(16/9);
+
+    useEffect(() => {
+        // Check if the intro has been played.
+        try {
+            const hasPlayedIntro = localStorage.getItem('hasPlayedIntro_v1');
+            if (hasPlayedIntro) {
+                setMachineState('off');
+            } else {
+                setMusicEvent('devyourself');
+                setMachineState('cinematic');
+            }
+        } catch (e) {
+            // localStorage might be disabled
+            setMachineState('off');
+        }
+    }, []);
 
     const updateScale = useCallback(() => {
         const viewportBaseWidth = 1920;
@@ -397,6 +414,16 @@ export default function Home() {
         setMachineState('bios');
     }
 
+    const handleCinematicComplete = () => {
+        try {
+            localStorage.setItem('hasPlayedIntro_v1', 'true');
+        } catch (e) {
+            // localStorage might be disabled
+        }
+        setMusicEvent('none');
+        setMachineState('off');
+    }
+
     const handleBiosComplete = () => {
         setMusicEvent('epic');
         setMachineState('booting');
@@ -415,6 +442,8 @@ export default function Home() {
 
     const renderState = () => {
         switch (machineState) {
+            case 'cinematic':
+                 return <CinematicScreen onComplete={handleCinematicComplete} />;
             case 'off':
                 return (
                     <OffScreen onStart={handleStartSystem} onRatioChange={setAspectRatio} currentRatio={aspectRatio}/>

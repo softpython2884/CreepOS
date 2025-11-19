@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useEffect, useRef, useState }from 'react';
 
 export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'stopScream' | 'email' | 'error' | null;
-export type MusicEvent = 'calm' | 'calm2' | 'epic' | 'alarm' | 'creepy' | 'cinematic' | 'none';
+export type MusicEvent = 'calm' | 'calm2' | 'epic' | 'alarm' | 'creepy' | 'cinematic' | 'devyourself' | 'none';
 
 interface AudioManagerProps {
   soundEvent: SoundEvent;
@@ -32,6 +31,7 @@ const musicTracks: Record<Exclude<MusicEvent, 'none'>, { src: string; volume: nu
     alarm: { src: '/alarm.mp3', volume: 0.6, loop: true },
     creepy: { src: '/30s-creepyBG.mp3', volume: 0.5 },
     cinematic: { src: '/present30s.mp3', volume: 0.5 },
+    devyourself: { src: '/devyourself.mp3', volume: 0.5, loop: false },
 };
 
 const SFX_PLAYER_COUNT = 5;
