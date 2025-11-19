@@ -31,4 +31,5 @@ export interface Call {
     isSecure: boolean;
     messages: CallMessage[];
     choices: CallChoice[];
+    isFinished?: boolean;
 }

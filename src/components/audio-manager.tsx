@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'stopScream' | 'email' | 'error' | null;
+export type SoundEvent = 'scream' | 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'stopScream' | 'email' | 'error' | 'ringtone' | null;
 export type MusicEvent = 'calm' | 'epic' | 'alarm' | 'creepy' | 'cinematic' | 'none';
 
 interface AudioManagerProps {
@@ -23,6 +23,7 @@ const sounds: Record<NonNullable<Exclude<SoundEvent, 'stopScream'>>, { src: stri
     bsod: { src: '/bluescreen.mp3', volume: 0.5 },
     fan: { src: '/ventil.mp3', volume: 0.4, loop: true },
     error: { src: '/error-011.mp3', volume: 0.5 },
+    ringtone: { src: ['/call.mp3', '/remixcall.mp3'], volume: 0.7, loop: true },
 };
 
 const musicTracks: Record<Exclude<MusicEvent, 'none' | 'calm'>, { src: string; volume: number; loop?: boolean }> = {
@@ -41,10 +42,22 @@ const calmPlaylist = [
 
 const SFX_PLAYER_COUNT = 5;
 
+// Function to select a sound source with weighted probability
+const selectSoundSource = (src: string | string[]): string => {
+    if (Array.isArray(src)) {
+        // Special case for ringtone: 95% chance for call.mp3, 5% for remixcall.mp3
+        if (src.includes('/call.mp3') && src.includes('/remixcall.mp3')) {
+            return Math.random() < 0.05 ? '/remixcall.mp3' : '/call.mp3';
+        }
+        return src[Math.floor(Math.random() * src.length)];
+    }
+    return src;
+};
+
 export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioManagerProps) {
   const sfxPlayersRef = useRef<HTMLAudioElement[]>([]);
   const musicPlayerRef = useRef<HTMLAudioElement | null>(null);
-  const screamPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const specialLoopPlayerRef = useRef<HTMLAudioElement | null>(null); // For scream and ringtone
   const [isInitialized, setIsInitialized] = useState(false);
   const currentMusic = useRef<MusicEvent>('none');
   const calmPlaylistIndex = useRef(0);
@@ -85,9 +98,9 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         };
         musicPlayerRef.current = player;
     }
-    if (!screamPlayerRef.current) {
-        screamPlayerRef.current = new Audio();
-        screamPlayerRef.current.loop = true;
+    if (!specialLoopPlayerRef.current) {
+        specialLoopPlayerRef.current = new Audio();
+        specialLoopPlayerRef.current.loop = true;
     }
 
     const enableAudio = async () => {
@@ -110,54 +123,48 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
   }, [isInitialized, playNextCalmTrack]);
 
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized || !specialLoopPlayerRef.current) return;
     
-    if (soundEvent === 'stopScream') {
-        if (screamPlayerRef.current) {
-            screamPlayerRef.current.pause();
-            screamPlayerRef.current.currentTime = 0;
+    if (soundEvent === null || soundEvent === 'stopScream') {
+        if (specialLoopPlayerRef.current) {
+            specialLoopPlayerRef.current.pause();
+            specialLoopPlayerRef.current.currentTime = 0;
         }
         onEnd(null);
         return;
     }
     
-    if (!soundEvent) return;
-
-    if (soundEvent === 'scream') {
-        if (screamPlayerRef.current && screamPlayerRef.current.paused) {
-            const sound = sounds.scream;
-            const src = Array.isArray(sound.src) ? sound.src[Math.floor(Math.random() * sound.src.length)] : sound.src;
-            screamPlayerRef.current.src = src;
-            screamPlayerRef.current.volume = sound.volume;
-            screamPlayerRef.current.loop = sound.loop || false;
-            screamPlayerRef.current.play().catch(e => console.warn('Scream play failed', e));
-        }
-        onEnd(null);
-        return;
-    }
-
-    const sound = sounds[soundEvent as NonNullable<Exclude<SoundEvent, 'scream' | 'stopScream'>>];
+    const sound = sounds[soundEvent];
     if (!sound) return;
 
+    // Handle special looping sounds (scream, ringtone)
+    if (sound.loop) {
+        const player = specialLoopPlayerRef.current;
+        if (player.paused) {
+            const src = selectSoundSource(sound.src);
+            player.src = src;
+            player.volume = sound.volume;
+            player.loop = sound.loop;
+            player.play().catch(e => console.warn(`Loop sound ${soundEvent} play failed`, e));
+        }
+        onEnd(null); // Reset event immediately
+        return;
+    }
+
+    // Handle one-shot sounds
     const player = sfxPlayersRef.current.find(p => p.paused);
 
     if (player) {
-        let src = '';
-        if (Array.isArray(sound.src)) {
-            src = sound.src[Math.floor(Math.random() * sound.src.length)];
-        } else {
-            src = sound.src;
-        }
+        const src = selectSoundSource(sound.src);
 
         if (player.src !== window.location.origin + src) {
             player.src = src;
         }
         player.volume = sound.volume;
-        player.loop = sound.loop || false;
+        player.loop = false;
         
         player.onended = () => {
             onEnd(soundEvent);
-            if(player.loop) player.play(); // Restart loop
         };
         
         player.play().catch(error => {
@@ -166,8 +173,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
             }
         });
         
-        // Reset the event so it can be triggered again
-        onEnd(null);
+        onEnd(null); // Reset event immediately
     }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps

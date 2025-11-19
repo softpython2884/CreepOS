@@ -10,9 +10,10 @@ import { useEffect, useRef } from 'react';
 interface CallViewProps {
   call: Call;
   onPlayerChoice: (choiceId: string) => void;
+  onClose: () => void;
 }
 
-export default function CallView({ call, onPlayerChoice }: CallViewProps) {
+export default function CallView({ call, onPlayerChoice, onClose }: CallViewProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,7 +46,7 @@ export default function CallView({ call, onPlayerChoice }: CallViewProps) {
             <div
               key={index}
               className={cn(
-                "flex items-start gap-2 max-w-[85%]",
+                "flex items-start gap-2 max-w-[85%] animate-in fade-in",
                 msg.speaker === 'Operator' ? 'self-end flex-row-reverse' : 'self-start'
               )}
             >
@@ -62,24 +63,31 @@ export default function CallView({ call, onPlayerChoice }: CallViewProps) {
         </div>
       </ScrollArea>
 
-      {/* Choices */}
-      {call.choices.length > 0 && (
-        <div className="p-2 border-t border-accent/20">
-          <div className="flex flex-col gap-2">
-            {call.choices.map((choice) => (
-              <Button
-                key={choice.id}
-                variant="outline"
-                size="sm"
-                className="justify-start text-left h-auto whitespace-normal"
-                onClick={() => onPlayerChoice(choice.id)}
-              >
-                {choice.text}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Choices / End Call */}
+      <div className="p-2 border-t border-accent/20">
+        {call.isFinished ? (
+            <div className='flex flex-col items-center gap-2'>
+                <p className='text-muted-foreground text-xs'>- Liaison coupée -</p>
+                <Button variant="outline" size="sm" className="w-full" onClick={onClose}>
+                    Fermer
+                </Button>
+            </div>
+        ) : (
+            <div className="flex flex-col gap-2">
+                {call.choices.map((choice) => (
+                <Button
+                    key={choice.id}
+                    variant="outline"
+                    size="sm"
+                    className="justify-start text-left h-auto whitespace-normal"
+                    onClick={() => onPlayerChoice(choice.id)}
+                >
+                    {choice.text}
+                </Button>
+                ))}
+            </div>
+        )}
+      </div>
     </div>
   );
 }

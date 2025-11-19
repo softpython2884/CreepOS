@@ -23,6 +23,7 @@ import TracerTerminal, { traceCommands, decryptCommands, isolationCommands } fro
 import { saveGameState, loadGameState, deleteGameState } from '@/lib/save-manager';
 import SurvivalMode from './survival-mode';
 import CallView from './call-view';
+import IncomingCallView from './incoming-call-view';
 import { Call, CallMessage, CallChoice, CallScript } from '@/lib/call-system/types';
 import { testCallScript } from '@/lib/call-system/scripts/test-call';
 
@@ -55,6 +56,8 @@ type EditingFile = {
   path: string[];
   content: string;
 } | null;
+
+type CallState = 'idle' | 'incoming' | 'active';
 
 interface DesktopProps {
   onSoundEvent: (event: SoundEvent) => void;
@@ -114,6 +117,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const [dangerLevel, setDangerLevel] = useState(0);
 
   // Call state
+  const [callState, setCallState] = useState<CallState>('idle');
   const [activeCall, setActiveCall] = useState<Call | null>(null);
   const callScriptRef = useRef<CallScript | null>(null);
   const currentNodeIdRef = useRef<string | null>(null);
@@ -148,12 +152,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
 
   useEffect(() => {
     // Expose test function to window
-    (window as any).startTestCall = () => startCall(testCallScript);
+    (window as any).startTestCall = () => triggerCall(testCallScript);
     
     return () => {
       delete (window as any).startTestCall;
     }
-  }, []);
+  }, [triggerCall]);
 
   useEffect(() => {
     // Autosave interval
@@ -203,23 +207,53 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   }, []);
 
   // --- CALL SYSTEM LOGIC ---
-  const startCall = (script: CallScript) => {
+  const triggerCall = useCallback((script: CallScript) => {
+    if (callState !== 'idle') return;
+
     callScriptRef.current = script;
     currentNodeIdRef.current = script.startNode;
-    const startNode = script.nodes[script.startNode];
-    
     setActiveCall({
       interlocutor: script.interlocutor,
       isSecure: script.isSecure,
+      messages: [], // Messages will be populated on answer
+      choices: [],
+    });
+    setCallState('incoming');
+    onSoundEvent('ringtone');
+  }, [callState, onSoundEvent]);
+
+  const answerCall = () => {
+    const script = callScriptRef.current;
+    if (!script || callState !== 'incoming') return;
+    
+    onSoundEvent(null); // Stop ringtone
+    const startNode = script.nodes[script.startNode];
+    
+    setActiveCall(prev => prev ? ({
+      ...prev,
       messages: [startNode.message],
       choices: startNode.choices || [],
-    });
-    onSoundEvent('email'); // Or a new 'call' sound
+    }) : null);
+    setCallState('active');
+    onSoundEvent('click');
   };
+
+  const declineCall = () => {
+    onSoundEvent(null); // Stop ringtone
+    endCall();
+  };
+
+  const endCall = () => {
+    setCallState('idle');
+    setActiveCall(null);
+    callScriptRef.current = null;
+    currentNodeIdRef.current = null;
+    onSoundEvent('close');
+  }
 
   const advanceCall = (choiceId: string) => {
     const script = callScriptRef.current;
-    if (!script) return;
+    if (!script || !activeCall) return;
 
     const currentNodeId = currentNodeIdRef.current;
     const currentNode = script.nodes[currentNodeId!];
@@ -245,12 +279,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
 
     setTimeout(() => {
         if (!nextNode) {
-            // End of call
-            setTimeout(() => {
-              setActiveCall(null);
-              callScriptRef.current = null;
-              currentNodeIdRef.current = null;
-            }, 2000);
+            // End of script branch, but keep call active for closing message
+            setActiveCall(prev => prev ? ({ ...prev, choices: [], isFinished: true }) : null);
             return;
         }
 
@@ -678,9 +708,19 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         </>
       )}
 
-      {activeCall && (
+      {callState === 'incoming' && activeCall && (
+        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center">
+            <IncomingCallView 
+                interlocutor={activeCall.interlocutor}
+                onAccept={answerCall}
+                onDecline={declineCall}
+            />
+        </div>
+      )}
+
+      {callState === 'active' && activeCall && (
         <div className="absolute top-4 right-4 z-50">
-            <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} />
+            <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} onClose={endCall} />
         </div>
       )}
 
