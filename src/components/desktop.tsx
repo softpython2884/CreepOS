@@ -22,6 +22,10 @@ import { Progress } from './ui/progress';
 import TracerTerminal, { traceCommands, decryptCommands, isolationCommands } from './tracer-terminal';
 import { saveGameState, loadGameState, deleteGameState } from '@/lib/save-manager';
 import SurvivalMode from './survival-mode';
+import CallView from './call-view';
+import { Call, CallMessage, CallChoice, CallScript } from '@/lib/call-system/types';
+import { testCallScript } from '@/lib/call-system/scripts/test-call';
+
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player';
 
@@ -109,6 +113,11 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
   const [dangerLevel, setDangerLevel] = useState(0);
 
+  // Call state
+  const [activeCall, setActiveCall] = useState<Call | null>(null);
+  const callScriptRef = useRef<CallScript | null>(null);
+  const currentNodeIdRef = useRef<string | null>(null);
+
   // Trace state
   const [isTraced, setIsTraced] = useState(false);
   const [traceTimeLeft, setTraceTimeLeft] = useState(0);
@@ -136,6 +145,15 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   ]);
 
   const gameState = { network, hackedPcs, machineState: 'desktop' };
+
+  useEffect(() => {
+    // Expose test function to window
+    (window as any).startTestCall = () => startCall(testCallScript);
+    
+    return () => {
+      delete (window as any).startTestCall;
+    }
+  }, []);
 
   useEffect(() => {
     // Autosave interval
@@ -183,6 +201,74 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         return newNetwork;
     });
   }, []);
+
+  // --- CALL SYSTEM LOGIC ---
+  const startCall = (script: CallScript) => {
+    callScriptRef.current = script;
+    currentNodeIdRef.current = script.startNode;
+    const startNode = script.nodes[script.startNode];
+    
+    setActiveCall({
+      interlocutor: script.interlocutor,
+      isSecure: script.isSecure,
+      messages: [startNode.message],
+      choices: startNode.choices || [],
+    });
+    onSoundEvent('email'); // Or a new 'call' sound
+  };
+
+  const advanceCall = (choiceId: string) => {
+    const script = callScriptRef.current;
+    if (!script) return;
+
+    const currentNodeId = currentNodeIdRef.current;
+    const currentNode = script.nodes[currentNodeId!];
+    
+    const chosenChoice = currentNode.choices?.find(c => c.id === choiceId);
+    if (!chosenChoice) return;
+
+    // Add player choice to history
+    const playerMessage: CallMessage = {
+        speaker: 'Operator',
+        text: chosenChoice.text
+    };
+
+    setActiveCall(prev => prev ? ({ ...prev, messages: [...prev.messages, playerMessage], choices: [] }) : null);
+
+    // Process consequences
+    if (chosenChoice.consequences?.danger) {
+        handleIncreaseDanger(chosenChoice.consequences.danger);
+    }
+    
+    const nextNodeId = chosenChoice.nextNode;
+    const nextNode = script.nodes[nextNodeId];
+
+    setTimeout(() => {
+        if (!nextNode) {
+            // End of call
+            setTimeout(() => {
+              setActiveCall(null);
+              callScriptRef.current = null;
+              currentNodeIdRef.current = null;
+            }, 2000);
+            return;
+        }
+
+        currentNodeIdRef.current = nextNodeId;
+        setActiveCall(prev => prev ? ({
+            ...prev,
+            messages: [...prev.messages, nextNode.message],
+            choices: nextNode.choices || [],
+        }) : null);
+        onSoundEvent('email');
+    }, 1000); // Delay for realism
+  }
+
+  const handlePlayerChoice = (choiceId: string) => {
+    advanceCall(choiceId);
+  }
+  // --- END CALL SYSTEM ---
+
 
   const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
     if (isTraced) return; // Don't start a new trace if one is active
@@ -590,6 +676,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             <TracerTerminal title="NODE_ISOLATION::ID_99_C" commands={isolationCommands} startDelay={2000} />
           </div>
         </>
+      )}
+
+      {activeCall && (
+        <div className="absolute top-4 right-4 z-50">
+            <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} />
+        </div>
       )}
 
       {openApps.map((app) => {
