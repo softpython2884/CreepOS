@@ -693,7 +693,7 @@ export default function Terminal({
                 '  nano <file>    - Crée ou édite un fichier texte (auth requise)',
                 '  rm <file>      - Supprime un fichier ou vide son contenu (auth requise)',
                 '  rm *           - Supprime tous les fichiers du répertoire actuel (auth requise)',
-                '  cp <src> <dest> - Copie un fichier (auth requise)',
+                '  cp <src> <dest> - Copie un fichier ou un dossier (auth requise)',
                 '  mv <src> <dest> - Déplace ou renomme un fichier (auth requise)',
                 '  reboot         - Redémarre le système actuel',
                 '  save           - Sauvegarde l\'état actuel du jeu (local uniquement)',
@@ -950,135 +950,117 @@ export default function Terminal({
         }
         case 'cp':
         case 'mv': {
-            if(!checkAuth()) {
-                break;
-            }
-            
+            if (!checkAuth()) break;
+        
             const [sourceArg, destArg] = args;
-            if(!sourceArg || !destArg) {
-                handleOutput(`${command}: opérande fichier manquant`);
+            if (!sourceArg || !destArg) {
+                handleOutput(`${command}: opérande manquant`);
                 break;
             }
-            
+        
+            // --- Parse Paths ---
+            let sourcePC = getCurrentPc();
+            let destPC = sourcePC;
+            const playerPC = network.find(p => p.id === 'player-pc');
+        
+            let sourcePathArg = sourceArg;
+            let destPathArg = destArg;
+        
+            if (destArg.startsWith('local:')) {
+                destPC = playerPC;
+                destPathArg = destArg.substring(6);
+            }
+        
+            if (!sourcePC || !destPC) {
+                handleOutput(`${command}: erreur système: machine introuvable.`);
+                break;
+            }
+        
+            const sourceFS = personalizeFileSystem(sourcePC.fileSystem, sourcePC.auth.user);
+            let destFS = personalizeFileSystem(destPC.fileSystem, destPC.auth.user);
+        
+            // --- Handle wildcard (*) ---
             if (sourceArg.endsWith('*')) {
                 const sourceDirArg = sourceArg.slice(0, -1);
                 const sourcePath = resolvePath(sourceDirArg);
-                const sourceNode = findNodeByPath(sourcePath, fileSystem);
-                
-                if (!sourceNode || sourceNode.type !== 'folder' || !sourceNode.children) {
-                    handleOutput(`${command}: impossible d'obtenir des informations sur '${sourceArg}': Aucun fichier ou dossier de ce type`);
+                const sourceDirNode = findNodeByPath(sourcePath, sourceFS);
+        
+                if (!sourceDirNode || sourceDirNode.type !== 'folder' || !sourceDirNode.children) {
+                    handleOutput(`${command}: impossible d'accéder à '${sourceArg}': Pas un répertoire valide`);
                     break;
                 }
-
-                const destPath = resolvePath(destArg);
-                
-                let destPC = getCurrentPc();
-                let destPCId = destPC?.id;
-                
-                if(destArg.startsWith('local:')) {
-                    destPC = network.find(p => p.id === 'player-pc');
-                }
-                
-                if (!destPC) break;
-
-                const destNodeOnDestPC = findNodeByPath(destPath, destPC.fileSystem);
-
-                if (!destNodeOnDestPC || destNodeOnDestPC.type !== 'folder') {
+        
+                const destPath = resolvePath(destPathArg);
+                const destDirNode = findNodeByPath(destPath, destFS);
+        
+                if (!destDirNode || destDirNode.type !== 'folder') {
                     handleOutput(`${command}: la destination '${destArg}' n'est pas un répertoire`);
                     break;
                 }
-
-                const copiedFiles: FileSystemNode[] = [];
-                for (const fileToCopy of sourceNode.children) {
-                    if(fileToCopy.type === 'file') {
-                        const copiedNode = {
-                            ...JSON.parse(JSON.stringify(fileToCopy)),
-                            id: `${fileToCopy.id}-copy-${Date.now()}`
-                        };
-                        copiedFiles.push(copiedNode);
-                    }
-                }
-                
+        
+                const filesToCopy = sourceDirNode.children.filter(f => f.type === 'file');
+        
                 setNetwork(currentNetwork => currentNetwork.map(pc => {
-                    if (pc.id === destPCId) {
+                    if (pc.id === destPC!.id) {
                         let newFs = pc.fileSystem;
-                        copiedFiles.forEach(file => {
-                            newFs = addNodeByPath(newFs, destPath, file);
+                        filesToCopy.forEach(file => {
+                            const copiedNode = { ...JSON.parse(JSON.stringify(file)), id: `${file.id}-copy-${Date.now()}` };
+                            newFs = addNodeByPath(newFs, destPath, copiedNode);
                         });
-                        return {...pc, fileSystem: newFs};
+                        return { ...pc, fileSystem: newFs };
                     }
                     return pc;
                 }));
-
-                handleOutput(`${copiedFiles.length} fichiers copiés vers ${destArg}`);
-                addLog(`EVENT: ${copiedFiles.length} fichiers copiés de ${connectedIp}:${sourceDirArg} vers local:${destArg}`);
-                
+        
+                handleOutput(`${filesToCopy.length} fichiers copiés vers ${destArg}`);
+                addLog(`EVENT: ${filesToCopy.length} fichiers copiés de ${sourcePC.ip}:${sourceDirArg} vers ${destPC.ip}:${destPathArg}`);
+                if (sourcePC.id !== destPC.id) addRemoteLog(`EVENT: ${filesToCopy.length} fichiers copiés de ${sourceDirArg} vers ${destPC.ip}:${destPathArg} par ${PLAYER_PUBLIC_IP}`);
                 break;
             }
-
-            const sourcePath = resolvePath(sourceArg);
-            const sourceNode = findNodeByPath(sourcePath, fileSystem);
-
-            if(!sourceNode) {
-                handleOutput(`${command}: impossible d'obtenir des informations sur '${sourceArg}': Aucun fichier ou dossier de ce type`);
+        
+            // --- Handle single file ---
+            const sourcePath = resolvePath(sourcePathArg);
+            const sourceNode = findNodeByPath(sourcePath, sourceFS);
+        
+            if (!sourceNode) {
+                handleOutput(`${command}: impossible d'accéder à '${sourceArg}': Aucun fichier ou dossier de ce type`);
                 break;
             }
-            if(sourceNode.type === 'folder') {
+            if (sourceNode.type === 'folder') {
                 handleOutput(`${command}: impossible de copier des répertoires pour l'instant.`);
                 break;
             }
-
-            let destPath = resolvePath(destArg);
-            let destNode = findNodeByPath(destPath, fileSystem);
-            let finalDestDirPath: string[];
+        
+            let destPath = resolvePath(destPathArg);
+            let destNode = findNodeByPath(destPath, destFS);
+        
+            let finalDestPath: string[];
             let newFileName: string;
-
+        
             if (destNode && destNode.type === 'folder') {
-                // Destination is a directory, copy file inside it
-                finalDestDirPath = [...destPath];
+                finalDestPath = destPath;
                 newFileName = sourceNode.name;
             } else {
-                // Destination is a file path
+                finalDestPath = destPath.slice(0, -1);
                 newFileName = destPath[destPath.length - 1];
-                finalDestDirPath = destPath.slice(0, -1);
             }
-            
-            const destParentNode = findNodeByPath(finalDestDirPath, fileSystem);
-            if (!destParentNode || destParentNode.type !== 'folder') {
-                 handleOutput(`${command}: impossible de créer le fichier normal '${destArg}': Aucun fichier ou dossier de ce type`);
-                 break;
-            }
-            
-            if (finalDestDirPath.join('/') === sourcePath.slice(0,-1).join('/') && command === 'cp') {
-                if (destNode && destNode.type === 'file') {
-                    // This is an overwrite, which addNodeByPath handles
-                } else if (findNodeByPath([...finalDestDirPath, newFileName], fileSystem)) {
-                     handleOutput(`${command}: impossible de créer le fichier '${destArg}': Le fichier existe`);
-                     break;
-                }
-            }
-
-
-            const copiedNode = {
-                ...JSON.parse(JSON.stringify(sourceNode)), // deep copy
-                id: `${sourceNode.id}-copy-${Date.now()}`,
-                name: newFileName
-            };
-            
+        
+            const copiedNode = { ...JSON.parse(JSON.stringify(sourceNode)), id: `${sourceNode.id}-copy-${Date.now()}`, name: newFileName };
+        
             setNetwork(currentNetwork => currentNetwork.map(pc => {
-                if (pc.ip === connectedIp) {
-                    let newFs = pc.fileSystem;
-
-                    if (command === 'mv') {
-                         newFs = updateNodeByPath(newFs, sourcePath, () => null);
-                    }
-                    
-                    newFs = addNodeByPath(newFs, finalDestDirPath, copiedNode);
-                    return {...pc, fileSystem: newFs};
+                let updatedPC = pc;
+                if (command === 'mv' && pc.id === sourcePC.id) {
+                    const newFs = updateNodeByPath(pc.fileSystem, sourcePath, () => null);
+                    updatedPC = { ...pc, fileSystem: newFs };
                 }
-                return pc;
+                if (pc.id === destPC!.id) {
+                    const newFs = addNodeByPath(updatedPC.fileSystem, finalDestPath, copiedNode);
+                    updatedPC = { ...updatedPC, fileSystem: newFs };
+                }
+                return updatedPC;
             }));
             
+            handleOutput(`'${sourceArg}' ${command === 'mv' ? 'déplacé' : 'copié'} vers '${destArg}'`);
             break;
         }
         case 'connect': {

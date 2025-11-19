@@ -33,7 +33,7 @@
             "id": "cheat-readme",
             "name": "README.txt",
             "type": "file",
-            "content": "Welcome, developer.\n\nThis server contains all the necessary hacking tools.\nUse 'cp /bin/* /bin' on your local machine to transfer them.\n\nGood luck."
+            "content": "Bienvenue, développeur.\n\nCe serveur contient tous les outils de piratage nécessaires.\nUtilisez 'cp /bin/* local:/bin/' pour les transférer sur votre machine.\n\nBonne chance."
         },
         {
             "id": "cheat-logs",
