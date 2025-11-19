@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Globe, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ export default function WebBrowser({ network }: WebBrowserProps) {
   const [address, setAddress] = useState('hyp.net');
   const [currentContent, setCurrentContent] = useState('');
   const [currentDomain, setCurrentDomain] = useState('');
+  const isInitialMount = useRef(true);
 
   const navigate = (targetDomain?: string) => {
     const domain = (targetDomain || address).trim().toLowerCase();
@@ -49,12 +50,16 @@ export default function WebBrowser({ network }: WebBrowserProps) {
   };
 
   useEffect(() => {
-    // Set home page on initial load
-    const homeContent = defaultHomePageContent(network);
-    setCurrentContent(homeContent);
-    setCurrentDomain('hyp.net');
-    setAddress('hyp.net');
-  }, [network]);
+    if (isInitialMount.current) {
+        // Set home page on initial load
+        const homeContent = defaultHomePageContent(network);
+        setCurrentContent(homeContent);
+        setCurrentDomain('hyp.net');
+        setAddress('hyp.net');
+        isInitialMount.current = false;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array ensures this runs only once
 
 
   useEffect(() => {

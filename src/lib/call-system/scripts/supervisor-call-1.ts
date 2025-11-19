@@ -19,7 +19,7 @@ export const supervisorCall1: CallScript = {
         },
         {
           id: 'question',
-          text: 'Exécuter NÉO ? Je viens à peine d\'arriver.',
+          text: 'Exécuter NÉO ? Comment dois-je procéder ?',
           nextNode: 'question-response',
         },
         {
@@ -32,7 +32,7 @@ export const supervisorCall1: CallScript = {
     'question-response': {
         message: {
             speaker: 'Superviseur',
-            text: 'Pas de temps à perdre, Omen. Vos instructions sont dans le fichier welcome.txt. Lisez-le. Terminé.',
+            text: 'Les RH ont dû vous envoyer un e-mail avec les accès. Sinon, tout est dans le fichier welcome.txt sur votre bureau. Lisez-le. Terminé.',
         },
         consequences: {
             triggerEmail: {

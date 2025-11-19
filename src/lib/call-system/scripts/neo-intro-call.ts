@@ -1,4 +1,5 @@
 import type { CallScript } from '../types';
+import { directorCallback } from './director-callback';
 
 export const neoIntroCall: CallScript = {
   id: 'neo-intro-call',
@@ -24,6 +25,10 @@ export const neoIntroCall: CallScript = {
         speaker: 'Néo',
         text: 'Est-ce que cela fait mal... de mourir ?',
       },
+      consequences: {
+        triggerSound: 'tension',
+        endCallAndTrigger: directorCallback,
+      }
     },
   },
 };

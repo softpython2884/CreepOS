@@ -61,9 +61,9 @@ type EditingFile = {
 type CallState = 'idle' | 'incoming' | 'active';
 
 interface DesktopProps {
-  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | null) => void;
+  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | null) => void;
   onMusicEvent: (event: MusicEvent) => void;
-  onAlertEvent: (event: AlertEvent | null) => void;
+  onAlertEvent: (event: AlertEvent) => void;
   username: string;
   onReboot: () => void;
   setMachineState: (state: string) => void;
@@ -207,13 +207,13 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     setEmails(prev => [...prev, newEmail]);
     onSoundEvent('email');
     setEmailNotification(true);
-    setTimeout(() => setEmailNotification(false), 3000);
     addLog(`EMAIL: Email reçu de ${emailDetails.sender} avec le sujet "${emailDetails.subject}"`);
   }, [addLog, onSoundEvent]);
 
 
   const endCall = useCallback(() => {
     onAlertEvent('stopRingtone');
+    onAlertEvent('stopScream'); // Just in case
     
     setCallState('idle');
     setActiveCall(null);
@@ -297,6 +297,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if (chosenChoice.consequences?.triggerEmail) {
         receiveEmail(chosenChoice.consequences.triggerEmail);
     }
+    if (chosenChoice.consequences?.triggerSound) {
+        onSoundEvent(chosenChoice.consequences.triggerSound);
+    }
     if (chosenChoice.consequences?.endCallAndTrigger) {
         setTimeout(() => triggerCall(chosenChoice.consequences!.endCallAndTrigger!), 1500);
     }
@@ -363,8 +366,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const handleNeoExecute = useCallback(() => {
     callQueueRef.current = [
       () => triggerCall(directorCall),
-      () => triggerCall(neoIntroCall),
-      () => triggerCall(directorCallback),
     ];
     const firstCall = callQueueRef.current.shift();
     if(firstCall) {
@@ -456,6 +457,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   
   const openApp = useCallback((appId: AppId, appProps?: any) => {
     const config = appConfig[appId];
+
+    if (appId === 'email') {
+        setEmailNotification(false);
+    }
     
     if (config.isSingular) {
         const existingApp = openApps.find(app => app.appId === appId);
@@ -546,11 +551,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     onSoundEvent('email');
     setEmails(prev => [...prev, newEmail]);
     addLog(`EMAIL: Email envoyé à ${email.recipient} avec le sujet "${email.subject}"`);
-    
-    setTimeout(() => {
-        setEmailNotification(true);
-        setTimeout(() => setEmailNotification(false), 2000);
-    }, 0);
   };
 
   const getPlayerFileSystem = useCallback(() => {
@@ -703,6 +703,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     setOpenApps(prevApps => {
         const app = prevApps.find(a => a.instanceId === instanceId);
         if (!app) return prevApps;
+
+        if (app.appId === 'email') {
+            setEmailNotification(false);
+        }
         
         return prevApps.map(app => 
             app.instanceId === instanceId 

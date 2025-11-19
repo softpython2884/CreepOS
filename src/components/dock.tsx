@@ -48,7 +48,7 @@ export default function Dock({ onAppClick, openApps, activeInstanceId, emailNoti
                     {openApps.some(openApp => openApp.appId === app.id) && (
                         <span className={cn(
                             "absolute bottom-1 left-1/2 -translate-x-1/2 h-1 w-4 rounded-full",
-                            isActive ? 'bg-accent-foreground' : 'bg-muted-foreground'
+                            isActive ? 'bg-accent' : 'bg-muted-foreground'
                         )}></span>
                     )}
                     </button>
