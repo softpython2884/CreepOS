@@ -17,7 +17,44 @@ export const supervisorCall1: CallScript = {
           text: 'Bien reçu.',
           nextNode: 'end-call',
         },
+        {
+          id: 'question',
+          text: 'Exécuter NÉO ? Je viens à peine d\'arriver.',
+          nextNode: 'question-response',
+        },
+        {
+          id: 'silent',
+          text: '[Rester silencieux]',
+          nextNode: 'silent-response',
+        }
       ],
+    },
+    'question-response': {
+        message: {
+            speaker: 'Superviseur',
+            text: 'Pas de temps à perdre, Omen. Vos instructions sont dans le fichier welcome.txt sur votre bureau. Lisez-le. Terminé.',
+        },
+        consequences: {
+            triggerEmail: {
+              sender: 'Supervisor@research-lab.net',
+              subject: 'Call scheduled',
+              body: "Je t'appelle dans 2 minutes. Met-toi en route, vas exécuter Néo. Reste près de ta machine.",
+            },
+          },
+    },
+    'silent-response': {
+        message: {
+            speaker: 'Superviseur',
+            text: '...Omen ? Répondez. Est-ce que vous me recevez ? Bon, lisez vos instructions et mettez-vous au travail. Je n\'ai pas le temps pour ça. Terminé.',
+        },
+        consequences: {
+            danger: 5,
+            triggerEmail: {
+              sender: 'Supervisor@research-lab.net',
+              subject: 'Call scheduled',
+              body: "Je t'appelle dans 2 minutes. Met-toi en route, vas exécuter Néo. Reste près de ta machine.",
+            },
+        },
     },
     'end-call': {
       message: {

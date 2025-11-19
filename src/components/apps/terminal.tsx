@@ -1007,14 +1007,6 @@ export default function Terminal({
                 }));
 
                 handleOutput(`Copied ${copiedFiles.length} files to ${destArg}`);
-
-                 if (sourceNode.id === 'cheat-bin') {
-                    receiveEmail({
-                        sender: 'Néo@SYS.AI',
-                        subject: '...?',
-                        body: "Je vois ce que vous faites, Opérateur.\nContinuez."
-                    });
-                }
                 
                 break;
             }

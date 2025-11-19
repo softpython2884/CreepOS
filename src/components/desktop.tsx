@@ -8,7 +8,7 @@ import DocumentFolder from '@/components/apps/document-folder';
 import TextEditor from '@/components/apps/text-editor';
 import { cn } from '@/lib/utils';
 import { MusicEvent, AlertEvent } from './audio-manager';
-import { type FileSystemNode } from '@/lib/network/types';
+import { type FileSystemNode, SoundEvent } from '@/lib/network/types';
 import Draggable from 'react-draggable';
 import { network as initialNetwork } from '@/lib/network';
 import { type PC } from '@/lib/network/types';
@@ -134,7 +134,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const [emails, setEmails] = useState<Email[]>(() => {
     const savedState = loadGameState(username);
-    return savedState.emails || [
+    if (savedState.emails && savedState.emails.length > 0) {
+      return savedState.emails;
+    }
+    return [
       {
         id: 'welcome-email',
         sender: 'HR@research-lab.net',
@@ -145,7 +148,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         folder: 'inbox',
       },
       {
-        id: 'supervisor-email',
+        id: 'supervisor-email-initial',
         sender: 'Supervisor@research-lab.net',
         recipient: 'Dr.Omen@research-lab.net',
         subject: 'Scheduled Call',
@@ -153,7 +156,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         timestamp: new Date(new Date().getTime() - 5 * 60000).toISOString(),
         folder: 'inbox',
       },
-  ]});
+    ];
+  });
 
   const gameState = { network, hackedPcs, emails, machineState: 'desktop' };
   
@@ -208,27 +212,24 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   }, [addLog, onSoundEvent]);
 
 
-  const endCall = useCallback((withSound = true) => {
+  const endCall = useCallback(() => {
     onAlertEvent('stopRingtone');
-    if (isTraced) {
-      onMusicEvent('scream');
-    } else {
-      onMusicEvent('calm');
-    }
+    
     setCallState('idle');
     setActiveCall(null);
     callScriptRef.current = null;
     currentNodeIdRef.current = null;
-    if (withSound) {
-        onSoundEvent('close');
+    onSoundEvent('close');
+    
+    if(!isTraced) {
+      onMusicEvent('calm');
     }
     
-    // Process next call in queue if any
     const nextCall = callQueueRef.current.shift();
     if(nextCall) {
-        setTimeout(nextCall, 1000); // Small delay between calls
+        setTimeout(nextCall, 1000); 
     }
-  }, [onAlertEvent, isTraced, onMusicEvent, onSoundEvent]);
+  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced]);
 
 
   const triggerCall = useCallback((script: CallScript) => {
@@ -269,8 +270,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const declineCall = useCallback(() => {
     addLog(`EVENT: Declined call from ${callScriptRef.current?.interlocutor}.`);
-    endCall(false);
-  }, [addLog, endCall]);
+    onAlertEvent('stopRingtone');
+    endCall();
+  }, [addLog, endCall, onAlertEvent]);
 
   const advanceCall = (choiceId: string) => {
     const script = callScriptRef.current;
@@ -339,7 +341,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if (isTraced) return;
     
     addLog(`DANGER: Trace initiated from ${targetName}. You have ${time} seconds to disconnect.`);
-    onMusicEvent('scream');
+    onAlertEvent('scream');
     setIsTraced(true);
     setTraceTimeLeft(time);
     setTraceTarget({ name: targetName, time: time });
@@ -347,7 +349,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     setOpenApps(prev => prev.map(app => 
         app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
     ));
-  }, [addLog, onMusicEvent, isTraced]);
+  }, [addLog, onAlertEvent, isTraced]);
 
   // Initial supervisor call
   useEffect(() => {
@@ -757,7 +759,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
       {callState === 'active' && activeCall && (
         <div className="absolute top-4 right-4 z-[9999]">
-            <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} onClose={() => endCall()} />
+            <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} onClose={endCall} />
         </div>
       )}
 
