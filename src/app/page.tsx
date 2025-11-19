@@ -14,7 +14,7 @@ import { network as initialNetworkData } from '@/lib/network';
 import SurvivalMode from '@/components/survival-mode';
 import CinematicScreen from '@/components/cinematic-screen';
 
-type MachineState = 'cinematic' | 'off' | 'bios' | 'booting' | 'login' | 'desktop' | 'recovery' | 'bsod' | 'survival';
+type MachineState = 'standby' | 'cinematic' | 'off' | 'bios' | 'booting' | 'login' | 'desktop' | 'recovery' | 'bsod' | 'survival';
 
 const biosLines = [
     'NEO-SYSTEM BIOS v1.0.3',
@@ -47,6 +47,15 @@ const ratios = [
     { name: '1:1 (Square)', value: 1/1 },
     { name: '9:16 (Vertical)', value: 9/16 },
 ];
+
+const StandbyScreen = ({ onInteract }: { onInteract: () => void }) => (
+    <div 
+        className="w-full h-full flex flex-col justify-center items-center bg-black font-code cursor-pointer"
+        onClick={onInteract}
+    >
+        <p className="text-xl text-foreground animate-pulse">[ Cliquez pour commencer ]</p>
+    </div>
+);
 
 const OffScreen = ({ onStart, onRatioChange, currentRatio }: { onStart: () => void; onRatioChange: (ratio: number) => void; currentRatio: number }) => {
     const [selectedRatio, setSelectedRatio] = useState<string | number>(currentRatio.toString());
@@ -349,27 +358,28 @@ const BsodScreen = ({ onReboot }: { onReboot: () => void }) => {
 
 
 export default function Home() {
-    const [machineState, setMachineState] = useState<MachineState>('cinematic');
+    const [machineState, setMachineState] = useState<MachineState>('standby');
     const [username] = useState('Operator');
     const [soundEvent, setSoundEvent] = useState<SoundEvent>(null);
     const [musicEvent, setMusicEvent] = useState<MusicEvent>('none');
     const [aspectRatio, setAspectRatio] = useState(16/9);
 
-    useEffect(() => {
+    const handleUserInteraction = () => {
         // Check if the intro has been played.
         try {
             const hasPlayedIntro = localStorage.getItem('hasPlayedIntro_v1');
             if (hasPlayedIntro) {
                 setMachineState('off');
             } else {
-                setMusicEvent('devyourself');
+                setMusicEvent('cinematic');
                 setMachineState('cinematic');
             }
         } catch (e) {
             // localStorage might be disabled
             setMachineState('off');
         }
-    }, []);
+    }
+
 
     const updateScale = useCallback(() => {
         const viewportBaseWidth = 1920;
@@ -442,6 +452,8 @@ export default function Home() {
 
     const renderState = () => {
         switch (machineState) {
+            case 'standby':
+                return <StandbyScreen onInteract={handleUserInteraction} />;
             case 'cinematic':
                  return <CinematicScreen onComplete={handleCinematicComplete} />;
             case 'off':

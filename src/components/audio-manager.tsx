@@ -30,7 +30,7 @@ const musicTracks: Record<Exclude<MusicEvent, 'none'>, { src: string; volume: nu
     epic: { src: '/start.mp3', volume: 0.4, loop: true },
     alarm: { src: '/alarm.mp3', volume: 0.6, loop: true },
     creepy: { src: '/30s-creepyBG.mp3', volume: 0.5 },
-    cinematic: { src: '/present30s.mp3', volume: 0.5 },
+    cinematic: { src: '/Néo.mp3', volume: 0.8, loop: false },
     devyourself: { src: '/devyourself.mp3', volume: 0.5, loop: false },
 };
 
