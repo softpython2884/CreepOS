@@ -43,6 +43,9 @@ export default function CinematicScreen({ onComplete }: { onComplete: () => void
     const [currentLineIndex, setCurrentLineIndex] = useState(-1);
     const [showText, setShowText] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
+    const [showTitleCard, setShowTitleCard] = useState(false);
+    const [titleCorrupted, setTitleCorrupted] = useState(false);
+    const [titleShattered, setTitleShattered] = useState(false);
 
     useEffect(() => {
         setCurrentLineIndex(0);
@@ -53,7 +56,13 @@ export default function CinematicScreen({ onComplete }: { onComplete: () => void
 
         if (currentLineIndex >= lines.length) {
             setShowText(false);
-            setTimeout(onComplete, 1000);
+            setTimeout(() => {
+                setShowTitleCard(true);
+                // Title card animation sequence
+                setTimeout(() => setTitleCorrupted(true), 2000); // Glitch and turn red after 2s
+                setTimeout(() => setTitleShattered(true), 4000); // Shatter after 4s
+                setTimeout(onComplete, 5500); // Complete cinematic after shatter
+            }, 1000);
             return;
         }
 
@@ -76,17 +85,18 @@ export default function CinematicScreen({ onComplete }: { onComplete: () => void
     
     const handleTypingComplete = () => {
         const line = lines[currentLineIndex];
+        const waitTime = line.duration - (line.text.length * 60);
         setTimeout(() => {
             setShowText(false);
             setIsTyping(false);
             setTimeout(() => setCurrentLineIndex(i => i + 1), 1000);
-        }, line.duration - (line.text.length * 60)); // Adjust wait time
+        }, waitTime > 500 ? waitTime : 500);
     };
 
     const currentLine = lines[currentLineIndex];
 
     return (
-        <div className="w-full h-full flex flex-col justify-center items-center bg-black font-code text-foreground cursor-none">
+        <div className="w-full h-full flex flex-col justify-center items-center bg-black font-code text-foreground cursor-none overflow-hidden">
             <div className={cn(
                 "transition-opacity duration-1000 text-center",
                 showText ? 'opacity-100' : 'opacity-0'
@@ -101,6 +111,27 @@ export default function CinematicScreen({ onComplete }: { onComplete: () => void
                     )
                 )}
             </div>
+            
+            {showTitleCard && (
+                <div className={cn(
+                    'transition-opacity duration-500',
+                    showTitleCard ? 'opacity-100' : 'opacity-0',
+                    titleShattered && 'animate-shatter'
+                )}>
+                    <h1 className={cn(
+                        'text-5xl md:text-7xl font-bold tracking-[0.3em] transition-colors duration-1000',
+                        titleCorrupted ? 'text-destructive animate-glitch-long' : 'text-white'
+                    )}>
+                        NEO-SYSTEM
+                    </h1>
+                    <h2 className={cn(
+                        'text-3xl md:text-5xl font-bold tracking-[0.1em] transition-colors duration-1000 text-center mt-2',
+                         titleCorrupted ? 'text-destructive/80 animate-vibration' : 'text-accent'
+                    )}>
+                        : BREACH
+                    </h2>
+                </div>
+            )}
         </div>
     );
 }
