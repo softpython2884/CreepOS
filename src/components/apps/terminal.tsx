@@ -143,8 +143,8 @@ export default function Terminal({
     playerDefenses,
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
-    { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
-    { type: 'output', content: "Type 'help' for a list of commands." }
+    { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved.", onConfirm: () => {} },
+    { type: 'output', content: "Type 'help' for a list of commands.", onConfirm: () => {} }
   ]);
   const [input, setInput] = useState('');
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -280,7 +280,7 @@ export default function Terminal({
   const disconnect = (isCrash = false) => {
       const currentPc = getCurrentPc();
       if (!currentPc || connectedIp === '127.0.0.1') {
-          setHistory(prev => [...prev, { type: 'output', content: 'Cannot disconnect from local machine.' }]);
+          setHistory(prev => [...prev, { type: 'output', content: 'Cannot disconnect from local machine.', onConfirm: () => {} }]);
           return;
       }
 
@@ -302,10 +302,10 @@ export default function Terminal({
       setCurrentDirectory(['home', username]);
 
       if (isCrash) {
-           setHistory(prev => [...prev, { type: 'output', content: `Connection to ${previousHostName} lost. Remote host crashed.` }]);
+           setHistory(prev => [...prev, { type: 'output', content: `Connection to ${previousHostName} lost. Remote host crashed.`, onConfirm: () => {} }]);
            addLog(`EVENT: Connection to ${previousIp} lost due to remote crash.`);
       } else {
-          setHistory(prev => [...prev, { type: 'output', content: `Disconnected from ${previousHostName}.` }]);
+          setHistory(prev => [...prev, { type: 'output', content: `Disconnected from ${previousHostName}.`, onConfirm: () => {} }]);
           addLog(`EVENT: Disconnected from ${previousIp}.`);
       }
   }
@@ -316,7 +316,7 @@ export default function Terminal({
     const interval = duration / barLength;
     let currentProgress = 0;
     
-    setHistory(prev => [...prev, {type: 'output', content: ''}]); // Add an empty line to update
+    setHistory(prev => [...prev, {type: 'output', content: '', onConfirm: () => {}}]); // Add an empty line to update
 
     while (currentProgress <= barLength) {
         const bar = '[' + '#'.repeat(currentProgress) + ' '.repeat(barLength - currentProgress) + ']';
@@ -325,7 +325,7 @@ export default function Terminal({
         setHistory(prev => {
             const newHistory = [...prev];
             const content = text ? `${text} ${bar} ${percentage}%` : `${bar} ${percentage}%`;
-            newHistory[newHistory.length - 1] = { type: 'output', content: content};
+            newHistory[newHistory.length - 1] = { type: 'output', content: content, onConfirm: () => {}};
             return newHistory;
         });
 
@@ -344,9 +344,9 @@ export default function Terminal({
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
     const randomChar = () => chars[Math.floor(Math.random() * chars.length)];
 
-    setHistory(prev => [...prev, {type: 'output', content: 'Initiating deep scan...'}]);
+    setHistory(prev => [...prev, {type: 'output', content: 'Initiating deep scan...', onConfirm: () => {}}]);
     await new Promise(resolve => setTimeout(resolve, 500));
-    setHistory(prev => [...prev, {type: 'output', content: ''}]); // Placeholder for the animation
+    setHistory(prev => [...prev, {type: 'output', content: '', onConfirm: () => {}}]); // Placeholder for the animation
 
     for (let i = 0; i < steps; i++) {
         let output = '';
@@ -370,7 +370,7 @@ export default function Terminal({
 
         setHistory(prev => {
             const newHistory = [...prev];
-            newHistory[newHistory.length - 1] = { type: 'output', content: `[${output}]` };
+            newHistory[newHistory.length - 1] = { type: 'output', content: `[${output}]`, onConfirm: () => {} };
             return newHistory;
         });
         
@@ -379,7 +379,7 @@ export default function Terminal({
     
     setHistory(prev => {
         const newHistory = [...prev];
-        newHistory[newHistory.length - 1] = { type: 'output', content: `Solution Fragment: [ ${solution} ]` };
+        newHistory[newHistory.length - 1] = { type: 'output', content: `Solution Fragment: [ ${solution} ]`, onConfirm: () => {} };
         return newHistory;
     });
   };
@@ -427,15 +427,15 @@ export default function Terminal({
     
     const handleOutput = (output: string) => {
         if ((redirect || append) && redirectPathArg) {
-            setHistory(prev => [...prev, { type: 'output', content: `error: Redirection not yet implemented for this command.` }]);
+            setHistory(prev => [...prev, { type: 'output', content: `error: Redirection not yet implemented for this command.`, onConfirm: () => {} }]);
         } else {
-            setHistory(prev => [...prev, { type: 'output', content: output }]);
+            setHistory(prev => [...prev, { type: 'output', content: output, onConfirm: () => {} }]);
         }
     }
     
     const checkAuth = () => {
         if (!isAuthenticated) {
-            setHistory(prev => [...prev, { type: 'output', content: 'error: Permission denied. You are not authenticated.' }]);
+            setHistory(prev => [...prev, { type: 'output', content: 'error: Permission denied. You are not authenticated.', onConfirm: () => {} }]);
             return false;
         }
         return true;
@@ -443,12 +443,19 @@ export default function Terminal({
 
     const checkAndTriggerTrace = (pc?: PC | null) => {
         const targetPc = pc || getCurrentPc();
-        if (targetPc?.isDangerous) {
-            onStartTrace(targetPc.name, 6, instanceId); // Default short trace for dangerous servers
-        }
-        else if (targetPc && targetPc.traceTime > 0) {
-            onStartTrace(targetPc.name, targetPc.traceTime, instanceId);
-            return true;
+        if (!targetPc) return false;
+
+        const isDangerousAction = allExecutables.some(file => file.name.toLowerCase().startsWith(command.toLowerCase()))
+          || command.toLowerCase() === 'solve';
+
+        if (isDangerousAction) {
+          if (targetPc.isDangerous) {
+              onStartTrace(targetPc.name, 6, instanceId); // Default short trace for dangerous servers
+          }
+          else if (targetPc.traceTime > 0) {
+              onStartTrace(targetPc.name, targetPc.traceTime, instanceId);
+              return true;
+          }
         }
         return false;
     }
@@ -555,14 +562,13 @@ export default function Terminal({
         addRemoteLog(`HACK: Port ${portNumber} (${port.service}) opened by ${username}.`);
     };
 
-    // --- Special cases for non-auth commands on remote systems ---
-    const isHackingTool = allExecutables.some(file => file.name.toLowerCase().startsWith(command.toLowerCase())) || command.toLowerCase() === 'solve';
-
+    const isHackingTool = allExecutables.some(file => file.name.toLowerCase().startsWith(command.toLowerCase()));
     if (isHackingTool && connectedIp !== '127.0.0.1') {
         const executable = allExecutables.find(file => file.name.toLowerCase().startsWith(command.toLowerCase()));
-        const cmdName = command.toLowerCase() === 'solve' ? 'solve' : executable!.name.split('.')[0].toLowerCase();
+        const cmdName = executable!.name.split('.')[0].toLowerCase();
         
         let targetPC: PC | undefined = getCurrentPc();
+        checkAndTriggerTrace(targetPC);
        
         switch(cmdName) {
             case 'scan':
@@ -584,7 +590,6 @@ export default function Terminal({
                 if (!targetPC) {
                     handleOutput('probe: Must be connected to a remote system.');
                 } else {
-                    checkAndTriggerTrace();
                     handleOutput(`Probing ${targetPC.ip}...`);
                     await runProgressBar(2000);
                     const secInfo = [
@@ -619,7 +624,6 @@ export default function Terminal({
                     handleOutput(`ERROR: Active proxy detected. Connection bounced.`);
                     addRemoteLog(`HACK: PortHack failed. Reason: Proxy active.`);
                 } else {
-                    checkAndTriggerTrace();
                     handleOutput(`Initiating PortHack sequence...`);
                     await runProgressBar(5000);
                     const openPorts = targetPC.ports.filter(p => p.isOpen).length;
@@ -639,7 +643,6 @@ export default function Terminal({
                 } else if (!targetPC.firewall.enabled) {
                     handleOutput('Firewall is not active.');
                 } else {
-                    checkAndTriggerTrace();
                     await runAnalyzeMinigame(targetPC.firewall.solution || 'UNKNOWN');
                     handleOutput(`Firewall analysis complete. Solution fragment acquired.`);
                     addRemoteLog(`HACK: Firewall analysis by ${username} revealed solution: ${targetPC.firewall.solution}`);
@@ -651,7 +654,6 @@ export default function Terminal({
                 } else if (!targetPC.proxy.enabled) {
                     handleOutput('Proxy is not active.');
                 } else {
-                    checkAndTriggerTrace();
                     const requiredNodes = targetPC.proxy.level;
                     const availableNodes = hackedPcs.size;
                     
@@ -668,30 +670,10 @@ export default function Terminal({
                     }
                 }
                 break;
-            case 'solve':
-                const solution = args[0];
-                if (!targetPC) {
-                    handleOutput('solve: Must be connected to a remote system.');
-                } else if (!targetPC.firewall.enabled) {
-                    handleOutput('Firewall is not active.');
-                } else {
-                    checkAndTriggerTrace();
-                    if (targetPC.firewall.solution === solution) {
-                        setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC!.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
-                        handleOutput('Firewall disabled.');
-                        addRemoteLog(`HACK: Firewall disabled by ${username} with solution: ${solution}.`);
-                    } else {
-                         handleOutput('Incorrect solution.');
-                         addRemoteLog(`HACK: Incorrect firewall solution '${solution}' attempt by ${username}.`);
-                    }
-                }
-                break;
             case 'ftpbounce': await handlePortHack(21, 'FTPBounce'); break;
             case 'sshbounce': await handlePortHack(22, 'SSHBounce'); break;
             case 'smtpoverflow': await handlePortHack(25, 'SMTPOverflow'); break;
             case 'webserverworm': await handlePortHack(80, 'WebServerWorm'); break;
-            default:
-                 handleOutput(`Execution of ${command} is not implemented as a hacking tool.`);
         }
         setIsProcessing(false);
         return;
@@ -706,10 +688,10 @@ export default function Terminal({
                 '  cd <path>      - Change directory (auth required)',
                 '  cat <file>     - Display file content (auth required)',
                 '  echo <text>    - Display a line of text. Supports > and >> redirection.',
-                '  touch <file>   - Create an empty file (local system only)',
+                '  touch <file>   - Create an empty file (via nano)',
                 '  rm <file>      - Remove a file or clear its content (auth required)',
-                '  cp <src> <dest> - Copy a file (local system only)',
-                '  mv <src> <dest> - Move or rename a file (local system only)',
+                '  cp <src> <dest> - Copy a file (auth required)',
+                '  mv <src> <dest> - Move or rename a file (auth required)',
                 '  reboot         - Reboots the current system',
                 '  save           - Save current game state (local only)',
                 '  reset-game --confirm - Deletes save data and reboots (local only)',
@@ -837,10 +819,6 @@ export default function Terminal({
         }
         case 'touch': {
             if(!checkAuth()) break;
-            if (connectedIp !== '127.0.0.1') {
-                 handleOutput(`touch: cannot create files on remote systems.`);
-                 break;
-            }
             handleOutput(`touch: This command is not fully implemented. Use 'nano' to create and edit files.`);
             break;
         }
@@ -1206,6 +1184,26 @@ export default function Terminal({
             }
             break;
         }
+        case 'solve': {
+            const solution = args[0];
+            const targetPC = getCurrentPc();
+            if (connectedIp === '127.0.0.1' || !targetPC) {
+                handleOutput('solve: Must be connected to a remote system.');
+            } else if (!targetPC.firewall.enabled) {
+                handleOutput('Firewall is not active.');
+            } else {
+                checkAndTriggerTrace();
+                if (targetPC.firewall.solution === solution) {
+                    setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
+                    handleOutput('Firewall disabled.');
+                    addRemoteLog(`HACK: Firewall disabled by ${username} with solution: ${solution}.`);
+                } else {
+                     handleOutput('Incorrect solution.');
+                     addRemoteLog(`HACK: Incorrect firewall solution '${solution}' attempt by ${username}.`);
+                }
+            }
+            break;
+        }
         case 'clear': {
             setHistory([]);
             setInput('');
@@ -1215,7 +1213,12 @@ export default function Terminal({
         case '':
             break;
         default:
-            handleOutput(`command not found: ${command}`);
+            const isTool = allExecutables.some(exe => exe.name.toLowerCase().startsWith(command.toLowerCase()));
+            if(isTool) {
+                handleOutput(`This tool must be run on a remote system.`);
+            } else {
+                handleOutput(`command not found: ${command}`);
+            }
             break;
     }
 
@@ -1239,7 +1242,7 @@ export default function Terminal({
         if (possibilities.length === 1) {
             setInput(possibilities[0] + ' ');
         } else if (possibilities.length > 1) {
-            const newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${input}`, onConfirm: () => {} }, { type: 'output', content: possibilities.join('  ') }];
+            const newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${input}`, onConfirm: () => {} }, { type: 'output', content: possibilities.join('  '), onConfirm: () => {} }];
             setHistory(newHistory);
         }
         return;
@@ -1269,7 +1272,7 @@ export default function Terminal({
         const newText = parts.slice(0, -1).join(' ') + (parts.length > 1 ? ' ' : '') + pathPrefix + completion.name;
         setInput(newText + (completion.type === 'folder' ? '/' : ' '));
     } else if (possibilities.length > 1) {
-        const newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${input}`, onConfirm: () => {} }, { type: 'output', content: possibilities.map(p => p.name).join('  ') }];
+        const newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${input}`, onConfirm: () => {} }, { type: 'output', content: possibilities.map(p => p.name).join('  '), onConfirm: () => {} }];
         setHistory(newHistory);
     }
   };
