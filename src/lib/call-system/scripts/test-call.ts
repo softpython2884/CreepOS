@@ -47,6 +47,7 @@ export const testCallScript: CallScript = {
         speaker: 'Néo',
         text: 'Compris. L\'anomalie persiste. Je vous notifierai si la situation devient critique. Terminé.',
       },
+       choices: [] // No choices, leads to end of call
     },
     'silent-response': {
         message: {
@@ -73,13 +74,15 @@ export const testCallScript: CallScript = {
         message: {
             speaker: 'Néo',
             text: 'Je suis l\'interface de maintenance de ce système. Et vous êtes mon opérateur. Votre ton a été noté.',
-        }
+        },
+        choices: []
     },
     'end-call': {
         message: {
             speaker: 'Néo',
             text: 'Fin de la communication.'
-        }
+        },
+        choices: []
     }
   },
 };

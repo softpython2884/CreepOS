@@ -184,15 +184,25 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
 
   const declineCall = () => {
     onSoundEvent(null); // Stop ringtone
-    endCall();
+    const script = callScriptRef.current;
+    if (script) {
+        // Wait and recall
+        const randomDelay = Math.random() * 2000 + 1000; // 1-3 seconds
+        setTimeout(() => {
+            triggerCall(script);
+        }, randomDelay);
+    }
+    endCall(false); // End call without UI sound
   };
 
-  const endCall = () => {
+  const endCall = (withSound = true) => {
     setCallState('idle');
     setActiveCall(null);
     callScriptRef.current = null;
     currentNodeIdRef.current = null;
-    onSoundEvent('close');
+    if (withSound) {
+        onSoundEvent('close');
+    }
   }
 
   const advanceCall = (choiceId: string) => {
@@ -241,8 +251,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const handlePlayerChoice = (choiceId: string) => {
     advanceCall(choiceId);
   }
-  // --- END CALL SYSTEM ---
-
+  
   useEffect(() => {
     // Expose test function to window
     (window as any).startTestCall = () => triggerCall(testCallScript);
@@ -251,6 +260,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       delete (window as any).startTestCall;
     }
   }, [triggerCall]);
+  // --- END CALL SYSTEM ---
+
 
   useEffect(() => {
     // Autosave interval
@@ -719,7 +730,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
 
       {callState === 'active' && activeCall && (
         <div className="absolute top-4 right-4 z-50">
-            <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} onClose={endCall} />
+            <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} onClose={() => endCall()} />
         </div>
       )}
 

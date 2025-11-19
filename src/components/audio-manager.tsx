@@ -18,7 +18,7 @@ const sounds: Record<NonNullable<Exclude<SoundEvent, 'stopScream'>>, { src: stri
     scream: { src: ['/action.mp3', '/NéoAttaque.mp3'], volume: 0.8, loop: true },
     glitch: { src: ['/glitch-sound-scary-mp3.mp3', '/error-glitch.mp3', '/glitch-sound-effect_FugN82U.mp3'], volume: 0.4 },
     click: { src: '/clicksoundeffect.mp3', volume: 0.6 },
-    email: { src: '/mail.mp3', volume: 0.5 },
+    email: { src: '/email.mp3', volume: 0.5 },
     close: { src: '/clicksoundeffect.mp3', volume: 0.4 },
     bsod: { src: '/bluescreen.mp3', volume: 0.5 },
     fan: { src: '/ventil.mp3', volume: 0.4, loop: true },
@@ -123,15 +123,20 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
   }, [isInitialized, playNextCalmTrack]);
 
   useEffect(() => {
-    if (!isInitialized || !specialLoopPlayerRef.current) return;
-    
-    if (soundEvent === null || soundEvent === 'stopScream') {
+    if (!isInitialized) return;
+
+    if (soundEvent === 'stopScream') {
         if (specialLoopPlayerRef.current) {
             specialLoopPlayerRef.current.pause();
             specialLoopPlayerRef.current.currentTime = 0;
         }
         onEnd(null);
         return;
+    }
+
+    if (soundEvent === null) {
+      onEnd(null);
+      return;
     }
     
     const sound = sounds[soundEvent];
@@ -140,7 +145,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
     // Handle special looping sounds (scream, ringtone)
     if (sound.loop) {
         const player = specialLoopPlayerRef.current;
-        if (player.paused) {
+        if (player) {
             const src = selectSoundSource(sound.src);
             player.src = src;
             player.volume = sound.volume;
@@ -156,24 +161,26 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
 
     if (player) {
         const src = selectSoundSource(sound.src);
-
-        if (player.src !== window.location.origin + src) {
-            player.src = src;
-        }
+        player.src = src;
         player.volume = sound.volume;
         player.loop = false;
         
         player.onended = () => {
             onEnd(soundEvent);
+            player.onended = null;
         };
         
         player.play().catch(error => {
             if ((error as Error).name !== 'AbortError') {
                 console.warn(`Could not play sound (${soundEvent}):`, error);
             }
+            onEnd(soundEvent); // Ensure onEnd is called even if play fails
         });
         
         onEnd(null); // Reset event immediately
+    } else {
+      // If no player is available, just end the event
+      onEnd(soundEvent);
     }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -189,7 +196,7 @@ export default function AudioManager({ soundEvent, musicEvent, onEnd }: AudioMan
         currentMusic.current = musicEvent;
         
         const fadeOutAndStop = (callback: () => void) => {
-            if (musicPlayer.paused) {
+            if (musicPlayer.paused || musicPlayer.volume === 0) {
                 callback();
                 return;
             }
