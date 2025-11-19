@@ -22,7 +22,9 @@
                     "name": "docs",
                     "type": "folder",
                     "children": [
-                        { "id": "file-notes", "name": "notes.txt", "type": "file", "content": "My personal notes..." }
+                        { "id": "file-notes", "name": "notes.txt", "type": "file", "content": "My personal notes..." },
+                        { "id": "file-devyourself", "name": "devyourself.pm3", "type": "file", "content": "/devyourself.mp3" },
+                        { "id": "file-codeyourself", "name": "codeyourself.pm3", "type": "file", "content": "/codeyourself.mp3" }
                     ]
                 },
                 {

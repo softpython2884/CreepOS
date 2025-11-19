@@ -1,13 +1,13 @@
 
 'use client';
 
-import { Terminal, Folder, Network, ShieldCheck, Mail, Globe } from 'lucide-react';
+import { Terminal, Folder, Network, ShieldCheck, Mail, Globe, Music } from 'lucide-react';
 import type { AppId } from '@/components/desktop';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface DockProps {
-  onAppClick: (appId: AppId) => void;
+  onAppClick: (appId: AppId, props?: any) => void;
   openApps: { instanceId: number; appId: AppId }[];
   activeInstanceId: number | null;
   emailNotification: boolean;

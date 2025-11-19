@@ -36,8 +36,6 @@ const calmPlaylist = [
     { src: '/music2.mp3', volume: 0.3 },
     { src: '/Néo-Principale.mp3', volume: 0.4 },
     { src: '/Néo2.mp3', volume: 0.4 },
-    { src: '/devyourself.mp3', volume: 0.4 },
-    { src: '/codeyourself.mp3', volume: 0.4 },
 ];
 
 const SFX_PLAYER_COUNT = 5;

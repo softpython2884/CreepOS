@@ -16,13 +16,14 @@ import LiveLogs from './apps/live-logs';
 import NetworkMap from './apps/network-map';
 import EmailClient, { type Email } from './apps/email-client';
 import WebBrowser from './apps/web-browser';
+import MediaPlayer from './apps/media-player';
 import { ShieldAlert, ShieldCheck, Mail, AlertTriangle, Skull } from 'lucide-react';
 import { Progress } from './ui/progress';
 import TracerTerminal, { traceCommands, decryptCommands, isolationCommands } from './tracer-terminal';
 import { saveGameState, loadGameState, deleteGameState } from '@/lib/save-manager';
 import SurvivalMode from './survival-mode';
 
-export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser';
+export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player';
 
 type AppConfig = {
   [key in AppId]: {
@@ -31,6 +32,7 @@ type AppConfig = {
     width: number;
     height: number;
     props?: any;
+    isSingular?: boolean; // Can only one instance of this app be open?
   };
 };
 
@@ -42,6 +44,7 @@ type OpenApp = {
   y: number;
   nodeRef: React.RefObject<HTMLDivElement>;
   isSourceOfTrace?: boolean;
+  props?: any; // For app-specific props like file path
 };
 
 type EditingFile = {
@@ -280,6 +283,40 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
   const handleOpenFileEditor = (path: string[], content: string) => {
     setEditingFile({ path, content });
   };
+  
+  const openApp = useCallback((appId: AppId, appProps?: any) => {
+    const config = appConfig[appId];
+    
+    // If app is singular and already open, just bring it to front
+    if (config.isSingular) {
+        const existingApp = openApps.find(app => app.appId === appId);
+        if (existingApp) {
+            bringToFront(existingApp.instanceId);
+            return;
+        }
+    }
+    
+    const instanceId = nextInstanceIdRef.current++;
+    
+    const viewport = document.getElementById('viewport');
+    if (!viewport) return;
+
+    const viewportWidth = viewport.offsetWidth;
+    const viewportHeight = viewport.offsetHeight;
+
+    const randomXOffset = (Math.random() - 0.5) * 200;
+    const randomYOffset = (Math.random() - 0.5) * 200;
+    const x = (viewportWidth / 2) - (config.width / 2) + randomXOffset;
+    const y = (viewportHeight / 2) - (config.height / 2) + randomYOffset;
+    
+    const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, x, y, nodeRef: createRef<HTMLDivElement>(), props: appProps };
+
+    setOpenApps(prev => [...prev, newApp]);
+    setActiveInstanceId(instanceId);
+    setNextZIndex(prev => prev + 1);
+    onSoundEvent('click');
+  }, [nextZIndex, onSoundEvent, openApps]);
+
 
   const handleSaveFile = (path: string[], newContent: string) => {
       addLog(`EVENT: File saved at /${path.join('/')}`);
@@ -407,6 +444,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
             onFileSystemUpdate: setPlayerFileSystem,
             onSoundEvent: onSoundEvent,
             username: username,
+            onOpenFile: (fileNode: FileSystemNode) => {
+                openApp('media-player', { fileName: fileNode.name, filePath: fileNode.content });
+            },
         } 
     },
     logs: {
@@ -416,7 +456,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       height: 400,
       props: {
         logs: logs,
-      }
+      },
+      isSingular: true,
     },
     'network-map': {
       title: 'Network Map',
@@ -426,7 +467,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       props: {
         network: network.filter(pc => discoveredPcs.has(pc.id)),
         hackedPcs: hackedPcs,
-      }
+      },
+      isSingular: true,
     },
     email: {
       title: 'Email Client',
@@ -437,7 +479,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
         emails: emails,
         onSend: handleSendEmail,
         currentUser: username,
-      }
+      },
+      isSingular: true,
     },
     'web-browser': {
       title: 'Hypnet Explorer',
@@ -446,6 +489,18 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       height: 768,
       props: {
         network: network,
+      },
+      isSingular: true,
+    },
+    'media-player': {
+      title: 'Media Player',
+      component: MediaPlayer,
+      width: 450,
+      height: 250,
+      props: {
+        // Default props, will be overridden by openApp call
+        fileName: 'unknown',
+        filePath: '',
       }
     }
   };
@@ -457,32 +512,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
       height: 450,
       props: { ...appConfig.terminal.props, machineState: 'survival', setPlayerDefenses, playerDefenses }
   };
-
-  const openApp = useCallback((appId: AppId, sourceInstanceId?: number) => {
-    const playerFs = getPlayerFileSystem();
-    if (appId === 'documents' && playerFs.length === 0) return;
-
-    const instanceId = nextInstanceIdRef.current++;
-    const config = appConfig[appId];
-    
-    const viewport = document.getElementById('viewport');
-    if (!viewport) return;
-
-    const viewportWidth = viewport.offsetWidth;
-    const viewportHeight = viewport.offsetHeight;
-
-    const randomXOffset = (Math.random() - 0.5) * 200;
-    const randomYOffset = (Math.random() - 0.5) * 200;
-    const x = (viewportWidth / 2) - (config.width / 2) + randomXOffset;
-    const y = (viewportHeight / 2) - (config.height / 2) + randomYOffset;
-    
-    const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, x, y, nodeRef: createRef<HTMLDivElement>() };
-
-    setOpenApps(prev => [...prev, newApp]);
-    setActiveInstanceId(instanceId);
-    setNextZIndex(prev => prev + 1);
-    onSoundEvent('click');
-  }, [nextZIndex, onSoundEvent, appConfig, getPlayerFileSystem]);
 
   const closeApp = useCallback((instanceId: number) => {
     onSoundEvent('close');
@@ -567,7 +596,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
           if (!currentAppConfig) return null;
           const AppComponent = currentAppConfig.component;
           
-          let props = { ...currentAppConfig.props };
+          let props = { ...currentAppConfig.props, ...app.props };
           
           if (app.appId === 'terminal') {
             props.instanceId = app.instanceId;
@@ -584,7 +613,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, username, onReboot
               >
                 <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
                     <Window 
-                      title={currentAppConfig.title} 
+                      title={app.appId === 'media-player' ? app.props?.fileName || 'Media Player' : currentAppConfig.title} 
                       onClose={() => closeApp(app.instanceId)} 
                       width={currentAppConfig.width}
                       height={currentAppConfig.height}

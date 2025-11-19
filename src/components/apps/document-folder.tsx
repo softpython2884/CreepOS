@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { FileText, Folder, CornerUpLeft, X, Lock } from 'lucide-react';
+import { FileText, Folder, CornerUpLeft, X, Lock, Music, FileImage } from 'lucide-react';
 import { type FileSystemNode } from '@/lib/network/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,13 +14,17 @@ interface DocumentFolderProps {
     onFileSystemUpdate: (newFileSystem: FileSystemNode[]) => void;
     onSoundEvent?: (event: 'click') => void;
     username: string;
+    onOpenFile: (file: FileSystemNode) => void;
 }
+
+const isMediaFile = (fileName: string) => /\.(pm3|mp3|wav|ogg|jpg|jpeg|png|gif)$/i.test(fileName);
+const isAudioFile = (fileName: string) => /\.(pm3|mp3|wav|ogg)$/i.test(fileName);
 
 const personalizeFileSystem = (nodes: FileSystemNode[], user: string): FileSystemNode[] => {
     return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, user));
 };
 
-export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSoundEvent, username }: DocumentFolderProps) {
+export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSoundEvent, username, onOpenFile }: DocumentFolderProps) {
     const [currentPath, setCurrentPath] = useState<string[]>([]);
     const [currentFolderItems, setCurrentFolderItems] = useState<FileSystemNode[]>([]);
     const [selectedFile, setSelectedFile] = useState<FileSystemNode | null>(null);
@@ -63,7 +67,11 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
         if (node.type === 'folder' && node.children) {
             setCurrentPath([...currentPath, node.name]);
         } else if (node.type === 'file') {
-            setSelectedFile(node);
+            if (isMediaFile(node.name)) {
+                onOpenFile(node);
+            } else {
+                setSelectedFile(node);
+            }
         }
     };
 
@@ -107,7 +115,11 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
     };
 
     const getDisplayPath = () => {
-        return '/' + currentPath.join('/');
+        const path = currentPath.join('/');
+        if (path.startsWith('home')) {
+            return `~/${path.substring(5)}`;
+        }
+        return `/${path}`;
     }
 
     if (selectedFile) {
@@ -128,6 +140,24 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
         );
     }
 
+    const renderIcon = (node: FileSystemNode) => {
+        if (node.type === 'folder') {
+            return (
+                <div className="relative">
+                    <Folder className="h-12 w-12 text-accent group-hover:text-accent-foreground" />
+                    {node.isLocked && <Lock className="absolute -bottom-1 -right-1 h-4 w-4 text-foreground/70" />}
+                </div>
+            )
+        }
+        if (isAudioFile(node.name)) {
+            return <Music className="h-12 w-12 text-muted-foreground group-hover:text-accent-foreground" />;
+        }
+        if (isMediaFile(node.name)) {
+            return <FileImage className="h-12 w-12 text-muted-foreground group-hover:text-accent-foreground" />;
+        }
+        return <FileText className="h-12 w-12 text-muted-foreground group-hover:text-accent-foreground" />;
+    };
+
     return (
         <>
             <ScrollArea className="h-full bg-card">
@@ -146,14 +176,7 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
                             onClick={() => openNode(node)}
                             className="flex flex-col items-center gap-2 p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors group"
                         >
-                            {node.type === 'folder' ? (
-                                <div className="relative">
-                                    <Folder className="h-12 w-12 text-accent group-hover:text-accent-foreground" />
-                                    {node.isLocked && <Lock className="absolute -bottom-1 -right-1 h-4 w-4 text-foreground/70" />}
-                                </div>
-                            ) : (
-                                <FileText className="h-12 w-12 text-muted-foreground group-hover:text-accent-foreground" />
-                            )}
+                            {renderIcon(node)}
                             <span className="text-xs text-center break-all">{node.name}</span>
                         </button>
                     ))}
