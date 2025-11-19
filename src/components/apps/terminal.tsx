@@ -192,9 +192,9 @@ export default function Terminal({
   const allExecutables = useMemo(() => {
     const playerPcFs = network.find(p => p.id === 'player-pc')?.fileSystem;
     if (!playerPcFs) return [];
-    const binFolder = personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder');
+    const binFolder = playerPcFs.find(node => node.name === 'bin' && node.type === 'folder');
     return binFolder?.children?.filter(f => f.type === 'file' && (f.name.endsWith('.bin') || f.name.endsWith('.exe'))) || [];
-  }, [network, username]);
+  }, [network]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -961,8 +961,8 @@ export default function Terminal({
             }
             
             if (sourceArg.endsWith('*')) {
-                const sourceDir = sourceArg.slice(0, -1);
-                const sourcePath = resolvePath(sourceDir);
+                const sourceDirArg = sourceArg.slice(0, -1);
+                const sourcePath = resolvePath(sourceDirArg);
                 const sourceNode = findNodeByPath(sourcePath, fileSystem);
                 
                 if (!sourceNode || sourceNode.type !== 'folder' || !sourceNode.children) {
@@ -971,16 +971,20 @@ export default function Terminal({
                 }
 
                 const destPath = resolvePath(destArg);
+                
+                let destPC = getCurrentPc();
+                let destPCId = destPC?.id;
+                
+                if(destArg.startsWith('local:')) {
+                    destPC = network.find(p => p.id === 'player-pc');
+                }
+                
+                if (!destPC) break;
 
-                // This part assumes we are copying to the player's PC file system
-                // A more robust implementation would check the destination PC
-                const playerPc = network.find(p => p.id === 'player-pc');
-                if (!playerPc) break;
+                const destNodeOnDestPC = findNodeByPath(destPath, destPC.fileSystem);
 
-                const destNodeOnPlayer = findNodeByPath(destPath, playerPc.fileSystem);
-
-                if (!destNodeOnPlayer || destNodeOnPlayer.type !== 'folder') {
-                    handleOutput(`${command}: destination '${destArg}' is not a directory on local machine`);
+                if (!destNodeOnDestPC || destNodeOnDestPC.type !== 'folder') {
+                    handleOutput(`${command}: destination '${destArg}' is not a directory`);
                     break;
                 }
 
@@ -996,7 +1000,7 @@ export default function Terminal({
                 }
                 
                 setNetwork(currentNetwork => currentNetwork.map(pc => {
-                    if (pc.id === 'player-pc') {
+                    if (pc.id === destPCId) {
                         let newFs = pc.fileSystem;
                         copiedFiles.forEach(file => {
                             newFs = addNodeByPath(newFs, destPath, file);
@@ -1007,6 +1011,7 @@ export default function Terminal({
                 }));
 
                 handleOutput(`Copied ${copiedFiles.length} files to ${destArg}`);
+                addLog(`EVENT: Copied ${copiedFiles.length} files from ${connectedIp}:${sourceDirArg} to local:${destArg}`);
                 
                 break;
             }

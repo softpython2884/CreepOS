@@ -12,6 +12,14 @@
     "ports": [],
     "fileSystem": [
         {
+            "id": "folder-bin",
+            "name": "bin",
+            "type": "folder",
+            "children": [
+                { "id": "file-nano", "name": "nano.bin", "type": "file", "content": "Text editor executable", "isSystemFile": true }
+            ]
+        },
+        {
             "id": "folder-home",
             "name": "home",
             "type": "folder",
@@ -45,19 +53,11 @@
                                 { "id": "file-activity-log", "name": "activity.log", "type": "file", "content": "" }
                             ]
                         },
-                        {
-                            "id": "folder-bin",
-                            "name": "bin",
-                            "type": "folder",
-                            "children": [
-                                { "id": "file-nano", "name": "nano.bin", "type": "file", "content": "Text editor executable", "isSystemFile": true }
-                            ]
-                        },
                          {
                             "id": "file-welcome",
                             "name": "welcome.txt",
                             "type": "file",
-                            "content": "Bienvenue Dr. Omen.\n\nMerci d'avoir rejoint le Centre. Vous serez en résidence pendant 3 mois et travaillerez sur le projet \"NÉO\" (IA expérimentale — usage recherche). Pendant votre séjour : confidentialité totale, accès strict, surveillance automatisée.\n\nTutoriel rapide :\n1. Scannez le réseau (`scan`) pour trouver des machines. Vous devriez trouver un 'Tool-Server'.\n2. Connectez-vous à ce serveur (`connect <ip>`). Le mot de passe se trouve quelque part dans vos notes.\n3. Une fois connecté, copiez les outils de piratage dans votre dossier `bin` local avec : `cp /bin/* /home/omen/bin`\n4. Connectez-vous au 'neo-dev-node' (`connect 198.51.100.1`) et suivez les instructions sur le site pour télécharger NÉO.\n\nBon courage.\n— HR"
+                            "content": "Bienvenue Dr. Omen.\n\nMerci d'avoir rejoint le Centre. Vous serez en résidence pendant 3 mois et travaillerez sur le projet \"NÉO\" (IA expérimentale — usage recherche). Pendant votre séjour : confidentialité totale, accès strict, surveillance automatisée.\n\nTutoriel rapide :\n1. Connectez-vous au 'Tool-Server' avec l'IP `36.30.30.44`. Le mot de passe est un simple décompte.\n2. Une fois authentifié (`login admin <mot_de_passe>`), copiez les outils de piratage sur votre machine locale avec la commande : `cp /bin/* /bin`\n3. Connectez-vous au 'neo-dev-node' (`connect 198.51.100.1`) et suivez les instructions sur le site pour télécharger NÉO.\n\nBon courage.\n— HR"
                         }
                     ]
                 }

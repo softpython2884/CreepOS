@@ -1,4 +1,3 @@
-
 {
     "id": "cheat-pc",
     "name": "Tool-Server",
@@ -34,7 +33,7 @@
             "id": "cheat-readme",
             "name": "README.txt",
             "type": "file",
-            "content": "Welcome, developer.\n\nThis server contains all the necessary hacking tools.\nUse 'cp /bin/* /home/Operator/bin' on your local machine after connecting to transfer them.\n\nGood luck."
+            "content": "Welcome, developer.\n\nThis server contains all the necessary hacking tools.\nUse 'cp /bin/* /bin' on your local machine to transfer them.\n\nGood luck."
         },
         {
             "id": "cheat-logs",
