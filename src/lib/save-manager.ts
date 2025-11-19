@@ -1,22 +1,24 @@
-
 'use client';
 
-import { PC } from './network/types';
+import { PC, FileSystemNode } from './network/types';
 import { network as initialNetwork } from './network';
+import { Email } from '@/components/apps/email-client';
 
 export interface GameState {
     network: PC[];
     hackedPcs: Set<string>;
+    emails: Email[];
     machineState?: string;
 }
 
 const initialGameState: GameState = {
     network: JSON.parse(JSON.stringify(initialNetwork)), // Deep copy
     hackedPcs: new Set(['player-pc']),
+    emails: [],
     machineState: 'off',
 };
 
-export const saveGameState = (username: string, gameState: GameState) => {
+export const saveGameState = (username: string, gameState: Omit<GameState, 'hackedPcs'> & { hackedPcs: Set<string> | string[] }) => {
     try {
         const stateToSave = {
             ...gameState,
@@ -35,7 +37,9 @@ export const loadGameState = (username: string): GameState => {
             const parsedState = JSON.parse(savedStateJSON);
             return {
                 ...parsedState,
+                network: parsedState.network || JSON.parse(JSON.stringify(initialNetwork)),
                 hackedPcs: new Set(parsedState.hackedPcs || ['player-pc']), // Convert Array back to Set
+                emails: parsedState.emails || [],
             };
         }
     } catch (error) {

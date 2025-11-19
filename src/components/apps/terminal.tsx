@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileSystemNode, PC } from '@/lib/network/types';
 import { network as initialNetworkData } from '@/lib/network';
+import { type Email } from './email-client';
 
 interface HistoryItem {
   type: 'command' | 'output' | 'confirmation';
@@ -16,7 +17,7 @@ interface HistoryItem {
 interface TerminalProps {
     username: string;
     instanceId: number;
-    onSoundEvent?: (event: 'click') => void;
+    onSoundEvent?: (event: 'click' | 'error') => void;
     onOpenFileEditor: (path: string[], content: string) => void;
     network: PC[];
     setNetwork: React.Dispatch<React.SetStateAction<PC[]>>;
@@ -34,6 +35,7 @@ interface TerminalProps {
     machineState: string; // To know if we are in survival mode
     setPlayerDefenses?: any;
     playerDefenses?: any;
+    receiveEmail: (email: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => void;
 }
 
 const PLAYER_PUBLIC_IP = '184.72.238.110';
@@ -157,6 +159,7 @@ export default function Terminal({
     machineState,
     setPlayerDefenses,
     playerDefenses,
+    receiveEmail,
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved.", onConfirm: () => {} },
@@ -189,11 +192,11 @@ export default function Terminal({
   }, [getCurrentPc]);
   
   const allExecutables = useMemo(() => {
-    const playerPcFs = initialNetworkData.find(p => p.id === 'player-pc')?.fileSystem;
+    const playerPcFs = network.find(p => p.id === 'player-pc')?.fileSystem;
     if (!playerPcFs) return [];
     const binFolder = personalizeFileSystem(playerPcFs, username).find(node => node.name === 'bin' && node.type === 'folder');
     return binFolder?.children?.filter(f => f.type === 'file' && (f.name.endsWith('.bin') || f.name.endsWith('.exe'))) || [];
-  }, [username]);
+  }, [network, username]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -852,7 +855,7 @@ export default function Terminal({
                     type: 'confirmation',
                     content: 'Are you sure you want to delete all files in this directory? (y/n)',
                     onConfirm: async (confirmed) => {
-                        setHistory(prevHist => [...prevHist, {type: 'command', content: confirmed ? 'y' : 'n'}]);
+                        setHistory(prevHist => [...prevHist, {type: 'command', content: confirmed ? 'y' : 'n', onConfirm: () => {}}]);
                         if (confirmed) {
                             let filesToRemove: FileSystemNode[] = [];
                             let filesCleared: FileSystemNode[] = [];
@@ -889,21 +892,24 @@ export default function Terminal({
                             // Await state update before logging
                             await new Promise(resolve => setTimeout(resolve, 0));
 
+                            const newHistoryItems: HistoryItem[] = [];
                             if (filesToRemove.length > 0) {
-                                handleOutput(`Removed ${filesToRemove.length} file(s).`);
+                                newHistoryItems.push({ type: 'output', content: `Removed ${filesToRemove.length} file(s).`, onConfirm: () => {} });
                                 addLog(`EVENT: Removed ${filesToRemove.length} files from ${connectedIp}:${'/' + currentDirectory.join('/')}`);
                                 if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: ${filesToRemove.length} file(s) removed by user from ${PLAYER_PUBLIC_IP} in /${currentDirectory.join('/')}`);
                             }
                             if (filesCleared.length > 0) {
-                                handleOutput(`Cleared content of ${filesCleared.length} log file(s).`);
+                                newHistoryItems.push({ type: 'output', content: `Cleared content of ${filesCleared.length} log file(s).`, onConfirm: () => {} });
                                 addLog(`EVENT: Cleared ${filesCleared.length} logs on ${connectedIp}`);
                                 if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: ${filesCleared.length} log file(s) cleared by user from ${PLAYER_PUBLIC_IP}.`);
                             }
                             if (filesToRemove.length === 0 && filesCleared.length === 0) {
-                                handleOutput("rm: no removable files found in this directory.");
+                                newHistoryItems.push({ type: 'output', content: "rm: no removable files found in this directory.", onConfirm: () => {} });
                             }
+                            setHistory(prev => [...prev, ...newHistoryItems]);
+
                         } else {
-                            handleOutput('Operation cancelled.');
+                            setHistory(prev => [...prev, { type: 'output', content: 'Operation cancelled.', onConfirm: () => {} }]);
                         }
                         setIsProcessing(false);
                     }
@@ -992,6 +998,65 @@ export default function Terminal({
             const [sourceArg, destArg] = args;
             if(!sourceArg || !destArg) {
                 handleOutput(`${command}: missing file operand`);
+                break;
+            }
+            
+            if (sourceArg.endsWith('*')) {
+                const sourceDir = sourceArg.slice(0, -1);
+                const sourcePath = resolvePath(sourceDir);
+                const sourceNode = findNodeByPath(sourcePath, fileSystem);
+                
+                if (!sourceNode || sourceNode.type !== 'folder' || !sourceNode.children) {
+                    handleOutput(`${command}: cannot stat '${sourceArg}': No such file or directory`);
+                    break;
+                }
+
+                const destPath = resolvePath(destArg);
+
+                // This part assumes we are copying to the player's PC file system
+                // A more robust implementation would check the destination PC
+                const playerPc = network.find(p => p.id === 'player-pc');
+                if (!playerPc) break;
+
+                const destNodeOnPlayer = findNodeByPath(destPath, playerPc.fileSystem);
+
+                if (!destNodeOnPlayer || destNodeOnPlayer.type !== 'folder') {
+                    handleOutput(`${command}: destination '${destArg}' is not a directory on local machine`);
+                    break;
+                }
+
+                const copiedFiles: FileSystemNode[] = [];
+                for (const fileToCopy of sourceNode.children) {
+                    if(fileToCopy.type === 'file') {
+                        const copiedNode = {
+                            ...JSON.parse(JSON.stringify(fileToCopy)),
+                            id: `${fileToCopy.id}-copy-${Date.now()}`
+                        };
+                        copiedFiles.push(copiedNode);
+                    }
+                }
+                
+                setNetwork(currentNetwork => currentNetwork.map(pc => {
+                    if (pc.id === 'player-pc') {
+                        let newFs = pc.fileSystem;
+                        copiedFiles.forEach(file => {
+                            newFs = addNodeByPath(newFs, destPath, file);
+                        });
+                        return {...pc, fileSystem: newFs};
+                    }
+                    return pc;
+                }));
+
+                handleOutput(`Copied ${copiedFiles.length} files to ${destArg}`);
+
+                 if (sourceNode.id === 'cheat-bin') {
+                    receiveEmail({
+                        sender: 'Néo@SYS.AI',
+                        subject: '...?',
+                        body: "Je vois ce que vous faites, Opérateur.\nContinuez."
+                    });
+                }
+                
                 break;
             }
 

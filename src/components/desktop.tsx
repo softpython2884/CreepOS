@@ -21,7 +21,7 @@ import { ShieldAlert, ShieldCheck, Mail, AlertTriangle, Skull } from 'lucide-rea
 import { Progress } from './ui/progress';
 import TracerTerminal, { traceCommands, decryptCommands, isolationCommands } from './tracer-terminal';
 import { saveGameState, loadGameState, deleteGameState } from '@/lib/save-manager';
-import SurvivalMode from '@/components/survival-mode';
+import SurvivalMode from './survival-mode';
 import CallView from './call-view';
 import IncomingCallView from './incoming-call-view';
 import { Call, CallMessage, CallChoice, CallScript } from '@/lib/call-system/types';
@@ -136,28 +136,30 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   });
 
 
-  const [emails, setEmails] = useState<Email[]>([
-    {
-      id: 'welcome-email',
-      sender: 'HR@research-lab.net',
-      recipient: 'Dr.Omen@research-lab.net',
-      subject: 'Welcome to the Nexus Research Center',
-      body: `Dear Dr. Omen,\n\nOn behalf of the entire Nexus team, we are pleased to welcome you. Your contract is attached to this email.\n\nYour first assignment is to familiarize yourself with the NÉO system. You will find a welcome file in your home directory (/home/omen/welcome.txt) with initial instructions.\n\nWe look forward to your contributions.\n\nBest regards,\nNexus Human Resources`,
-      timestamp: new Date(new Date().getTime() - 10 * 60000).toISOString(),
-      folder: 'inbox',
-    },
-    {
-      id: 'supervisor-email',
-      sender: 'Supervisor@research-lab.net',
-      recipient: 'Dr.Omen@research-lab.net',
-      subject: 'Scheduled Call',
-      body: `Omen,\n\nI have scheduled a call with you for today to go over your objectives. Please be ready.\n\n- Supervisor`,
-      timestamp: new Date(new Date().getTime() - 5 * 60000).toISOString(),
-      folder: 'inbox',
-    },
-]);
+  const [emails, setEmails] = useState<Email[]>(() => {
+    const savedState = loadGameState(username);
+    return savedState.emails || [
+      {
+        id: 'welcome-email',
+        sender: 'HR@research-lab.net',
+        recipient: 'Dr.Omen@research-lab.net',
+        subject: 'Welcome to the Nexus Research Center',
+        body: `Dear Dr. Omen,\n\nOn behalf of the entire Nexus team, we are pleased to welcome you. Your contract is attached to this email.\n\nYour first assignment is to familiarize yourself with the NÉO system. You will find a welcome file in your home directory (/home/omen/welcome.txt) with initial instructions.\n\nWe look forward to your contributions.\n\nBest regards,\nNexus Human Resources`,
+        timestamp: new Date(new Date().getTime() - 10 * 60000).toISOString(),
+        folder: 'inbox',
+      },
+      {
+        id: 'supervisor-email',
+        sender: 'Supervisor@research-lab.net',
+        recipient: 'Dr.Omen@research-lab.net',
+        subject: 'Scheduled Call',
+        body: `Omen,\n\nI have scheduled a call with you for today to go over your objectives. Please be ready.\n\n- Supervisor`,
+        timestamp: new Date(new Date().getTime() - 5 * 60000).toISOString(),
+        folder: 'inbox',
+      },
+  ]});
 
-  const gameState = { network, hackedPcs, machineState: 'desktop' };
+  const gameState = { network, hackedPcs, emails, machineState: 'desktop' };
   
   const addLog = useCallback((message: string) => {
     setLogs(prev => {
@@ -202,7 +204,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if (withSound) {
         onSoundEvent('close');
     }
-  }, [onAlertEvent, onSoundEvent]);
+    if (isTraced) {
+      onMusicEvent('scream');
+    } else {
+      onMusicEvent('calm');
+    }
+  }, [onAlertEvent, onSoundEvent, isTraced, onMusicEvent]);
 
 
   const triggerCall = useCallback((script: CallScript) => {
@@ -227,12 +234,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     
     onAlertEvent('stopRingtone');
     
-    if (isTraced) {
-      onMusicEvent('scream');
-    } else {
-      onMusicEvent('calm');
-    }
-
     const startNode = script.nodes[script.startNode];
     
     setActiveCall(prev => prev ? ({
@@ -242,17 +243,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     }) : null);
     setCallState('active');
     onSoundEvent('click');
-  }, [callState, onAlertEvent, onSoundEvent, onMusicEvent, isTraced]);
+  }, [callState, onAlertEvent, onSoundEvent]);
 
   const declineCall = useCallback(() => {
     addLog(`EVENT: Declined call from ${callScriptRef.current?.interlocutor}.`);
-    if (isTraced) {
-      onMusicEvent('scream');
-    } else {
-      onMusicEvent('calm');
-    }
     endCall(false);
-  }, [addLog, endCall, isTraced, onMusicEvent]);
+  }, [addLog, endCall]);
 
   const advanceCall = (choiceId: string) => {
     const script = callScriptRef.current;
@@ -342,7 +338,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     }, 5000); 
 
     return () => clearInterval(saveInterval);
-  }, [network, hackedPcs, username, gameState]);
+  }, [network, hackedPcs, emails, username, gameState]);
 
     useEffect(() => {
         if (dangerLevel >= 100) {
@@ -378,7 +374,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
                 });
                 setNetwork(updatedNetwork);
                 
-                saveGameState(username, { network: updatedNetwork, hackedPcs, machineState: 'desktop' });
+                saveGameState(username, { ...gameState, network: updatedNetwork });
 
                 onSoundEvent('bsod');
                 setMachineState('bsod');
@@ -389,7 +385,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, hackedPcs, handleStopTrace]);
+}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, hackedPcs, handleStopTrace, gameState]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
@@ -498,6 +494,23 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       onSoundEvent('click');
   };
 
+  const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => {
+    const newEmail: Email = {
+      id: `email-${Date.now()}`,
+      recipient: 'Dr.Omen@research-lab.net',
+      folder: 'inbox',
+      timestamp: new Date().toISOString(),
+      ...emailDetails,
+    };
+
+    setEmails(prev => [...prev, newEmail]);
+    onSoundEvent('email');
+    setEmailNotification(true);
+    setTimeout(() => setEmailNotification(false), 3000);
+    addLog(`EMAIL: Received email from ${emailDetails.sender} with subject "${emailDetails.subject}"`);
+  }, [addLog, onSoundEvent]);
+
+
   const handleSendEmail = (email: Omit<Email, 'id' | 'timestamp' | 'folder'>) => {
     const newEmail: Email = {
       ...email,
@@ -530,7 +543,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         const updatedFileSystem = typeof newFileSystem === 'function' ? newFileSystem(playerPc.fileSystem) : newFileSystem;
         const newPlayerPc = { ...playerPc, fileSystem: updatedFileSystem };
 
-        const newNetwork = [...newNetwork];
+        const newNetwork = [...prevNetwork];
         newNetwork[playerPcIndex] = newPlayerPc;
         return newNetwork;
     });
@@ -563,6 +576,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
             },
             dangerLevel,
             machineState: 'desktop', // Default state for desktop terminal
+            receiveEmail,
         } 
     },
     documents: { 
