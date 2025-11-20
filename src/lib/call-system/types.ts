@@ -1,9 +1,14 @@
+
 import type { Email, Attachment } from '@/components/apps/email-client';
 
 export interface CallMessage {
     speaker: string; // e.g., 'Operator', 'Néo'
     text: string;
 }
+
+type ConsequenceTrigger = 
+    | { type: 'call'; script: CallScript }
+    | { type: 'email'; email: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> };
 
 export interface CallChoice {
     id: string;
@@ -13,7 +18,7 @@ export interface CallChoice {
         danger?: number;
         triggerEmail?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>;
         triggerSound?: 'tension';
-        endCallAndTrigger?: CallScript;
+        endCallAndTrigger?: ConsequenceTrigger;
     };
 }
 
@@ -23,7 +28,7 @@ export interface CallNode {
     consequences?: {
         triggerEmail?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>;
         triggerSound?: 'tension';
-        endCallAndTrigger?: CallScript;
+        endCallAndTrigger?: ConsequenceTrigger;
     }
 }
 
@@ -42,3 +47,5 @@ export interface Call {
     choices: CallChoice[];
     isFinished?: boolean;
 }
+
+    

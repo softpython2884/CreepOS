@@ -1,4 +1,5 @@
-import type { CallScript } from '../types';
+
+import type { CallScript, Email } from '../types';
 
 export const directorCall: CallScript = {
   id: 'director-call',
@@ -61,3 +62,24 @@ export const directorCall: CallScript = {
     }
   },
 };
+
+
+export const directorCallbackEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
+    sender: 'Directeur@recherche-lab.net',
+    subject: 'URGENT: Problème de connexion',
+    body: `Omen,
+
+La communication a été coupée. J'ai tenté de vous rappeler mais votre système apparaît hors-ligne. C'est inhabituel.
+
+Je dois m'assurer que votre ligne est sécurisée avant de continuer.
+
+Utilisez la console et exécutez la commande suivante pour rétablir une liaison sécurisée avec moi :
+
+call --203.0.113.1 --secure
+
+Faites-le immédiatement.
+
+- Directeur`
+};
+
+    

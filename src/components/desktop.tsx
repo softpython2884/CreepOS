@@ -26,7 +26,7 @@ import CallView from './call-view';
 import IncomingCallView from './incoming-call-view';
 import { Call, CallMessage, CallChoice, CallScript } from '@/lib/call-system/types';
 import { supervisorCall1 } from '@/lib/call-system/scripts/supervisor-call-1';
-import { directorCall } from '@/lib/call-system/scripts/director-call';
+import { directorCall, directorCallbackEmail } from '@/lib/call-system/scripts/director-call';
 import { neoIntroCall } from '@/lib/call-system/scripts/neo-intro-call';
 import { directorCallback } from '@/lib/call-system/scripts/director-callback';
 import { neoPhase1Call } from '@/lib/call-system/scripts/neo-phase1-call';
@@ -217,7 +217,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const endCall = useCallback(() => {
     onAlertEvent('stopRingtone');
-    onAlertEvent('stopScream'); // Just in case
+    onAlertEvent('stopScream');
     
     const lastScript = callScriptRef.current;
 
@@ -227,20 +227,22 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     currentNodeIdRef.current = null;
     onSoundEvent('close');
     
-    if(!isTraced) {
-      onMusicEvent('calm');
-    }
+    setTimeout(() => {
+      if (!isTraced) {
+        onMusicEvent('calm');
+      }
+    }, 1000);
 
     if (lastScript) {
-        // Find if the last node had a trigger
         const lastNode = lastScript.nodes[currentNodeIdRef.current || ''];
         const trigger = lastNode?.consequences?.endCallAndTrigger;
         
         if (trigger) {
-             callQueueRef.current.push(() => triggerCall(trigger));
-        } else if (lastScript.id === 'director-callback') {
-            // If the director callback just finished, send the mission email.
-            receiveEmail(supervisorPhase1);
+            if (trigger.type === 'call') {
+                callQueueRef.current.push(() => triggerCall(trigger.script));
+            } else if (trigger.type === 'email') {
+                receiveEmail(trigger.email);
+            }
         }
     }
     
@@ -248,7 +250,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if(nextCall) {
         setTimeout(nextCall, 2000); 
     }
-  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail, callScriptRef, currentNodeIdRef]);
+  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail]);
 
 
   const triggerCall = useCallback((script: CallScript) => {
@@ -256,6 +258,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         callQueueRef.current.push(() => triggerCall(script));
         return;
     };
+
+    if (script.id === 'neo-intro-call') {
+        onMusicEvent('none');
+    }
 
     callScriptRef.current = script;
     currentNodeIdRef.current = script.startNode;
@@ -268,7 +274,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     setCallState('incoming');
     onAlertEvent('ringtone');
     addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
-  }, [callState, onAlertEvent, addLog]);
+  }, [callState, onAlertEvent, addLog, onMusicEvent]);
 
   const answerCall = useCallback(() => {
     const script = callScriptRef.current;
@@ -328,15 +334,22 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
           setActiveCall(prev => prev ? ({ ...prev, isFinished: true, choices: [] }) : null);
           return;
       }
-
-      if (nextNode.consequences?.endCallAndTrigger) {
-          callQueueRef.current.push(() => triggerCall(nextNode.consequences!.endCallAndTrigger!));
-      }
       
       currentNodeIdRef.current = nextNodeId;
+      
+      const newMessages = [...(activeCall?.messages || []), playerMessage, nextNode.message];
+
+      if (nextNode.consequences?.endCallAndTrigger) {
+           if(nextNode.consequences.endCallAndTrigger.type === 'call') {
+               callQueueRef.current.push(() => triggerCall(nextNode.consequences!.endCallAndTrigger!.script));
+           } else {
+                receiveEmail(nextNode.consequences.endCallAndTrigger.email);
+           }
+      }
+
       setActiveCall(prev => prev ? ({
           ...prev,
-          messages: [...prev.messages, nextNode.message],
+          messages: newMessages,
           choices: nextNode.choices || [],
           isFinished: !nextNode.choices || nextNode.choices.length === 0,
       }) : null);
@@ -680,6 +693,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
             machineState: 'desktop', // Default state for desktop terminal
             receiveEmail,
             onNeoExecute: handleNeoExecute,
+            triggerCall,
         } 
     },
     documents: { 
@@ -918,3 +932,5 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     </main>
   );
 }
+
+    

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect, KeyboardEvent, useCallback, useMemo } from 'react';
@@ -6,6 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileSystemNode, PC } from '@/lib/network/types';
 import { network as initialNetworkData } from '@/lib/network';
 import { type Email } from './email-client';
+import { directorCallback } from '@/lib/call-system/scripts/director-callback';
+import { CallScript } from '@/lib/call-system/types';
 
 interface HistoryItem {
   type: 'command' | 'output' | 'confirmation';
@@ -35,9 +38,11 @@ interface TerminalProps {
     machineState: string; // To know if we are in survival mode
     receiveEmail: (email: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => void;
     onNeoExecute: (isInitialInstall: boolean) => void;
+    triggerCall: (script: CallScript) => void;
 }
 
 const PLAYER_PUBLIC_IP = '184.72.238.110';
+const DIRECTOR_IP = '203.0.113.1'; // IP from corporate-proxy
 
 const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode | null => {
     if (path.length === 0) return { name: '/', type: 'folder', children: nodes, id: 'root' };
@@ -158,6 +163,7 @@ export default function Terminal({
     machineState,
     receiveEmail,
     onNeoExecute,
+    triggerCall,
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved.", onConfirm: () => {} },
@@ -169,6 +175,7 @@ export default function Terminal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAwaitingConfirmation, setIsAwaitingConfirmation] = useState(false);
   const [isNeoInstalled, setIsNeoInstalled] = useState(false);
+  const [directorCallbackUsed, setDirectorCallbackUsed] = useState(false);
   
   // Network and FS state
   const [connectedIp, setConnectedIp] = useState<string>('127.0.0.1');
@@ -712,6 +719,7 @@ export default function Terminal({
                 '  disconnect / dc- Se déconnecte du système distant actuel',
                 '  login <user> <pass> - S\'authentifie sur un système connecté',
                 '  solve <solution> - Tente de désactiver un pare-feu avec une solution.',
+                '  call --[ip] --secure - Lance un appel sécurisé vers une IP',
                 '',
                 'Outils de piratage (généralement exécutés depuis votre machine sur une cible distante):',
             ];
@@ -1190,6 +1198,28 @@ export default function Terminal({
             }
             break;
         }
+        case 'call': {
+            const ipArg = args.find(a => a.startsWith('--'))?.substring(2);
+            const isSecure = args.includes('--secure');
+
+            if (!ipArg) {
+                handleOutput('call: IP de destination manquante. Utilisation : call --[ip]');
+                break;
+            }
+
+            if (ipArg === DIRECTOR_IP && isSecure) {
+                if (directorCallbackUsed) {
+                    handleOutput('call: La communication avec cette cible est terminée.');
+                } else {
+                    handleOutput('Appel sécurisé vers le Directeur en cours...');
+                    triggerCall(directorCallback);
+                    setDirectorCallbackUsed(true);
+                }
+            } else {
+                handleOutput(`call: Impossible de joindre ${ipArg}. Vérifiez l'IP et les protocoles.`);
+            }
+            break;
+        }
         case 'clear': {
             setHistory([]);
             setInput('');
@@ -1216,7 +1246,7 @@ export default function Terminal({
     // Command completion
     if (parts.length === 1) {
         const executables = allExecutables.map(f => f.name.split('.')[0].toLowerCase());
-        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'rm', 'mv', 'cp', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan', 'nano', 'neo'];
+        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'rm', 'mv', 'cp', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan', 'nano', 'neo', 'call'];
         const allCommands = [...new Set([...mainCommands, ...executables])];
         const possibilities = allCommands.filter(cmd => cmd.startsWith(lastPart));
 
@@ -1323,3 +1353,5 @@ export default function Terminal({
     </div>
   );
 }
+
+    

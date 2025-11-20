@@ -1,5 +1,6 @@
+
 import type { CallScript } from '../types';
-import { directorCallback } from './director-callback';
+import { directorCallbackEmail } from './director-call';
 
 export const neoIntroCall: CallScript = {
   id: 'neo-intro-call',
@@ -27,8 +28,13 @@ export const neoIntroCall: CallScript = {
       },
       consequences: {
         triggerSound: 'tension',
-        endCallAndTrigger: directorCallback,
+        endCallAndTrigger: {
+            type: 'email',
+            email: directorCallbackEmail,
+        },
       },
     },
   },
 };
+
+    
