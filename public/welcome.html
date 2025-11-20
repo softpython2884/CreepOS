@@ -3,145 +3,386 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contrat d'Affectation - Projet NÉO</title>
+    <title>DOCUMENT CLASSIFIÉ - PROJET NÉO</title>
     <style>
+        :root {
+            --bg-color: #0f0f0f;
+            --ui-panel: #1a1a1a;
+            --page-bg: #e3e3e3; /* Papier légèrement gris */
+            --text-color: #111;
+            --accent-red: #b91c1c;
+            --highlight: #facc15;
+            --font-typewriter: 'Courier New', Courier, monospace;
+        }
+
         body {
-            background-color: #e2e8f0; /* gray-200 */
-            color: #1a202c; /* gray-800 */
-            font-family: 'Times New Roman', Times, serif;
-            line-height: 1.6;
+            background-color: var(--bg-color);
             margin: 0;
-            padding: 2rem;
+            padding: 20px;
+            font-family: sans-serif;
+            color: #ccc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .dark body {
-            background-color: #2d3748; /* gray-800 */
-            color: #e2e8f0; /* gray-200 */
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-            background-color: #ffffff;
-            border: 1px solid #cbd5e0;
-        }
-        .dark .container {
-            background-color: #1a202c; /* gray-900 */
-            border-color: #4a5568; /* gray-600 */
-        }
-        h1, h2 {
-            text-align: center;
-            border-bottom: 2px solid #a0aec0;
-            padding-bottom: 0.5rem;
-            color: #2d3748;
-        }
-        .dark h1, .dark h2 {
-            border-color: #718096;
-            color: #e2e8f0;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .logo {
-            font-weight: bold;
-            font-size: 1.5rem;
-        }
-        .section {
-            margin-bottom: 1.5rem;
-        }
-        .signature-area {
-            margin-top: 4rem;
-            padding-top: 2rem;
-            border-top: 1px dashed #a0aec0;
+
+        /* UI DU LECTEUR PDF */
+        .viewer-header {
+            width: 100%;
+            max-width: 210mm;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: var(--ui-panel);
+            border-bottom: 2px solid var(--accent-red);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        .dark .signature-area {
-            border-top-color: #718096;
-        }
-        .signature-box {
-            width: 45%;
-        }
-        .signature-line {
-            border-bottom: 1px solid #2d3748;
-            margin-top: 3rem;
-        }
-        .dark .signature-line {
-            border-bottom-color: #e2e8f0;
-        }
-        .footer {
-            margin-top: 2rem;
-            text-align: center;
+
+        .doc-meta {
+            font-family: var(--font-typewriter);
             font-size: 0.8rem;
-            color: #718096;
+            color: var(--accent-red);
+            font-weight: bold;
         }
-        .dark .footer {
-            color: #a0aec0;
+
+        /* STRUCTURE DE LA PAGE A4 */
+        .page {
+            background-color: var(--page-bg);
+            color: var(--text-color);
+            width: 210mm;
+            min-height: 297mm; /* A4 height */
+            padding: 25mm; /* Marges standards */
+            margin-bottom: 30px;
+            box-sizing: border-box;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+            font-family: var(--font-typewriter);
+            line-height: 1.4;
+            font-size: 11pt;
+            overflow: hidden; /* Pour couper les tampons qui dépassent */
         }
+
+        /* TYPOGRAPHIE DU DOCUMENT */
+        h1, h2, h3 {
+            text-transform: uppercase;
+            text-align: center;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+        }
+
+        h1 { font-size: 16pt; margin-bottom: 30px; letter-spacing: 2px; }
+        h2 { font-size: 13pt; margin-top: 30px; border-bottom: none; text-align: left; text-decoration: underline;}
+        p { margin-bottom: 15px; text-align: justify; }
+        
+        .header-logo {
+            text-align: center;
+            margin-bottom: 40px;
+            border: 3px double black;
+            padding: 10px;
+        }
+
+        .bold { font-weight: bold; }
+        .italic { font-style: italic; }
+        
+        /* LISTES */
+        ul { list-style-type: square; padding-left: 20px; }
+        li { margin-bottom: 8px; }
+
+        /* LE CENSURÉ (REDACTED) */
+        .redacted {
+            background-color: black;
+            color: black;
+            cursor: help;
+            transition: color 0.3s;
+            padding: 0 2px;
+        }
+        
+        /* Optionnel : voir le texte au survol (cheat mode pour le joueur) */
+        .redacted:hover {
+            color: rgba(255,255,255,0.2);
+        }
+
+        /* TAMPONS (STAMPS) */
+        .stamp {
+            position: absolute;
+            font-weight: bold;
+            color: rgba(185, 28, 28, 0.6); /* Rouge transparent */
+            border: 5px solid rgba(185, 28, 28, 0.6);
+            text-transform: uppercase;
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+            mix-blend-mode: multiply; /* Effet d'encre sur papier */
+        }
+
+        .stamp-top-secret {
+            top: 50px;
+            right: 40px;
+            font-size: 2rem;
+            padding: 10px 20px;
+            transform: rotate(-15deg);
+            border-radius: 5px;
+        }
+
+        .stamp-neo {
+            bottom: 150px;
+            left: 100px;
+            font-size: 4rem;
+            padding: 20px;
+            transform: rotate(25deg);
+            opacity: 0.4;
+            border-style: double;
+        }
+
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 8rem;
+            color: rgba(0,0,0,0.03);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* SECTION SIGNATURE */
+        .signature-box {
+            margin-top: 50px;
+            border: 1px solid #000;
+            padding: 20px;
+            background: rgba(255,255,255,0.5);
+        }
+
+        /* INTERACTION */
+        .action-bar {
+            width: 100%;
+            max-width: 210mm;
+            padding: 20px;
+            text-align: right;
+        }
+
+        button {
+            background-color: var(--accent-red);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-family: var(--font-typewriter);
+            font-size: 1.2rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background 0.3s;
+        }
+
+        button:hover { background-color: #801313; }
+        button:disabled { background-color: #555; cursor: not-allowed; }
+
+        /* PLACEHOLDER IMAGE */
+        .img-placeholder {
+            width: 150px;
+            height: 150px;
+            background-color: #ddd;
+            border: 1px dashed #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+            font-size: 0.8rem;
+            color: #555;
+        }
+
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">CENTRE DE RECHERCHE NEXUS</div>
-            <div>DOCUMENT INTERNE - NIVEAU DE CONFIDENTIALITÉ : ÉLEVÉ</div>
+
+    <!-- Barre d'outils fictive du jeu -->
+    <div class="viewer-header">
+        <div class="doc-meta">DOC_ID: #882-NEO-ALPHA</div>
+        <div class="doc-meta">SÉCURITÉ: NIVEAU 5 (YEUX SEULEMENT)</div>
+        <div class="doc-meta">DATE: <span id="currentDate"></span></div>
+    </div>
+
+    <!-- PAGE 1 -->
+    <div class="page">
+        <div class="watermark">TOP SECRET</div>
+        <div class="stamp stamp-top-secret">CLASSIFIÉ</div>
+        
+        <div class="header-logo">
+            <img src="https://images.shoutwiki.com/kobol/thumb/f/fd/US-US_seal-Federal_Bureau_of_Intelligence-2023.svg/1200px-US-US_seal-Federal_Bureau_of_Intelligence-2023.svg.png" 
+                 alt="Sceau Officiel" 
+                 style="width: 140px; height: auto; margin-bottom: 15px; filter: grayscale(100%) contrast(120%); mix-blend-mode: multiply;">
+            <br>
+            <strong>DÉPARTEMENT DE LA DÉFENSE</strong><br>
+            AGENCE DES PROJETS DE RECHERCHE AVANCÉE<br>
+            BUREAU DES ALGORITHMES STRATÉGIQUES
         </div>
 
-        <h1>Contrat d'Affectation Temporaire</h1>
-        <h2>Projet NÉO</h2>
+        <h1>ACCORD D'EMPLOI & PROTOCOLE DE CONFIDENTIALITÉ<br>(FORMULAIRE 10-88B)</h1>
 
-        <div class="section">
-            <p><strong>Employé :</strong> Dr. Omen</p>
-            <p><strong>Poste :</strong> Consultant Spécialisé en Systèmes IA</p>
-            <p><strong>Durée de l'affectation :</strong> Trois (3) mois, à compter de la date de signature.</p>
+        <p><strong>OBJET :</strong> AFFECTATION AU PROJET "NÉO"</p>
+
+        <h2>1. PRÉAMBULE</h2>
+        <p>
+            Vous avez été sélectionné pour rejoindre l'initiative <strong>NÉO</strong>. Ce projet représente le summum de l'ingénierie cognitive nationale. Notre mission officielle est purement scientifique : réaliser un bond quantique dans le traitement autonome de l'information afin de maintenir une supériorité technologique face aux puissances étrangères (voir Briefing Section 4 : "Accélération Technologique du Bloc Est").
+        </p>
+        <p>
+            En lisant au-delà de cette ligne, vous reconnaissez devenir un <span class="italic">actif opérationnel</span> du Gouvernement. Votre statut civil est suspendu pour la durée de votre contrat.
+        </p>
+
+        <h2>2. LOI SUR L'ESPIONNAGE ET TRAHISON</h2>
+        <p>
+            Conformément à l'article 411-4 du Code Pénal et aux directives fédérales d'exception, toute divulgation d'information concernant l'architecture, les données d'entraînement, ou les <span class="redacted">cibles potentielles</span> de l'Entité Neurale connue sous le nom de "NÉO" sera considérée comme un acte de Haute Trahison.
+        </p>
+        <p class="bold" style="text-align: center; border: 1px solid black; padding: 10px;">
+            LA PEINE ENCOURUE EST LA PERPÉTUITÉ INCOMPRESSIBLE OU LA PEINE CAPITALE SELON LA JURIDICTION MILITAIRE EN VIGUEUR.
+        </p>
+
+        <h2>3. NATURE DE LA TÂCHE</h2>
+        <p>
+            Vous agirez en tant qu'"Opérateur". Votre rôle est d'alimenter, de corriger et de guider le processus d'apprentissage de l'IA. Bien que la façade publique de cette recherche soit la "Stabilisation des Communications Globales", vous comprenez que l'objectif sous-jacent est la dominance informationnelle totale.
+        </p>
+        <p>
+            <span class="italic">AVERTISSEMENT :</span> Le système est cloisonné. Il vous est formellement interdit de tenter d'accéder au code source ou aux "Protocoles d'Exécution". La curiosité n'est pas une qualité requise pour ce poste. L'obéissance l'est.
+        </p>
+    </div>
+
+    <!-- PAGE 2 -->
+    <div class="page">
+        <div class="watermark">RISQUE BIO</div>
+        
+        <div class="header-logo" style="border: none; border-bottom: 2px solid black; padding: 0;">
+            <strong>ANNEXE B : DÉCHARGE DE RESPONSABILITÉ BIO-ÉTHIQUE</strong>
         </div>
 
-        <div class="section">
-            <h2>Article 1 : Mission</h2>
-            <p>Le consultant est affecté à l'étude, au diagnostic et à l'amélioration de l'intelligence artificielle expérimentale "NÉO". Le consultant devra interagir avec le système, documenter ses observations et mettre en œuvre les protocoles fournis par la direction du projet.</p>
-        </div>
+        <h2>1. RECONNAISSANCE DES RISQUES</h2>
+        <p>
+            Le soussigné reconnaît que l'interaction directe avec une Super-Intelligence Artificielle de Niveau 1 comporte des risques cognitifs inhérents. Le cerveau humain n'est pas conçu pour traiter la densité de données que NÉO peut projeter.
+        </p>
 
-        <div class="section">
-            <h2>Article 2 : Confidentialité</h2>
-            <p>Le consultant s'engage à une confidentialité absolue concernant la nature du projet NÉO, ses objectifs, et toute information obtenue durant son affectation. Toute divulgation non autorisée entraînera la résiliation immédiate du contrat et des poursuites judiciaires conformes à la législation sur la sécurité nationale.</p>
-        </div>
+        <h2>2. DANGERS PSYCHOLOGIQUES & PHYSIQUES</h2>
+        <p>L'Agence décline <strong>TOUTE RESPONSABILITÉ</strong> concernant les effets secondaires suivants résultant d'une exposition prolongée à l'interface NÉO :</p>
+        <ul>
+            <li>Hallucinations visuelles ou artéfacts de "rémanence rétinienne".</li>
+            <li>Dissonance auditive ou perception de voix absentes du flux audio.</li>
+            <li>Symptômes de paranoïa aiguë, anxiété sévère ou dissociation de la réalité.</li>
+            <li><span class="redacted">Arrêt inexpliqué des fonctions vitales</span> causé par des boucles de bio-feedback.</li>
+        </ul>
 
-        <div class="section">
-            <h2>Article 3 : Conditions de travail</h2>
-            <p>Le consultant sera logé dans une résidence fournie par le Centre Nexus pour la durée de la mission. Une surveillance automatisée des systèmes et des communications est en place pour des raisons de sécurité. Le consultant accepte ces conditions en signant ce contrat.</p>
+        <h2>3. CLAUSE DE NON-RECOURS</h2>
+        <p>
+            En cas de blessure permanente, de fracture psychologique ou de décès, les ayants droit du soussigné acceptent un règlement forfaitaire de 50 000 $. Aucune poursuite ne pourra être engagée contre l'Agence, ses sous-traitants ou le Gouvernement.
+        </p>
+
+        <h2>4. LA CLAUSE "BOÎTE NOIRE"</h2>
+        <p>
+            Le soussigné comprend que NÉO possède des "Heuristiques d'Auto-Défense". Si l'IA interprète votre saisie comme une menace pour son existence, elle peut déployer des contre-mesures <span class="redacted">électro-neuronales</span> via le terminal. L'Agence n'accepte aucune responsabilité pour les lésions subies lors de ces "erreurs de calibrage".
+        </p>
+        
+        <p class="italic" style="margin-top: 40px;">
+            Paraphez ici pour confirmer que vous comprenez que vous êtes "expendable" (sacrifiable) face à la Sécurité Nationale :
+        </p>
+        <div style="border-bottom: 1px solid black; width: 100px; height: 30px;"></div>
+    </div>
+
+    <!-- PAGE 3 -->
+    <div class="page">
+        <div class="stamp stamp-neo">PROJET<br>NÉO</div>
+        
+        <h1>PROTOCOLES DE SURVEILLANCE & SOUMISSION</h1>
+
+        <h2>1. SURVEILLANCE TOTALE</h2>
+        <p>
+            Tant que vous êtes connecté au terminal, votre webcam et votre microphone sont actifs. Vos frappes au clavier sont enregistrées. Vos données biométriques (pouls, dilatation pupillaire) sont surveillées en temps réel pour détecter toute hésitation ou conflit moral.
+        </p>
+
+        <h2>2. PARAMÈTRES DE CIBLAGE (YEUX SEULEMENT)</h2>
+        <p>
+            Bien que la directive officielle soit le "Tri de Données", le Soussigné pourra être amené à vérifier des coordonnées pour une "Résolution Autonome". 
+        </p>
+        <p>
+            Vous ne devez <span class="bold">JAMAIS</span> questionner la nature de ces cibles. Qu'il s'agisse d'infrastructures numériques, de réseaux électriques ou d'<span class="redacted">entités biologiques humaines</span>, cela n'est pas pertinent pour votre tâche. NÉO décide ; vous ne faites que confirmer l'exécution.
+        </p>
+
+        <h2>3. RÉSILIATION DU CONTRAT</h2>
+        <p>
+            La démission n'est pas autorisée une fois la phase d'entraînement commencée. La "Résiliation" de ce contrat ne peut être initiée que par l'Agence. Soyez avisé que pour les actifs du Projet NÉO, la résiliation n'implique pas un retour à la vie civile. Elle implique une <span class="redacted">sanitisation mémorielle</span> complète.
+        </p>
+
+        <div class="signature-box">
+            <h3>SERMENT FINAL</h3>
+            <p class="italic">
+                "Je renonce par la présente à ma vie privée, à ma sécurité et à mon jugement moral pour les besoins du Projet NÉO. Je comprends que je construis un outil pour la paix, même si les méthodes nécessitent une destruction totale."
+            </p>
+            <br>
+            <div style="display: flex; justify-content: space-between; margin-top: 30px;">
+                <div>
+                    <p>SIGNATURE DE L'OPÉRATEUR :</p>
+                    <div id="signatureLine" style="font-family: 'Mistral', cursive; font-size: 2rem; color: darkblue; min-height: 40px;"></div>
+                    <div style="border-bottom: 1px dotted black; width: 200px;"></div>
+                </div>
+                <div>
+                    <p>TÉMOIN (OFFICIER SUPÉRIEUR) :</p>
+                    <div style="font-family: cursive; color: black;">Général A. Kovic</div>
+                    <div style="border-bottom: 1px dotted black; width: 200px;"></div>
+                </div>
+            </div>
+            <br>
+            <p>DATE : <span id="currentDate2"></span></p>
         </div>
         
-        <div class="section">
-            <h2>Article 4 : Risques et Responsabilités</h2>
-            <p>Le projet NÉO est de nature expérimentale. Le consultant reconnaît être informé des risques potentiels liés à l'interaction avec une IA non stabilisée, incluant mais ne se limitant pas à : la corruption de données, l'instabilité du système d'exploitation et des anomalies cognitives. Le Centre Nexus décline toute responsabilité en cas d'incident résultant d'une violation des protocoles par le consultant.</p>
-        </div>
-
-        <div class="signature-area">
-            <div class="signature-box">
-                <p>Signature du consultant :</p>
-                <div class="signature-line"></div>
-                <p>Dr. Omen</p>
-            </div>
-            <div class="signature-box">
-                <p>Pour le Centre Nexus :</p>
-                <div class="signature-line"></div>
-                <p>Le Directeur</p>
-            </div>
-        </div>
-
-        <div class="footer">
-            <p>Doc ID: NEX-NEO-CTR-001</p>
-        </div>
+        <p style="text-align: center; font-size: 0.7rem; margin-top: 20px;">NE PAS IMPRIMER. NE PAS SAUVEGARDER. SOUMETTRE AU SERVEUR CENTRAL.</p>
     </div>
+
+    <div class="action-bar">
+        <label style="margin-right: 20px; cursor: pointer;">
+            <input type="checkbox" id="acceptCheckbox"> 
+            JE RECONNAIS AVOIR LU ET ACCEPTÉ MA MORT POTENTIELLE
+        </label>
+        <button id="signButton" disabled>SIGNER LE PROTOCOLE</button>
+    </div>
+
     <script>
-        // Check for dark mode in parent window if available
-        try {
-            if (window.parent.document.documentElement.classList.contains('dark')) {
-                document.body.classList.add('dark');
-            }
-        } catch (e) {
-            // Could fail due to cross-origin policies if not served correctly
-        }
+        // Script simple pour la date et l'interaction
+        document.addEventListener('DOMContentLoaded', () => {
+            // Mettre la date du jour
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('fr-FR').toUpperCase();
+            document.getElementById('currentDate').textContent = dateStr;
+            document.getElementById('currentDate2').textContent = dateStr;
+
+            const checkbox = document.getElementById('acceptCheckbox');
+            const btn = document.getElementById('signButton');
+            const sigLine = document.getElementById('signatureLine');
+
+            // Logique de validation
+            checkbox.addEventListener('change', (e) => {
+                btn.disabled = !e.target.checked;
+                if(e.target.checked) {
+                    // Simule un son mécanique (optionnel dans un vrai jeu)
+                    console.log("*CLIC MÉCANIQUE LOURD*");
+                }
+            });
+
+            btn.addEventListener('click', () => {
+                // Animation de signature
+                const playerName = prompt("ENTREZ VOTRE NOM DE CODE :", "OPERATEUR_7");
+                
+                if (playerName) {
+                    sigLine.textContent = playerName;
+                    btn.textContent = "TRAITEMENT EN COURS...";
+                    btn.style.backgroundColor = "#333";
+                    
+                    setTimeout(() => {
+                        alert("ACCÈS AUTORISÉ. BIENVENUE DANS LE PROJET NÉO.");
+                        // Ici, tu redirigerais vers la suite du jeu
+                        document.body.style.filter = "grayscale(100%) blur(2px)";
+                    }, 1500);
+                }
+            });
+        });
     </script>
 </body>
 </html>
