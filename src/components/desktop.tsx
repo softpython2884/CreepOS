@@ -129,6 +129,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const callScriptRef = useRef<CallScript | null>(null);
   const currentNodeIdRef = useRef<string | null>(null);
   const callQueueRef = useRef<(() => void)[]>([]);
+  const callConsequencesTriggeredRef = useRef<Set<string>>(new Set());
 
   // Trace state
   const [isTraced, setIsTraced] = useState(false);
@@ -165,6 +166,21 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   });
 
   const gameState = { network, hackedPcs, emails, machineState: 'desktop' };
+
+  const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => {
+    const newEmail: Email = {
+      id: `email-${Date.now()}`,
+      recipient: 'Dr.Omen@recherche-lab.net',
+      folder: 'inbox',
+      timestamp: new Date().toISOString(),
+      ...emailDetails,
+    };
+
+    setEmails(prev => [...prev, newEmail]);
+    onSoundEvent('email');
+    setEmailNotification(true);
+    addLog(`EMAIL: Email reçu de ${emailDetails.sender} avec le sujet "${emailDetails.subject}"`);
+  }, [onSoundEvent]);
   
   const addLog = useCallback((message: string) => {
     setLogs(prev => {
@@ -200,22 +216,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     });
   }, []);
 
-  const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => {
-    const newEmail: Email = {
-      id: `email-${Date.now()}`,
-      recipient: 'Dr.Omen@recherche-lab.net',
-      folder: 'inbox',
-      timestamp: new Date().toISOString(),
-      ...emailDetails,
-    };
-
-    setEmails(prev => [...prev, newEmail]);
-    onSoundEvent('email');
-    setEmailNotification(true);
-    addLog(`EMAIL: Email reçu de ${emailDetails.sender} avec le sujet "${emailDetails.subject}"`);
-  }, [addLog, onSoundEvent]);
-
-
   const triggerCall = useCallback((script: CallScript) => {
     if (callState !== 'idle') {
         callQueueRef.current.push(() => triggerCall(script));
@@ -240,45 +240,51 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   }, [callState, onAlertEvent, addLog, onMusicEvent]);
 
   const endCall = useCallback((isManualClose: boolean = false) => {
-      onAlertEvent('stopRingtone');
-      
-      const lastScript = callScriptRef.current;
-      const lastNodeId = currentNodeIdRef.current;
+    onAlertEvent('stopRingtone');
+    
+    const lastScript = callScriptRef.current;
+    const lastNodeId = currentNodeIdRef.current;
 
-      if (isManualClose) {
-        onAlertEvent('stopAlarm'); 
-        onSoundEvent('startCall');
-      }
-      
-      setCallState('idle');
-      setActiveCall(null);
-      callScriptRef.current = null;
-      currentNodeIdRef.current = null;
-      
-      if (!isTraced) {
-          setTimeout(() => {
-            onMusicEvent('calm');
-          }, 1000);
-      }
-
-      if (lastScript && lastNodeId) {
-          const lastNode = lastScript.nodes[lastNodeId];
-          const trigger = lastNode?.consequences?.endCallAndTrigger;
-          
-          if (trigger) {
-              if (trigger.type === 'call') {
-                  callQueueRef.current.push(() => triggerCall(trigger.script));
-              } else if (trigger.type === 'email') {
-                  receiveEmail(trigger.email);
+    if (isManualClose) {
+      onSoundEvent('startCall');
+      onAlertEvent('stopAlarm');
+    }
+    
+    if (activeCall && !activeCall.isFinished) {
+      if (isManualClose && lastScript && lastNodeId) {
+          const triggerKey = `${lastScript.id}-${lastNodeId}-end`;
+          if (!callConsequencesTriggeredRef.current.has(triggerKey)) {
+              const lastNode = lastScript.nodes[lastNodeId];
+              const trigger = lastNode?.consequences?.endCallAndTrigger;
+              
+              if (trigger) {
+                  if (trigger.type === 'call') {
+                      callQueueRef.current.push(() => triggerCall(trigger.script));
+                  } else if (trigger.type === 'email') {
+                      receiveEmail(trigger.email);
+                  }
               }
+              callConsequencesTriggeredRef.current.add(triggerKey);
           }
       }
-      
-      const nextCall = callQueueRef.current.shift();
-      if(nextCall) {
-          setTimeout(nextCall, 2000); 
-      }
-  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail, triggerCall]);
+    }
+
+    setCallState('idle');
+    setActiveCall(null);
+    callScriptRef.current = null;
+    currentNodeIdRef.current = null;
+    
+    if (!isTraced) {
+        setTimeout(() => {
+          onMusicEvent('calm');
+        }, 1000);
+    }
+    
+    const nextCall = callQueueRef.current.shift();
+    if(nextCall) {
+        setTimeout(nextCall, 2000); 
+    }
+}, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail, triggerCall, activeCall]);
 
 
   const answerCall = useCallback(() => {
@@ -304,7 +310,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     const script = callScriptRef.current;
     if (!script) return;
     
-    addLog(`EVENT: Appel refusé de ${script.interlocutor}. Nouvelle tentative dans 3s...`);
     onAlertEvent('stopRingtone');
     setCallState('idle');
     setActiveCall(null);
@@ -312,7 +317,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     setTimeout(() => {
         triggerCall(script);
     }, 3000);
-  }, [addLog, onAlertEvent, triggerCall]);
+  }, [onAlertEvent, triggerCall]);
 
   const advanceCall = (choiceId: string) => {
     const script = callScriptRef.current;
@@ -346,6 +351,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     const nextNodeId = chosenChoice.nextNode;
     
     setTimeout(() => {
+      if (!script || !activeCall) return; 
+
       const nextNode = script.nodes[nextNodeId];
       const isFinished = !nextNode?.choices || nextNode.choices.length === 0;
 
@@ -360,10 +367,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       const newMessages = [...(activeCall?.messages || []), playerMessage, nextNode.message];
 
       if (nextNode.consequences?.endCallAndTrigger) {
-           if(nextNode.consequences.endCallAndTrigger.type === 'call') {
-               callQueueRef.current.push(() => triggerCall(nextNode.consequences!.endCallAndTrigger!.script));
-           } else {
-                receiveEmail(nextNode.consequences.endCallAndTrigger.email);
+           const triggerKey = `${script.id}-${nextNodeId}-end`;
+           if (!callConsequencesTriggeredRef.current.has(triggerKey)) {
+                if(nextNode.consequences.endCallAndTrigger.type === 'call') {
+                    callQueueRef.current.push(() => triggerCall(nextNode.consequences!.endCallAndTrigger!.script));
+                } else {
+                    receiveEmail(nextNode.consequences.endCallAndTrigger.email);
+                }
+                callConsequencesTriggeredRef.current.add(triggerKey);
            }
       }
 
@@ -963,3 +974,4 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       
 
     
+
