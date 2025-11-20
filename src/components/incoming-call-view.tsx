@@ -30,12 +30,6 @@ export default function IncomingCallView({
                 </Button>
                 <span className="text-green-400">Décrocher</span>
             </div>
-            <div className="flex flex-col items-center gap-2">
-                 <Button size="icon" variant="destructive" className="h-16 w-16 rounded-full" onClick={onDecline}>
-                    <X size={40} />
-                </Button>
-                <span className="text-destructive">Refuser</span>
-            </div>
         </div>
     </div>
   );

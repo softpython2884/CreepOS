@@ -416,8 +416,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   // Initial supervisor call
   useEffect(() => {
     const timer = setTimeout(() => {
-      triggerCall(supervisorCall1);
-    }, 13000);
+        triggerCall(supervisorCall1);
+    }, 13000); // Changed from 10000 to 13000
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps

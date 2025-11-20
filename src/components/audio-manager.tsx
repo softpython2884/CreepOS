@@ -25,7 +25,7 @@ const sounds: Record<NonNullable<SoundEvent>, { src: string | string[]; volume: 
     error: { src: '/error-011.mp3', volume: 0.5 },
     tension: { src: '/tension.mp3', volume: 0.8 },
     startCall: { src: '/startcall.mp3', volume: 0.7 },
-    endCall: { src: '/callend.mp3', volume: 0.7 },
+    endCall: { src: '/callend.mp3', volume: 0.7, loop: false },
 };
 
 const musicTracks: Record<Exclude<MusicEvent, 'none' | 'calm'>, { src: string; volume: number; loop?: boolean }> = {
