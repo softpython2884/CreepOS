@@ -1209,7 +1209,7 @@ export default function Terminal({
 
             if (ipArg === DIRECTOR_IP && isSecure) {
                 if (directorCallbackUsed) {
-                    handleOutput('call: La communication avec cette cible est terminée.');
+                    handleOutput('Connexion refusée. L\'interlocuteur a décliné l\'appel.');
                 } else {
                     handleOutput('Appel sécurisé vers le Directeur en cours...');
                     triggerCall(directorCallback);

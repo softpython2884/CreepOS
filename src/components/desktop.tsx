@@ -228,7 +228,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       callScriptRef.current = null;
       currentNodeIdRef.current = null;
 
-      if (!isManualClose) {
+      if (isManualClose) {
         onSoundEvent('endCall');
       }
       
