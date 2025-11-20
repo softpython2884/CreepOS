@@ -2,13 +2,18 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Inbox, Send, Edit, CornerUpLeft } from 'lucide-react';
+import { Inbox, Send, Edit, CornerUpLeft, Paperclip } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+
+export interface Attachment {
+  fileName: string;
+  link: string;
+}
 
 export interface Email {
   id: string;
@@ -18,6 +23,7 @@ export interface Email {
   body: string;
   timestamp: string;
   folder: 'inbox' | 'sent';
+  attachments?: Attachment[];
 }
 
 interface EmailClientProps {
@@ -130,32 +136,54 @@ export default function EmailClient({ emails, onSend, currentUser, onOpenLink }:
 
   const ReadView = () => (
     <div className='h-full flex flex-col'>
-      <div className="p-2 border-b flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentView('list')}>
-          <CornerUpLeft size={16} />
-        </Button>
-        <h2 className="text-lg font-semibold truncate flex-1">{selectedEmail?.subject}</h2>
-      </div>
-      {selectedEmail && (
-        <ScrollArea className="flex-grow">
-          <div className="p-4">
-            <div className="flex justify-between items-center mb-2 pb-2 border-b">
-              <div>
-                <p className="font-semibold">{selectedEmail.sender}</p>
-                <p className="text-sm text-muted-foreground">To: {selectedEmail.recipient}</p>
-              </div>
-              <p className="text-xs text-muted-foreground">{formatTimestamp(selectedEmail.timestamp)}</p>
-            </div>
-            <div 
-              ref={emailBodyRef}
-              className="whitespace-pre-wrap text-sm" 
-              dangerouslySetInnerHTML={{ __html: selectedEmail.body }}
-            />
-          </div>
-        </ScrollArea>
-      )}
+        <div className="p-2 border-b flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentView('list')}>
+                <CornerUpLeft size={16} />
+            </Button>
+            <h2 className="text-lg font-semibold truncate flex-1">{selectedEmail?.subject}</h2>
+        </div>
+        {selectedEmail && (
+            <ScrollArea className="flex-grow">
+                <div className="p-4">
+                    <div className="flex justify-between items-center mb-2 pb-2 border-b">
+                        <div>
+                            <p className="font-semibold">{selectedEmail.sender}</p>
+                            <p className="text-sm text-muted-foreground">To: {selectedEmail.recipient}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{formatTimestamp(selectedEmail.timestamp)}</p>
+                    </div>
+                    <div
+                        ref={emailBodyRef}
+                        className="whitespace-pre-wrap text-sm"
+                        dangerouslySetInnerHTML={{ __html: selectedEmail.body }}
+                    />
+                </div>
+                {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
+                    <div className="p-4 mt-4 border-t">
+                        <h3 className="mb-2 text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                            <Paperclip size={14} />
+                            Documents joints
+                        </h3>
+                        <div className="flex flex-col gap-2">
+                            {selectedEmail.attachments.map((att, index) => (
+                                <Button
+                                    key={index}
+                                    variant="outline"
+                                    className="justify-start"
+                                    onClick={() => onOpenLink(att.link)}
+                                >
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    {att.fileName}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </ScrollArea>
+        )}
     </div>
-  );
+);
+
 
   const ComposeView = () => {
     const [composeRecipient, setComposeRecipient] = useState('');
@@ -238,3 +266,4 @@ export default function EmailClient({ emails, onSend, currentUser, onOpenLink }:
     </div>
   );
 }
+

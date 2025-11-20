@@ -1,4 +1,4 @@
-import type { Email } from '@/components/apps/email-client';
+import type { Email, Attachment } from '@/components/apps/email-client';
 
 export interface CallMessage {
     speaker: string; // e.g., 'Operator', 'Néo'
