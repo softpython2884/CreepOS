@@ -18,6 +18,7 @@ import NetworkMap from './apps/network-map';
 import EmailClient, { type Email } from './apps/email-client';
 import WebBrowser from './apps/web-browser';
 import MediaPlayer from './apps/media-player';
+import SequenceAnalyzer from './apps/sequence-analyzer';
 import { AlertTriangle, Skull } from 'lucide-react';
 import { saveGameState, loadGameState, deleteGameState } from '@/lib/save-manager';
 import SurvivalMode from './survival-mode';
@@ -29,9 +30,10 @@ import { directorCall } from '@/lib/call-system/scripts/director-call';
 import { neoIntroCall } from '@/lib/call-system/scripts/neo-intro-call';
 import { directorCallback } from '@/lib/call-system/scripts/director-callback';
 import { neoPhase1Call } from '@/lib/call-system/scripts/neo-phase1-call';
+import { supervisorPhase1 } from '@/lib/call-system/scripts/supervisor-phase1';
 
 
-export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player' | 'contract-viewer';
+export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player' | 'contract-viewer' | 'sequence-analyzer';
 
 type AppConfig = {
   [key in AppId]: {
@@ -374,6 +376,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if (isInitialInstall) {
         callQueueRef.current = [
           () => triggerCall(directorCall),
+          () => receiveEmail(supervisorPhase1)
         ];
         const firstCall = callQueueRef.current.shift();
         if(firstCall) {
@@ -382,7 +385,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     } else {
         triggerCall(neoPhase1Call);
     }
-  }, [triggerCall]);
+  }, [triggerCall, receiveEmail]);
 
 
   useEffect(() => {
@@ -502,6 +505,26 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     onSoundEvent('click');
   }, [nextZIndex, onSoundEvent, openApps]);
 
+  const handleSequenceAnalysisComplete = useCallback(() => {
+    addLog(`EVENT: Analyse de séquence terminée. Rapport généré.`);
+    
+    setPlayerFileSystem(prevFs => {
+        const newFile: FileSystemNode = {
+            id: `file-${Date.now()}`,
+            name: 'rapport_sequences.txt',
+            type: 'file',
+            content: `RAPPORT D'ANALYSE DE SÉQUENCE\nDate: ${new Date().toISOString()}\nOpérateur: Dr. Omen\n\nAnalyse des fragments de mémoire brute de data-sequences.bin terminée avec succès.\nStabilité de la séquence restaurée à 100%.\n\nNÉO a identifié et corrigé 3 corruptions de type Delta-7 en utilisant les fonctions logiques ROTATE, SPLIT, et FORWARD.\n\nConclusion: Le jeu de données est maintenant stable et prêt pour une analyse plus approfondie.\n\n- Rapport généré par NÉO -`,
+        };
+
+        const documentsPath = ['documents'];
+        return updateNodeByPath(prevFs, documentsPath, (docsFolder) => {
+            if (docsFolder && docsFolder.type === 'folder' && docsFolder.children) {
+                return { ...docsFolder, children: [...docsFolder.children, newFile] };
+            }
+            return docsFolder;
+        });
+    });
+  }, [addLog]);
 
   const handleSaveFile = (path: string[], newContent: string) => {
       addLog(`EVENT: Fichier sauvegardé à /${path.join('/')}`);
@@ -562,6 +585,15 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     onSoundEvent('email');
     setEmails(prev => [...prev, newEmail]);
     addLog(`EMAIL: Email envoyé à ${email.recipient} avec le sujet "${email.subject}"`);
+
+    if(email.recipient === 'Superviseur@recherche-lab.net' && email.subject.includes('Rapport de Séquence')) {
+        const autoReply: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
+            sender: 'MAILER-DAEMON@recherche-lab.net',
+            subject: `Re: ${email.subject}`,
+            body: 'Ceci est une réponse automatique. Votre rapport a été reçu et sera traité prochainement.\n\n- Nexus Automated System -'
+        };
+        setTimeout(() => receiveEmail(autoReply), 1500);
+    }
   };
 
   const getPlayerFileSystem = useCallback(() => {
@@ -585,6 +617,11 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   };
 
   const handleOpenLink = (url: string) => {
+    if (url === 'app://sequence-analyzer') {
+        openApp('sequence-analyzer');
+        return;
+    }
+
     if (url.startsWith('/')) {
         const fileName = url.split('/').pop() || 'document';
         openApp('contract-viewer', { initialUrl: url, fileName: fileName });
@@ -709,6 +746,16 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         fileName: 'unknown',
         filePath: '',
       }
+    },
+    'sequence-analyzer': {
+      title: 'Analyseur de Séquence',
+      component: SequenceAnalyzer,
+      width: 900,
+      height: 650,
+      props: {
+        onAnalysisComplete: handleSequenceAnalysisComplete,
+      },
+      isSingular: true,
     }
   };
   

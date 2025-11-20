@@ -1,4 +1,3 @@
-
 import type { CallScript } from '../types';
 
 export const directorCall: CallScript = {
