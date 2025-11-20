@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { BrainCircuit, Cpu, RotateCcw, GitFork, Forward, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ScrollArea } from '../ui/scroll-area';
 
 type Tool = 'FORWARD' | 'ROTATE' | 'SPLIT';
 type Hex = {
@@ -47,16 +48,21 @@ const Hexagon = ({ hex, onClick, onDrop, onDragOver, selectedTool }: { hex: Hex;
   }).join(' ');
 
   const getFill = () => {
+    if (hex.isPath) return hex.pathColor;
     if (hex.isCorrectedBlock) return 'hsl(var(--accent))';
     if (hex.isStart || hex.isEnd) return hex.color;
-    if (hex.isPath) return 'hsl(var(--primary))';
     if (hex.isBlock) return 'hsl(var(--destructive))';
     return 'hsl(var(--secondary) / 0.5)';
   }
 
+  const getStroke = () => {
+      if (hex.isPath) return 'hsl(var(--foreground))';
+      return 'hsl(var(--border))';
+  }
+
   return (
-    <g transform={`translate(${x}, ${y})`} onDrop={onDrop} onDragOver={onDragOver} onClick={onClick} className="cursor-pointer">
-      <polygon points={points} fill={getFill()} stroke="hsl(var(--border))" strokeWidth="2" />
+    <g transform={`translate(${x}, ${y})`} onDrop={onDrop} onDragOver={onDragOver} onClick={onClick} className="cursor-pointer transition-opacity duration-300 hover:opacity-80">
+      <polygon points={points} fill={getFill()} stroke={getStroke()} strokeWidth="2" />
        {hex.isBlock && !hex.isCorrectedBlock && <AlertCircle className="text-white" x="-10" y="-10" size={20} />}
     </g>
   );
@@ -98,37 +104,46 @@ export default function SequenceAnalyzer({ onAnalysisComplete, onClose }: { onAn
     }, [puzzle]);
 
     const handleHexClick = (hex: Hex) => {
-        if ((hex.isStart && !completedPaths.includes(hex.color!)) || (hex.isPath && !hex.isEnd)) {
-            if (!activeColor) {
-                // Start a new path
-                setActiveColor(hex.color!);
-                setCurrentPath([hex]);
-            } else if (activeColor === (hex.isStart ? hex.color : hex.pathColor)) {
-                // Continue path
-                const lastHex = currentPath[currentPath.length - 1];
-                const isAdjacent = Math.abs(lastHex.q - hex.q) + Math.abs(lastHex.r - hex.r) + Math.abs(lastHex.s - hex.s) === 2;
-                
-                if (isAdjacent && !currentPath.find(h => h.q === hex.q && h.r === hex.r)) {
-                    const newPath = [...currentPath, hex];
-                    setCurrentPath(newPath);
-                    if (hex.isEnd && hex.color === activeColor) {
-                        // Path complete
-                        setCompletedPaths(prev => [...prev, activeColor!]);
-                        setActiveColor(null);
-                        setCurrentPath([]);
-                         setGrid(g => g.map(h => newPath.some(p => p.q === h.q && p.r === h.r) ? { ...h, isPath: true, pathColor: activeColor } : h));
+        // Start a new path
+        if (hex.isStart && !completedPaths.includes(hex.color!) && !activeColor) {
+            setActiveColor(hex.color!);
+            setCurrentPath([hex]);
+            return;
+        }
 
-                        if (completedPaths.length + 1 === puzzle.starts.length) {
-                            setNeoMessages(prev => [...prev, "NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Un rapport a été généré sur votre bureau."]);
-                            onAnalysisComplete();
-                        }
+        // Continue the current path
+        if (activeColor) {
+            const lastHex = currentPath[currentPath.length - 1];
+            const isAdjacent = Math.abs(lastHex.q - hex.q) + Math.abs(lastHex.r - hex.r) + Math.abs(lastHex.s - hex.s) === 2;
+            const isAlreadyInPath = currentPath.find(h => h.q === hex.q && h.r === hex.r);
+
+            if (isAdjacent && !isAlreadyInPath && !hex.isBlock) {
+                 const newPath = [...currentPath, hex];
+                 setCurrentPath(newPath);
+
+                 // Check if path is complete
+                 if (hex.isEnd && hex.color === activeColor) {
+                    const newCompletedPaths = [...completedPaths, activeColor];
+                    setCompletedPaths(newCompletedPaths);
+                    setActiveColor(null);
+                    setCurrentPath([]);
+                    setGrid(g => g.map(h => {
+                        const pathNode = newPath.find(p => p.q === h.q && p.r === h.r);
+                        return pathNode ? { ...h, isPath: true, pathColor: activeColor } : h;
+                    }));
+
+                    if (newCompletedPaths.length === puzzle.starts.length) {
+                        setNeoMessages(prev => [...prev, "NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Un rapport a été généré sur votre bureau."]);
+                        onAnalysisComplete();
                     }
-                }
+                 }
             }
         }
     };
     
     const analyzePath = () => {
+        if (!activeColor || currentPath.length === 0) return;
+
         const lastHex = currentPath[currentPath.length - 1];
         const neighbors = grid.filter(h => Math.abs(lastHex.q - h.q) + Math.abs(lastHex.r - h.r) + Math.abs(lastHex.s - h.s) === 2);
         const blockedNeighbor = neighbors.find(n => n.isBlock && !n.isCorrectedBlock);
@@ -136,7 +151,7 @@ export default function SequenceAnalyzer({ onAnalysisComplete, onClose }: { onAn
         if (blockedNeighbor) {
             setNeoMessages(prev => [...prev, `NÉO: Corruption détectée. La séquence requiert une fonction '${blockedNeighbor.solution}'.`]);
         } else {
-            setNeoMessages(prev => [...prev, `NÉO: Aucun blocage direct détecté. Essayez une autre approche.`]);
+            setNeoMessages(prev => [...prev, `NÉO: Aucun blocage direct détecté. Le chemin semble valide ou une autre approche est nécessaire.`]);
         }
     };
 
@@ -149,7 +164,7 @@ export default function SequenceAnalyzer({ onAnalysisComplete, onClose }: { onAn
         e.preventDefault();
         const tool = e.dataTransfer.getData("tool") as Tool;
         if (hex.isBlock && hex.solution === tool) {
-            setGrid(g => g.map(h => h.q === hex.q && h.r === hex.r ? { ...h, isCorrectedBlock: true } : h));
+            setGrid(g => g.map(h => (h.q === hex.q && h.r === hex.r) ? { ...h, isCorrectedBlock: true, isBlock: false } : h));
             setNeoMessages(prev => [...prev, `NÉO: Opérateur '${tool}' appliqué. Corruption corrigée.`]);
         } else if (hex.isBlock) {
              setNeoMessages(prev => [...prev, `NÉO: Erreur. L'opérateur '${tool}' est incorrect pour ce nœud.`]);
@@ -205,7 +220,7 @@ export default function SequenceAnalyzer({ onAnalysisComplete, onClose }: { onAn
                 </TooltipProvider>
             </div>
             <div className="flex-1 flex flex-col">
-                <div className="p-4 flex-1 relative">
+                <div className="flex-1 relative">
                      <svg width="100%" height="100%" viewBox="-400 -300 800 600">
                         {gridWithCurrentPath.map((hex, i) => (
                           <Hexagon 
@@ -219,12 +234,14 @@ export default function SequenceAnalyzer({ onAnalysisComplete, onClose }: { onAn
                         ))}
                     </svg>
                 </div>
-                <div className="h-48 border-t bg-secondary/30 flex">
-                    <div className="w-1/2 p-4 border-r">
-                        <h3 className="font-bold text-accent mb-2">Console NÉO</h3>
-                        <div className="h-full overflow-y-auto">
-                            {neoMessages.map((msg, i) => <p key={i} className="animate-in fade-in">{msg}</p>)}
-                        </div>
+                <div className="h-36 border-t bg-secondary/30 flex">
+                    <div className="w-1/2 p-2 border-r flex flex-col">
+                        <h3 className="font-bold text-accent mb-2 flex-shrink-0">Console NÉO</h3>
+                        <ScrollArea className="flex-grow">
+                            <div className="pr-2">
+                                {neoMessages.map((msg, i) => <p key={i} className="animate-in fade-in">{msg}</p>)}
+                            </div>
+                        </ScrollArea>
                     </div>
                     <div className="w-1/2 p-4 flex flex-col justify-center items-center gap-4">
                          <div className="w-full">
