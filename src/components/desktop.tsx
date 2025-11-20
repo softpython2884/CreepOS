@@ -28,6 +28,7 @@ import { supervisorCall1 } from '@/lib/call-system/scripts/supervisor-call-1';
 import { directorCall } from '@/lib/call-system/scripts/director-call';
 import { neoIntroCall } from '@/lib/call-system/scripts/neo-intro-call';
 import { directorCallback } from '@/lib/call-system/scripts/director-callback';
+import { neoPhase1Call } from '@/lib/call-system/scripts/neo-phase1-call';
 
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player' | 'contract-viewer';
@@ -369,13 +370,17 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
 
-  const handleNeoExecute = useCallback(() => {
-    callQueueRef.current = [
-      () => triggerCall(directorCall),
-    ];
-    const firstCall = callQueueRef.current.shift();
-    if(firstCall) {
-        firstCall();
+  const handleNeoExecute = useCallback((isInitialInstall: boolean) => {
+    if (isInitialInstall) {
+        callQueueRef.current = [
+          () => triggerCall(directorCall),
+        ];
+        const firstCall = callQueueRef.current.shift();
+        if(firstCall) {
+            firstCall();
+        }
+    } else {
+        triggerCall(neoPhase1Call);
     }
   }, [triggerCall]);
 

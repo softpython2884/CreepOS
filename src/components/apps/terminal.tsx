@@ -34,7 +34,7 @@ interface TerminalProps {
     dangerLevel: number;
     machineState: string; // To know if we are in survival mode
     receiveEmail: (email: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => void;
-    onNeoExecute: () => void;
+    onNeoExecute: (isInitialInstall: boolean) => void;
 }
 
 const PLAYER_PUBLIC_IP = '184.72.238.110';
@@ -531,11 +531,12 @@ export default function Terminal({
 
     if (command.toLowerCase() === 'neo') {
         if (isNeoInstalled) {
-            handleOutput('Configuration de NÉO déjà en cours...');
+            handleOutput('Contacting NÉO...');
+            onNeoExecute(false);
         } else {
             await runProgressBar(5000, 'Installation de NÉO...');
             handleOutput('Installation terminée. Initialisation...');
-            onNeoExecute();
+            onNeoExecute(true);
             setIsNeoInstalled(true);
         }
         setIsProcessing(false);
