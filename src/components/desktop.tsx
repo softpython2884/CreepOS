@@ -219,6 +219,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     onAlertEvent('stopRingtone');
     onAlertEvent('stopScream'); // Just in case
     
+    const wasDirectorCallback = callScriptRef.current?.id === 'director-callback';
+
     setCallState('idle');
     setActiveCall(null);
     callScriptRef.current = null;
@@ -232,8 +234,11 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     const nextCall = callQueueRef.current.shift();
     if(nextCall) {
         setTimeout(nextCall, 2000); 
+    } else if (wasDirectorCallback) {
+        // If the director callback just finished and there's nothing else queued, send the mission email.
+        receiveEmail(supervisorPhase1);
     }
-  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced]);
+  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail]);
 
 
   const triggerCall = useCallback((script: CallScript) => {
@@ -375,8 +380,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const handleNeoExecute = useCallback((isInitialInstall: boolean) => {
     if (isInitialInstall) {
         callQueueRef.current = [
-          () => triggerCall(directorCall),
-          () => receiveEmail(supervisorPhase1)
+          () => triggerCall(directorCall)
         ];
         const firstCall = callQueueRef.current.shift();
         if(firstCall) {
@@ -385,7 +389,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     } else {
         triggerCall(neoPhase1Call);
     }
-  }, [triggerCall, receiveEmail]);
+  }, [triggerCall]);
 
 
   useEffect(() => {
@@ -629,7 +633,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         if (url === '/welcome.html') {
             setTimeout(() => {
                 triggerCall(neoIntroCall);
-            }, 30000);
+            }, 15000);
         }
     } else {
         openApp('web-browser', { initialUrl: url });
@@ -903,3 +907,5 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     </main>
   );
 }
+
+    
