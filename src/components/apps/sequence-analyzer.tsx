@@ -24,8 +24,8 @@ type Hex = {
   solution?: Tool;
 };
 
-const puzzles = [
-    {
+const puzzles: Record<string, { starts: any[], ends: any[], blocks: any[] }> = {
+    DELTA7: {
         starts: [{ q: -2, r: 0, color: 'blue' }, {q: 2, r: -2, color: 'green'}],
         ends: [{ q: 2, r: 2, color: 'blue' }, {q: -1, r: 3, color: 'green'}],
         blocks: [
@@ -33,8 +33,17 @@ const puzzles = [
             { q: 1, r: -1, solution: 'SPLIT' },
             { q: 0, r: -2, solution: 'FORWARD' },
         ]
+    },
+    MEMO_BIN: {
+        starts: [{ q: -3, r: 1, color: 'red' }],
+        ends: [{ q: 3, r: -1, color: 'red' }],
+        blocks: [
+            { q: -1, r: 0, solution: 'FORWARD' },
+            { q: 0, r: 0, solution: 'ROTATE' },
+            { q: 1, r: 0, solution: 'SPLIT' },
+        ]
     }
-];
+};
 
 const HEX_SIZE = 40;
 
@@ -70,8 +79,8 @@ const Hexagon = ({ hex, onClick, onDrop, onDragOver, selectedTool }: { hex: Hex;
 };
 
 
-export default function SequenceAnalyzer({ onAnalysisComplete, onClose }: { onAnalysisComplete: () => void, onClose: () => void }) {
-    const [puzzle, setPuzzle] = useState(puzzles[0]);
+export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComplete, onClose }: { puzzleId?: string, onAnalysisComplete: (puzzleId: string) => void, onClose: () => void }) {
+    const [puzzle, setPuzzle] = useState(puzzles[puzzleId] || puzzles['DELTA7']);
     const [grid, setGrid] = useState<Hex[]>([]);
     const [currentPath, setCurrentPath] = useState<Hex[]>([]);
     const [activeColor, setActiveColor] = useState<string | null>(null);
@@ -134,8 +143,8 @@ export default function SequenceAnalyzer({ onAnalysisComplete, onClose }: { onAn
                     }));
 
                     if (newCompletedPaths.length === puzzle.starts.length) {
-                        setNeoMessages(prev => [...prev, "NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Un rapport a été généré dans vos documents."]);
-                        onAnalysisComplete();
+                        setNeoMessages(prev => [...prev, "Analyse terminée. Stabilité de la mémoire à 100%. Un rapport a été généré dans vos documents."]);
+                        onAnalysisComplete(puzzleId);
                     }
                  }
             }

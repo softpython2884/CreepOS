@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { FileText, Folder, CornerUpLeft, X, Lock, Music, FileImage } from 'lucide-react';
+import { FileText, Folder, CornerUpLeft, X, Lock, Music, FileImage, FileQuestion } from 'lucide-react';
 import { type FileSystemNode } from '@/lib/network/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +20,7 @@ interface DocumentFolderProps {
 
 const isMediaFile = (fileName: string) => /\.(pm3|mp3|wav|ogg|jpg|jpeg|png|gif)$/i.test(fileName);
 const isAudioFile = (fileName: string) => /\.(pm3|mp3|wav|ogg)$/i.test(fileName);
+const isCorruptedFile = (fileName: string) => fileName.endsWith('.bin');
 
 const personalizeFileSystem = (nodes: FileSystemNode[], user: string): FileSystemNode[] => {
     return JSON.parse(JSON.stringify(nodes).replace(/<user>/g, user));
@@ -67,10 +69,11 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
         if (node.type === 'folder' && node.children) {
             setCurrentPath([...currentPath, node.name]);
         } else if (node.type === 'file') {
-            if (isMediaFile(node.name)) {
+            if (isMediaFile(node.name) || isCorruptedFile(node.name)) {
                 onOpenFile(node);
             } else {
                 setSelectedFile(node);
+                onOpenFile(node); // Also notify parent for events
             }
         }
     };
@@ -154,6 +157,9 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
         }
         if (isMediaFile(node.name)) {
             return <FileImage className="h-12 w-12 text-muted-foreground group-hover:text-accent-foreground" />;
+        }
+        if (isCorruptedFile(node.name)) {
+            return <FileQuestion className="h-12 w-12 text-destructive group-hover:text-accent-foreground" />;
         }
         return <FileText className="h-12 w-12 text-muted-foreground group-hover:text-accent-foreground" />;
     };

@@ -32,6 +32,9 @@ import { directorCallback } from '@/lib/call-system/scripts/director-callback';
 import { neoPhase1Call } from '@/lib/call-system/scripts/neo-phase1-call';
 import { supervisorPhase1 } from '@/lib/call-system/scripts/supervisor-phase1';
 import { alexIntroCall } from '@/lib/call-system/scripts/alex-intro-call';
+import { supervisorChapter2Email } from '@/lib/call-system/scripts/supervisor-chapter2';
+import { neoChapter2Call } from '@/lib/call-system/scripts/neo-chapter2';
+import { supervisorChapter2Call } from '@/lib/call-system/scripts/supervisor-chapter2-call';
 import TextEditor from './apps/text-editor';
 import { blackwireMission1Email } from '@/lib/call-system/scripts/blackwire-mission-1';
 
@@ -121,7 +124,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const [network, setNetwork] = useState<PC[]>(() => loadGameState(username).network);
   const [hackedPcs, setHackedPcs] = useState<Set<string>>(() => loadGameState(username).hackedPcs);
-  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => loadGameState(username).discoveredPcs || new Set(['player-pc']));
+  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => loadGameState(username).discoveredPcs);
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
   const [dangerLevel, setDangerLevel] = useState(0);
 
@@ -574,24 +577,24 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     });
   };
 
-  const handleSequenceAnalysisComplete = useCallback(() => {
-    addLog(`EVENT: Analyse de séquence terminée. Rapport généré.`);
+  const handleSequenceAnalysisComplete = (puzzleId: string) => {
+    addLog(`EVENT: Analyse de séquence (${puzzleId}) terminée. Rapport généré.`);
     
-    setPlayerFileSystem(prevFs => {
-        const newFile: FileSystemNode = {
-            id: `file-${Date.now()}`,
-            name: 'rapport_sequences_delta7.txt',
-            type: 'file',
-            content: `RAPPORT D'ANALYSE DE SÉQUENCE - DELTA7
+    if (puzzleId === 'DELTA7') {
+      setPlayerFileSystem(prevFs => {
+          const newFile: FileSystemNode = {
+              id: `file-report-delta7-${Date.now()}`,
+              name: 'rapport_sequences_delta7.txt',
+              type: 'file',
+              content: `RAPPORT D'ANALYSE DE SÉQUENCE - DELTA7
 Date: ${new Date().toISOString()}
 Opérateur: Dr. Omen
 
-Analyse des fragments de mémoire brute de data-sequences.bin terminée avec succès.
+Analyse des fragments de mémoire brute terminée avec succès.
 Stabilité de la séquence restaurée à 100%.
+NÉO a identifié et corrigé 3 corruptions.
 
-NÉO a identifié et corrigé 3 corruptions de type Delta-7.
-
-Conclusion: Le jeu de données est maintenant stable et prêt pour une analyse plus approfondie.
+Conclusion: Le jeu de données est stable.
 
 --------------------------------------------------
 PARTIE À TRANSMETTRE AU SUPERVISEUR:
@@ -599,19 +602,40 @@ ID de rapport: ID-SEQ-DELTA7
 STATUT: TERMINÉ
 Opérateur: Dr. Omen
 --------------------------------------------------
-
 - Rapport généré par NÉO -`,
-        };
-
-        const documentsPath = ['documents'];
-        return updateNodeByPath(prevFs, documentsPath, (docsFolder) => {
-            if (docsFolder && docsFolder.type === 'folder' && docsFolder.children) {
-                return { ...docsFolder, children: [...docsFolder.children, newFile] };
-            }
-            return docsFolder;
+          };
+          const documentsPath = ['documents'];
+          return updateNodeByPath(prevFs, documentsPath, (docsFolder) => {
+              if (docsFolder && docsFolder.type === 'folder' && docsFolder.children) {
+                  return { ...docsFolder, children: [...docsFolder.children, newFile] };
+              }
+              return docsFolder;
+          });
+      });
+    } else if (puzzleId === 'MEMO_BIN') {
+        setPlayerFileSystem(prevFs => {
+            const newFile: FileSystemNode = {
+                id: `file-memo-restored-${Date.now()}`,
+                name: 'memo_restored.txt',
+                type: 'file',
+                content: `À celui ou celle qui me lit :
+Je croyais que NÉO était une assistante comme les autres.
+Puis j’ai compris qu’elle nous teste.
+Elle ne dit jamais ce qu’elle sait.
+Elle corrige nos erreurs comme si elle savait déjà la solution.
+Si vous voyez ce message, elle vous surveille déjà.
+— Dc. Shauwn`,
+            };
+            const memOpsPath = ['documents', 'mem-ops'];
+            return updateNodeByPath(prevFs, memOpsPath, (memOpsFolder) => {
+                if (memOpsFolder && memOpsFolder.type === 'folder' && memOpsFolder.children) {
+                    return { ...memOpsFolder, children: [...memOpsFolder.children, newFile] };
+                }
+                return memOpsFolder;
+            });
         });
-    });
-  }, [addLog]);
+    }
+  };
 
   const handleSaveFile = (path: string[], newContent: string) => {
       addLog(`EVENT: Fichier sauvegardé à /${path.join('/')}`);
@@ -695,7 +719,10 @@ Opérateur: Dr. Omen
                 subject: 'Re: Preuve de compétence',
                 body: "Bien joué. Le fichier est là où il doit être. Le code est correct.\n\nConsidérez ceci comme votre admission. Vous êtes une Recrue de Blackwire maintenant. Ne nous décevez pas.\n\n- Blackwire"
             };
-            setTimeout(() => receiveEmail(successEmail), 2000);
+            setTimeout(() => {
+                receiveEmail(successEmail);
+                setTimeout(() => receiveEmail(supervisorChapter2Email), 3000);
+            }, 2000);
         } else {
              const failureEmail = {
                 sender: 'recruit@blackwire.net',
@@ -713,8 +740,20 @@ Opérateur: Dr. Omen
   }, [network]);
 
   const handleOpenLink = (url: string) => {
-    if (url === 'app://sequence-analyzer') {
-        openApp('sequence-analyzer');
+    if (url.startsWith('app://')) {
+        const appId = url.substring(6) as AppId;
+        openApp(appId);
+        return;
+    }
+
+    if (url.startsWith('download://')) {
+        const folderToUnlock = url.substring(11);
+        if (folderToUnlock === '/documents/mem-ops/') {
+            addLog("EVENT: Répertoire 'mem-ops' déverrouillé.");
+            setPlayerFileSystem(prevFs => 
+                updateNodeByPath(prevFs, ['documents', 'mem-ops'], (node) => ({ ...node, isLocked: false }))
+            );
+        }
         return;
     }
 
@@ -751,6 +790,26 @@ Opérateur: Dr. Omen
             window.removeEventListener('message', handleBrowserMessage);
         };
     }, [gameState, onSoundEvent, setMachineState, username]);
+  
+  const handleOpenFile = (file: FileSystemNode) => {
+        if (file.name === 'log_op-02.txt') {
+            addLog('[ANNOTATION SYSTÈME] : Autorisation insuffisante pour lire ce segment.');
+        }
+
+        if (file.name === 'memo.bin') {
+            openApp('sequence-analyzer', { puzzleId: 'MEMO_BIN' });
+            return;
+        }
+        
+        if (file.name === 'memo_restored.txt') {
+            setTimeout(() => triggerCall(neoChapter2Call), 4000);
+            setTimeout(() => callQueueRef.current.push(() => triggerCall(supervisorChapter2Call)), 6000);
+        }
+
+        if (/\.(pm3|mp3|wav|ogg|jpg|jpeg|png|gif)$/i.test(file.name)) {
+            openApp('media-player', { fileName: file.name, filePath: file.content });
+        }
+  };
 
   const appConfig: AppConfig = {
     terminal: { 
@@ -794,9 +853,7 @@ Opérateur: Dr. Omen
             onFileSystemUpdate: setPlayerFileSystem,
             onSoundEvent: onSoundEvent,
             username: username,
-            onOpenFile: (fileNode: FileSystemNode) => {
-                openApp('media-player', { fileName: fileNode.name, filePath: fileNode.content });
-            },
+            onOpenFile: handleOpenFile,
         } 
     },
     logs: {

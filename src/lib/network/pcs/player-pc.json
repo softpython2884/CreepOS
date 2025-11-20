@@ -1,3 +1,4 @@
+
 {
     "id": "player-pc",
     "name": "Omen",
@@ -29,6 +30,33 @@
                     "name": "welcome.txt",
                     "type": "file",
                     "content": "Bienvenue Dr. Omen,\n\nVotre première tâche est d'initialiser le framework de l'IA NÉO. Pour ce faire, vous devez télécharger le paquet principal depuis le portail de développement sécurisé.\n\n1. Consultez vos e-mails. Vous avez dû recevoir vos identifiants pour le portail.\n\n2. Ouvrez le navigateur Hypnet et rendez-vous sur le site : neo.nexus\n\n3. Authentifiez-vous sur le portail pour obtenir les instructions de téléchargement.\n\n4. Suivez les instructions du portail pour télécharger et lancer NÉO via le terminal.\n\nBon courage.\n— RH"
+                },
+                {
+                    "id": "folder-mem-ops",
+                    "name": "mem-ops",
+                    "type": "folder",
+                    "isLocked": true,
+                    "password": "memkey_042",
+                    "children": [
+                        {
+                            "id": "file-log-op-01",
+                            "name": "log_op-01.txt",
+                            "type": "file",
+                            "content": "Journal Opérateur 01:\nInitialisation des systèmes. Tous les paramètres sont nominaux. NÉO répond comme prévu. Aucune anomalie à signaler."
+                        },
+                        {
+                            "id": "file-log-op-02",
+                            "name": "log_op-02.txt",
+                            "type": "file",
+                            "content": "Journal Opérateur 02:\nTests de diagnostic sur le noyau mémoriel. NÉO a assisté à la résolution de corruption de bas niveau. Efficacité supérieure aux prévisions."
+                        },
+                        {
+                            "id": "file-memo-bin",
+                            "name": "memo.bin",
+                            "type": "file",
+                            "content": "FICHIER CORROMPU"
+                        }
+                    ]
                 }
             ]
         },
@@ -45,7 +73,18 @@
             "name": "journal",
             "type": "folder",
             "children": [
-                { "id": "file-journal-00", "name": "entry_00.txt", "type": "file", "content": "2025-05-10 — Jour 0\n\nNouvel appart, nouveau poste. Je suis curieux et un peu nerveux. J'ai passé 9 ans en Europe, assez pour savoir que les promesses sur le papier ne valent rien. On m'a demandé de venir sans poser de questions. On m'a aussi demandé de vivre près du centre. Ils ont dit : \"plein accès\". Je note tout.\n\n(Alex m'a dit de garder un œil sur mes logs ou mes mails)" }
+                { 
+                    "id": "file-journal-00", 
+                    "name": "entry_00.txt", 
+                    "type": "file", 
+                    "content": "2025-05-10 — Jour 0\n\nNouvel appart, nouveau poste. Je suis curieux et un peu nerveux. J'ai passé 9 ans en Europe, assez pour savoir que les promesses sur le papier ne valent rien. On m'a demandé de venir sans poser de questions. On m'a aussi demandé de vivre près du centre. Ils ont dit : \"plein accès\". Je note tout.\n\n(Alex m'a dit de garder un œil sur mes logs ou mes mails)" 
+                },
+                {
+                    "id": "file-journal-01",
+                    "name": "entry_01.txt",
+                    "type": "file",
+                    "content": "J'ai trouvé les journaux d'un ancien opérateur. Le fichier 'memo.bin' est corrompu. Je devrais peut-être demander de l'aide à Blackwire pour le décrypter. Ils pourraient avoir les outils nécessaires. Je vais leur envoyer un e-mail."
+                }
             ]
         },
         {
