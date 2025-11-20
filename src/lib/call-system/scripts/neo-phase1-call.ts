@@ -1,4 +1,5 @@
 import type { CallScript } from '../types';
+import { supervisorPhase1 } from './supervisor-phase1';
 
 export const neoPhase1Call: CallScript = {
   id: 'neo-phase1-call',
@@ -83,11 +84,23 @@ export const neoPhase1Call: CallScript = {
         speaker: 'NÉO',
         text: 'Parfait. Je reste à votre disposition. Fin de la communication.',
       },
+      consequences: {
+        endCallAndTrigger: {
+            type: 'email',
+            email: supervisorPhase1,
+        },
+      },
     },
     'end-call-tense': {
       message: {
         speaker: 'NÉO',
         text: 'Entendu. N\'hésitez pas si vous changez d\'avis. Fin de la communication.',
+      },
+      consequences: {
+        endCallAndTrigger: {
+            type: 'email',
+            email: supervisorPhase1,
+        },
       },
     },
   },
