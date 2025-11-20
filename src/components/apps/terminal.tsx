@@ -168,6 +168,7 @@ export default function Terminal({
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAwaitingConfirmation, setIsAwaitingConfirmation] = useState(false);
+  const [isNeoInstalled, setIsNeoInstalled] = useState(false);
   
   // Network and FS state
   const [connectedIp, setConnectedIp] = useState<string>('127.0.0.1');
@@ -529,9 +530,14 @@ export default function Terminal({
     };
 
     if (command.toLowerCase() === 'neo') {
-        await runProgressBar(5000, 'Installation de NÉO...');
-        handleOutput('Installation terminée. Initialisation...');
-        onNeoExecute();
+        if (isNeoInstalled) {
+            handleOutput('Configuration de NÉO déjà en cours...');
+        } else {
+            await runProgressBar(5000, 'Installation de NÉO...');
+            handleOutput('Installation terminée. Initialisation...');
+            onNeoExecute();
+            setIsNeoInstalled(true);
+        }
         setIsProcessing(false);
         return;
     }
@@ -1014,7 +1020,6 @@ export default function Terminal({
         
                 handleOutput(`${filesToCopy.length} fichiers copiés vers ${destArg}`);
                 addLog(`EVENT: ${filesToCopy.length} fichiers copiés de ${sourcePC.ip}:${sourceDirArg} vers ${destPC.ip}:${destPathArg}`);
-                if (sourcePC.id !== destPC.id) addRemoteLog(`EVENT: ${filesToCopy.length} fichiers copiés de ${sourceDirArg} vers ${destPC.ip}:${destPathArg} par ${PLAYER_PUBLIC_IP}`);
                 break;
             }
         

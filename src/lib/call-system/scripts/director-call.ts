@@ -1,6 +1,5 @@
 
 import type { CallScript } from '../types';
-import { neoIntroCall } from './neo-intro-call';
 
 export const directorCall: CallScript = {
   id: 'director-call',
@@ -51,7 +50,6 @@ export const directorCall: CallScript = {
               body: "Veuillez trouver ci-joint votre contrat d'affectation au projet NÉO.",
               attachments: [{ fileName: 'contract.pdf', link: '/welcome.html' }]
             },
-            endCallAndTrigger: neoIntroCall,
           },
         },
       ],

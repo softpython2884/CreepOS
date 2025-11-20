@@ -301,9 +301,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if (chosenChoice.consequences?.triggerSound) {
         onSoundEvent(chosenChoice.consequences.triggerSound);
     }
-    if (chosenChoice.consequences?.endCallAndTrigger) {
-        setTimeout(() => triggerCall(chosenChoice.consequences!.endCallAndTrigger!), 1500);
-    }
     
     const nextNodeId = chosenChoice.nextNode;
     
@@ -313,6 +310,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
           setActiveCall(prev => prev ? ({ ...prev, isFinished: true, choices: [] }) : null);
           return;
       }
+
+      if (nextNode.consequences?.endCallAndTrigger) {
+          setTimeout(() => triggerCall(nextNode.consequences!.endCallAndTrigger!), 1500);
+      }
       
       currentNodeIdRef.current = nextNodeId;
       setActiveCall(prev => prev ? ({
@@ -321,6 +322,11 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
           choices: nextNode.choices || [],
           isFinished: !nextNode.choices || nextNode.choices.length === 0,
       }) : null);
+
+      if (nextNode.consequences?.triggerSound) {
+        onSoundEvent(nextNode.consequences.triggerSound);
+      }
+
       onSoundEvent('email');
     }, 1000);
   }
@@ -576,11 +582,15 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const handleOpenLink = (url: string) => {
     if (url.startsWith('/')) {
-        // It's a local file link
         const fileName = url.split('/').pop() || 'document';
         openApp('contract-viewer', { initialUrl: url, fileName: fileName });
+        
+        if (url === '/welcome.html') {
+            setTimeout(() => {
+                triggerCall(neoIntroCall);
+            }, 30000);
+        }
     } else {
-        // It's a domain for the web browser
         openApp('web-browser', { initialUrl: url });
     }
   }
