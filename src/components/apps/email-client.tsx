@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Inbox, Send, Edit, CornerUpLeft, Paperclip } from 'lucide-react';
+import { Inbox, Send, Edit, CornerUpLeft, Paperclip, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -266,4 +266,3 @@ export default function EmailClient({ emails, onSend, currentUser, onOpenLink }:
     </div>
   );
 }
-
