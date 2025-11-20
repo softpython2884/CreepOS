@@ -1,0 +1,37 @@
+{
+    "id": "nexus-backdoor",
+    "name": "NXS-NODE-17",
+    "ip": "198.51.100.17",
+    "type": "Server",
+    "links": ["neo-dev-node"],
+    "auth": { "user": "admin", "pass": "temp_access" },
+    "firewall": { "enabled": false, "complexity": 0 },
+    "proxy": { "enabled": false, "level": 0 },
+    "traceTime": 0,
+    "requiredPorts": 0,
+    "ports": [],
+    "traceability": 5,
+    "fileSystem": [
+        {
+            "id": "backdoor-root",
+            "name": "root",
+            "type": "folder",
+            "children": [
+                { 
+                    "id": "backdoor-readme", 
+                    "name": "readme.txt", 
+                    "type": "file", 
+                    "content": "Node de maintenance temporaire. Ne pas utiliser."
+                }
+            ]
+        },
+        {
+            "id": "backdoor-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "backdoor-access", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
+            ]
+        }
+    ]
+}

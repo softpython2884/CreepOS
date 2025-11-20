@@ -19,6 +19,19 @@
             "children": []
         },
         {
+            "id": "bw-drop-dist",
+            "name": "dist",
+            "type": "folder",
+            "children": [
+                { 
+                    "id": "bw-dist-backdoor", 
+                    "name": "backdoor.sys", 
+                    "type": "file", 
+                    "content": "BSYS_FRAG_LOADER // DO NOT DISTRIBUTE // SIG:BLKWR"
+                }
+            ]
+        },
+        {
             "id": "bw-drop-logs",
             "name": "logs",
             "type": "folder",

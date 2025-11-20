@@ -1,4 +1,3 @@
-
 import type { CallScript } from '../types';
 
 export const supervisorChapter2Call: CallScript = {

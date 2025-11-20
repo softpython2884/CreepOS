@@ -1,5 +1,6 @@
 import type { CallScript } from '../types';
 import { blackwireMission1Email } from './blackwire-mission-1';
+import { blackwireChapter3IntroEmail } from './blackwire-chapter3-intro';
 
 export const alexIntroCall: CallScript = {
   id: 'alex-intro-call',

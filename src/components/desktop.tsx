@@ -37,6 +37,7 @@ import { neoChapter2Call } from '@/lib/call-system/scripts/neo-chapter2';
 import { supervisorChapter2Call } from '@/lib/call-system/scripts/supervisor-chapter2-call';
 import TextEditor from './apps/text-editor';
 import { blackwireMission1Email } from '@/lib/call-system/scripts/blackwire-mission-1';
+import { blackwireChapter3IntroEmail } from '@/lib/call-system/scripts/blackwire-chapter3-intro';
 
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player' | 'contract-viewer' | 'sequence-analyzer';
@@ -731,6 +732,13 @@ Si vous voyez ce message, elle vous surveille déjà.
             };
             setTimeout(() => receiveEmail(failureEmail), 2000);
         }
+    }
+     if (email.recipient === 'recruit@blackwire.net' && email.subject.includes('memo.bin')) {
+        const newEmail = blackwireChapter3IntroEmail;
+        setTimeout(() => {
+            receiveEmail(newEmail);
+            addLog("EVENT: Chapitre 3 initié.");
+        }, 5000);
     }
   };
 
