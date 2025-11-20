@@ -7,7 +7,7 @@ import Dock from '@/components/dock';
 import Window from '@/components/window';
 import Terminal from '@/components/apps/terminal';
 import DocumentFolder from '@/components/apps/document-folder';
-import TextEditor from '@/components/apps/text-editor';
+import TextEditor from '@/components/ui/text-editor';
 import { cn } from '@/lib/utils';
 import { MusicEvent, AlertEvent } from './audio-manager';
 import { type FileSystemNode } from '@/lib/network/types';
@@ -32,6 +32,7 @@ import { neoIntroCall } from '@/lib/call-system/scripts/neo-intro-call';
 import { directorCallback } from '@/lib/call-system/scripts/director-callback';
 import { neoPhase1Call } from '@/lib/call-system/scripts/neo-phase1-call';
 import { supervisorPhase1 } from '@/lib/call-system/scripts/supervisor-phase1';
+import { alexIntroCall } from '@/lib/call-system/scripts/alex-intro-call';
 
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player' | 'contract-viewer' | 'sequence-analyzer';
@@ -686,7 +687,10 @@ Opérateur: Dr. Omen
             subject: `Re: ${email.subject}`,
             body: 'Ceci est une réponse automatique. Votre rapport a été reçu et sera traité prochainement.\n\n- Nexus Automated System -'
         };
-        setTimeout(() => receiveEmail(autoReply), 1500);
+        setTimeout(() => {
+            receiveEmail(autoReply);
+            setTimeout(() => triggerCall(alexIntroCall), 10000);
+        }, 1500);
     }
   };
 
@@ -991,6 +995,7 @@ Opérateur: Dr. Omen
       
 
     
+
 
 
 

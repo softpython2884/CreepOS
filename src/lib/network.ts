@@ -5,6 +5,7 @@ import corporateProxy from './network/pcs/corporate-proxy.json';
 import hypnetSearch from './network/pcs/hypnet-search.json';
 import cheatPc from './network/pcs/cheat-pc.json';
 import neoDevNode from './network/pcs/neo-dev-node.json';
+import alexToolbox from './network/pcs/alex-toolbox.json';
 import { type PC } from './network/types';
 
 export const network: PC[] = [
@@ -14,5 +15,6 @@ export const network: PC[] = [
     corporateProxy,
     hypnetSearch,
     cheatPc,
-    neoDevNode
+    neoDevNode,
+    alexToolbox
 ];

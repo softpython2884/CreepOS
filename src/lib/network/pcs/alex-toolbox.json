@@ -1,0 +1,40 @@
+{
+    "id": "alex-toolbox",
+    "name": "Toolbox-Server",
+    "ip": "172.50.32.8",
+    "type": "Server",
+    "links": [],
+    "auth": { "user": "test-user", "pass": "9e0-test" },
+    "firewall": { "enabled": false, "complexity": 0 },
+    "proxy": { "enabled": false, "level": 0 },
+    "traceTime": 0,
+    "requiredPorts": 0,
+    "ports": [],
+    "traceability": 0,
+    "fileSystem": [
+        {
+            "id": "toolbox-bin",
+            "name": "bin",
+            "type": "folder",
+            "children": [
+                { "id": "file-scan-alex", "name": "scan.bin", "type": "file", "content": "Géolocalise les noeuds du réseau", "isSystemFile": true },
+                { "id": "file-probe-alex", "name": "probe.bin", "type": "file", "content": "Analyse la sécurité d'un système", "isSystemFile": true },
+                { "id": "file-porthack-alex", "name": "porthack.bin", "type": "file", "content": "Force l'accès root si les défenses sont tombées", "isSystemFile": true }
+            ]
+        },
+        {
+            "id": "toolbox-readme",
+            "name": "README.txt",
+            "type": "file",
+            "content": "Si tu lis ça, c'est que t'es sur la bonne voie. Copie les outils et amuse-toi bien. - Alex"
+        },
+        {
+            "id": "toolbox-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "file-toolbox-access", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
+            ]
+        }
+    ]
+}
