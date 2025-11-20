@@ -223,20 +223,21 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       const lastScript = callScriptRef.current;
       const lastNodeId = currentNodeIdRef.current;
 
+      if (isManualClose) {
+        onAlertEvent('stopAlarm'); // Stop any potential sound from the call
+        onSoundEvent('endCall');
+      }
+      
       setCallState('idle');
       setActiveCall(null);
       callScriptRef.current = null;
       currentNodeIdRef.current = null;
-
-      if (isManualClose) {
-        onSoundEvent('endCall');
-      }
       
-      setTimeout(() => {
-        if (!isTraced) {
-          onMusicEvent('calm');
-        }
-      }, 1000);
+      if (!isTraced) {
+          setTimeout(() => {
+            onMusicEvent('calm');
+          }, 1000);
+      }
 
       if (lastScript && lastNodeId) {
           const lastNode = lastScript.nodes[lastNodeId];
@@ -255,7 +256,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       if(nextCall) {
           setTimeout(nextCall, 2000); 
       }
-  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail]);
+  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail, triggerCall]);
 
 
   const triggerCall = useCallback((script: CallScript) => {
@@ -417,7 +418,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   useEffect(() => {
     const timer = setTimeout(() => {
         triggerCall(supervisorCall1);
-    }, 13000); // Changed from 10000 to 13000
+    }, 5000); 
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -899,7 +900,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
       {callState === 'active' && activeCall && (
         <div className="absolute top-4 right-4 z-[9999]">
-            <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} onClose={() => endCall(true)} />
+            <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} onClose={() => { onAlertEvent('stopAlarm'); onSoundEvent('endCall'); endCall(true); }} />
         </div>
       )}
 

@@ -40,7 +40,7 @@ export default function Dock({ onAppClick, openApps, activeInstanceId, emailNoti
                     className={cn(
                         'relative flex h-12 w-12 items-center justify-center rounded-md transition-all duration-200 hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                         'text-foreground',
-                         isEmailAndNotifying && 'animate-pulse bg-accent/50'
+                         isEmailAndNotifying && 'bg-accent/50 animate-pulse-slow'
                     )}
                     aria-label={`Open ${app.name}`}
                     >
