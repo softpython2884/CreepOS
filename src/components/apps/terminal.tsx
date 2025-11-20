@@ -1075,7 +1075,167 @@ export default function Terminal({
             addRemoteLog(`EVENT: Fichier ${newFileName} reçu de ${PLAYER_PUBLIC_IP} dans ${finalDestPath.join('/') || '/'}`);
             break;
         }
-        case 'cp':
+        case 'cp': {
+          if (!checkAuth()) break;
+
+          const [sourceArg, destArg] = args;
+          if (!sourceArg || !destArg) {
+              handleOutput(`${command}: opérande manquant`);
+              break;
+          }
+
+          const isWildcard = sourceArg === '*';
+
+          // --- Handle Wildcard Copy ---
+          if (isWildcard) {
+              const sourceDirNode = findNodeByPath(currentDirectory, fileSystem);
+              if (!sourceDirNode || sourceDirNode.type !== 'folder' || !sourceDirNode.children) {
+                  handleOutput(`cp: erreur interne: impossible de lire le répertoire source`);
+                  break;
+              }
+
+              const filesToCopy = sourceDirNode.children.filter(f => f.type === 'file');
+              if (filesToCopy.length === 0) {
+                  handleOutput(`cp: aucun fichier à copier dans le répertoire actuel`);
+                  break;
+              }
+
+              const isDestLocal = destArg.startsWith('local:');
+              const destPathArg = isDestLocal ? destArg.substring(6) : destArg;
+              
+              if (isDestLocal) {
+                  const playerPC = network.find(p => p.id === 'player-pc');
+                  if (!playerPC) {
+                      handleOutput(`cp: erreur critique: impossible de trouver la machine locale`);
+                      break;
+                  }
+                  
+                  const destPath = resolvePath(destPathArg);
+                  const destDirNodeOnLocal = findNodeByPath(destPath, personalizeFileSystem(playerPC.fileSystem, username));
+
+                  if (!destDirNodeOnLocal || destDirNodeOnLocal.type !== 'folder') {
+                      handleOutput(`cp: la destination '${destArg}' n'est pas un répertoire local valide`);
+                      break;
+                  }
+
+                  setNetwork(currentNetwork => currentNetwork.map(pc => {
+                      if (pc.id === 'player-pc') {
+                          let newFs = pc.fileSystem;
+                          filesToCopy.forEach(file => {
+                              const copiedNode = { ...JSON.parse(JSON.stringify(file)), id: `${file.id}-copy-${Date.now()}` };
+                              newFs = addNodeByPath(newFs, destPath, copiedNode);
+                          });
+                          return { ...pc, fileSystem: newFs };
+                      }
+                      return pc;
+                  }));
+                  
+                  handleOutput(`${filesToCopy.length} fichiers copiés vers ${destArg}`);
+
+              } else {
+                  // Wildcard copy on the same remote machine
+                  const destPath = resolvePath(destPathArg);
+                  const destDirNode = findNodeByPath(destPath, fileSystem);
+
+                  if (!destDirNode || destDirNode.type !== 'folder') {
+                      handleOutput(`cp: la destination '${destArg}' n'est pas un répertoire`);
+                      break;
+                  }
+                  
+                  setNetwork(currentNetwork => currentNetwork.map(pc => {
+                      if (pc.ip === connectedIp) {
+                          let newFs = pc.fileSystem;
+                           filesToCopy.forEach(file => {
+                              const copiedNode = { ...JSON.parse(JSON.stringify(file)), id: `${file.id}-copy-${Date.now()}` };
+                              newFs = addNodeByPath(newFs, destPath, copiedNode);
+                          });
+                          return { ...pc, fileSystem: newFs };
+                      }
+                      return pc;
+                  }));
+                  handleOutput(`${filesToCopy.length} fichiers copiés vers ${destArg}`);
+              }
+              break;
+          }
+
+          // --- Handle Single File Copy ---
+          const sourcePath = resolvePath(sourceArg);
+          const sourceNode = findNodeByPath(sourcePath, fileSystem);
+
+          if (!sourceNode) {
+              handleOutput(`cp: impossible d'accéder à '${sourceArg}': Aucun fichier ou dossier de ce type`);
+              break;
+          }
+          if (sourceNode.type === 'folder') {
+              handleOutput(`cp: impossible de copier des répertoires pour l'instant.`);
+              break;
+          }
+
+          const isDestLocal = destArg.startsWith('local:');
+          const destPathArg = isDestLocal ? destArg.substring(6) : destArg;
+
+          if (isDestLocal) {
+              const playerPC = network.find(p => p.id === 'player-pc');
+              if (!playerPC) {
+                   handleOutput(`cp: erreur critique: impossible de trouver la machine locale`);
+                   break;
+              }
+
+              let destPath = resolvePath(destPathArg);
+              let destDirNodeOnLocal = findNodeByPath(destPath, personalizeFileSystem(playerPC.fileSystem, username));
+              
+              let finalDestPath: string[];
+              let newFileName: string;
+
+              if (destDirNodeOnLocal && destDirNodeOnLocal.type === 'folder') {
+                  finalDestPath = destPath;
+                  newFileName = sourceNode.name;
+              } else {
+                  finalDestPath = destPath.slice(0, -1);
+                  newFileName = destPath[destPath.length - 1] || sourceNode.name;
+              }
+
+              const copiedNode = { ...JSON.parse(JSON.stringify(sourceNode)), id: `${sourceNode.id}-copy-${Date.now()}`, name: newFileName };
+
+              setNetwork(currentNetwork => currentNetwork.map(pc => {
+                  if (pc.id === 'player-pc') {
+                      const newFs = addNodeByPath(pc.fileSystem, finalDestPath, copiedNode);
+                      return { ...pc, fileSystem: newFs };
+                  }
+                  return pc;
+              }));
+
+              handleOutput(`'${sourceArg}' copié vers '${destArg}'`);
+          } else {
+              // Copy on the same machine
+              let destPath = resolvePath(destArg);
+              let destNode = findNodeByPath(destPath, fileSystem);
+
+              let finalDestPath: string[];
+              let newFileName: string;
+
+              if (destNode && destNode.type === 'folder') {
+                  finalDestPath = destPath;
+                  newFileName = sourceNode.name;
+              } else {
+                  finalDestPath = destPath.slice(0, -1);
+                  newFileName = destPath[destPath.length - 1] || sourceNode.name;
+              }
+
+              const copiedNode = { ...JSON.parse(JSON.stringify(sourceNode)), id: `${sourceNode.id}-copy-${Date.now()}`, name: newFileName };
+
+              setNetwork(currentNetwork => currentNetwork.map(pc => {
+                  if (pc.ip === connectedIp) {
+                      const newFs = addNodeByPath(pc.fileSystem, finalDestPath, copiedNode);
+                      return { ...pc, fileSystem: newFs };
+                  }
+                  return pc;
+              }));
+              
+              handleOutput(`'${sourceArg}' copié vers '${destArg}'`);
+          }
+          break;
+        }
         case 'mv': {
             if (!checkAuth()) break;
         
