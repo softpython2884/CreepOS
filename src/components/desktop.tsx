@@ -137,7 +137,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [emailNotification, setEmailNotification] = useState(false);
   const [isNeoInstalled, setIsNeoInstalled] = useState(false);
   
-
   const [emails, setEmails] = useState<Email[]>(() => {
     const savedState = loadGameState(username);
     if (savedState.emails && savedState.emails.length > 0) {
@@ -217,6 +216,29 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   }, [addLog, onSoundEvent]);
 
 
+  const triggerCall = useCallback((script: CallScript) => {
+    if (callState !== 'idle') {
+        callQueueRef.current.push(() => triggerCall(script));
+        return;
+    };
+
+    if (script.id === 'neo-intro-call') {
+        onMusicEvent('none');
+    }
+
+    callScriptRef.current = script;
+    currentNodeIdRef.current = script.startNode;
+    setActiveCall({
+      interlocutor: script.interlocutor,
+      isSecure: script.isSecure,
+      messages: [], 
+      choices: [],
+    });
+    setCallState('incoming');
+    onAlertEvent('ringtone');
+    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
+  }, [callState, onAlertEvent, addLog, onMusicEvent]);
+
   const endCall = useCallback((isManualClose: boolean = false) => {
       onAlertEvent('stopRingtone');
       
@@ -224,8 +246,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       const lastNodeId = currentNodeIdRef.current;
 
       if (isManualClose) {
-        onAlertEvent('stopAlarm'); // Stop any potential sound from the call
-        onSoundEvent('endCall');
+        onAlertEvent('stopAlarm'); 
+        onSoundEvent('startCall');
       }
       
       setCallState('idle');
@@ -258,29 +280,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       }
   }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail, triggerCall]);
 
-
-  const triggerCall = useCallback((script: CallScript) => {
-    if (callState !== 'idle') {
-        callQueueRef.current.push(() => triggerCall(script));
-        return;
-    };
-
-    if (script.id === 'neo-intro-call') {
-        onMusicEvent('none');
-    }
-
-    callScriptRef.current = script;
-    currentNodeIdRef.current = script.startNode;
-    setActiveCall({
-      interlocutor: script.interlocutor,
-      isSecure: script.isSecure,
-      messages: [], 
-      choices: [],
-    });
-    setCallState('incoming');
-    onAlertEvent('ringtone');
-    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
-  }, [callState, onAlertEvent, addLog, onMusicEvent]);
 
   const answerCall = useCallback(() => {
     const script = callScriptRef.current;
@@ -331,6 +330,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         text: chosenChoice.text
     };
 
+    if (chosenChoice.consequences?.triggerSound) {
+        onSoundEvent(chosenChoice.consequences.triggerSound);
+    }
+
     setActiveCall(prev => prev ? ({ ...prev, messages: [...prev.messages, playerMessage], choices: [] }) : null);
 
     if (chosenChoice.consequences?.danger) {
@@ -338,9 +341,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     }
     if (chosenChoice.consequences?.triggerEmail) {
         receiveEmail(chosenChoice.consequences.triggerEmail);
-    }
-    if (chosenChoice.consequences?.triggerSound) {
-        onSoundEvent(chosenChoice.consequences.triggerSound);
     }
     
     const nextNodeId = chosenChoice.nextNode;
@@ -350,8 +350,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       const isFinished = !nextNode?.choices || nextNode.choices.length === 0;
 
       if (!nextNode) {
-          setActiveCall(prev => prev ? ({ ...prev, isFinished: true, choices: [] }) : null);
           onSoundEvent('endCall');
+          setActiveCall(prev => prev ? ({ ...prev, isFinished: true, choices: [] }) : null);
           return;
       }
       
@@ -382,7 +382,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         onSoundEvent(nextNode.consequences.triggerSound);
       }
 
-    }, 1000);
+    }, chosenChoice.consequences?.triggerSound ? 1800 : 1000);
   }
 
   const handlePlayerChoice = (choiceId: string) => {
@@ -900,7 +900,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
       {callState === 'active' && activeCall && (
         <div className="absolute top-4 right-4 z-[9999]">
-            <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} onClose={() => { onAlertEvent('stopAlarm'); onSoundEvent('endCall'); endCall(true); }} />
+            <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} onClose={() => endCall(true)} />
         </div>
       )}
 

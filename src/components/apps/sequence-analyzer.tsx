@@ -195,29 +195,13 @@ export default function SequenceAnalyzer({ onAnalysisComplete, onClose }: { onAn
     
     return (
         <div className="w-full h-full bg-card font-code text-sm flex">
-            <div className="w-48 border-r bg-secondary/30 p-4 flex flex-col gap-4">
-                <h3 className="text-lg font-bold text-accent">Opérateurs</h3>
-                <TooltipProvider>
-                    <div className="flex flex-col gap-3">
-                        {tools.map(({ name, icon }) => (
-                            <Tooltip key={name}>
-                                <TooltipTrigger asChild>
-                                    <div 
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, name)}
-                                        onDragEnd={() => setSelectedTool(null)}
-                                        className={cn("p-3 border-2 border-dashed border-border rounded-lg flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing", selectedTool === name && "border-accent ring-2 ring-accent")}>
-                                        {icon}
-                                        <span>{name}</span>
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">
-                                    <p>Opérateur logique: {name}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        ))}
+            <div className="w-64 border-r bg-secondary/30 p-2 flex flex-col">
+                <h3 className="font-bold text-accent mb-2 p-2 flex-shrink-0">Console NÉO</h3>
+                <ScrollArea className="flex-grow bg-black/30 rounded-md">
+                    <div className="p-2">
+                        {neoMessages.map((msg, i) => <p key={i} className="animate-in fade-in">{msg}</p>)}
                     </div>
-                </TooltipProvider>
+                </ScrollArea>
             </div>
             <div className="flex-1 flex flex-col">
                 <div className="flex-1 relative">
@@ -234,29 +218,45 @@ export default function SequenceAnalyzer({ onAnalysisComplete, onClose }: { onAn
                         ))}
                     </svg>
                 </div>
-                <div className="h-36 border-t bg-secondary/30 flex">
-                    <div className="w-1/2 p-2 border-r flex flex-col">
-                        <h3 className="font-bold text-accent mb-2 flex-shrink-0">Console NÉO</h3>
-                        <ScrollArea className="flex-grow">
-                            <div className="pr-2">
-                                {neoMessages.map((msg, i) => <p key={i} className="animate-in fade-in">{msg}</p>)}
-                            </div>
-                        </ScrollArea>
-                    </div>
-                    <div className="w-1/2 p-4 flex flex-col justify-center items-center gap-4">
-                         <div className="w-full">
-                            <p className="text-center text-muted-foreground">Stabilité de la séquence</p>
-                            <div className="w-full bg-border rounded-full h-2.5 mt-1">
+                <div className="h-36 border-t bg-secondary/30 flex p-4 items-center gap-8">
+                    <div className="flex-1">
+                        <div className="w-full">
+                            <p className="text-center text-muted-foreground mb-2">Stabilité de la séquence</p>
+                            <div className="w-full bg-border rounded-full h-2.5">
                                 <div className="bg-green-600 h-2.5 rounded-full" style={{ width: `${(completedPaths.length / puzzle.starts.length) * 100}%` }}></div>
                             </div>
                         </div>
-                        <Button onClick={analyzePath} disabled={!activeColor}>
+                        <Button onClick={analyzePath} disabled={!activeColor} className="w-full mt-4">
                             <Cpu className="mr-2" /> Analyser le chemin
                         </Button>
+                    </div>
+
+                    <div className="w-48">
+                        <h3 className="text-lg font-bold text-accent text-center mb-2">Opérateurs</h3>
+                        <TooltipProvider>
+                            <div className="grid grid-cols-3 gap-2">
+                                {tools.map(({ name, icon }) => (
+                                    <Tooltip key={name}>
+                                        <TooltipTrigger asChild>
+                                            <div 
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e, name)}
+                                                onDragEnd={() => setSelectedTool(null)}
+                                                className={cn("p-2 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-1 cursor-grab active:cursor-grabbing", selectedTool === name && "border-accent ring-2 ring-accent")}>
+                                                {icon}
+                                                <span className="text-xs">{name}</span>
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            <p>Opérateur logique: {name}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                ))}
+                            </div>
+                        </TooltipProvider>
                     </div>
                 </div>
             </div>
         </div>
     );
 }
-
