@@ -203,6 +203,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   }, []);
 
   const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => {
+    onSoundEvent('email');
     const newEmail: Email = {
       id: `email-${Date.now()}`,
       recipient: 'Dr.Omen@recherche-lab.net',
@@ -211,7 +212,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       ...emailDetails,
     };
 
-    onSoundEvent('email');
     setEmails(prev => [...prev, newEmail]);
     setEmailNotification(true);
     addLog(`EMAIL: Email reçu de ${emailDetails.sender} avec le sujet "${emailDetails.subject}"`);
@@ -242,10 +242,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const endCall = useCallback((isManualClose: boolean = false) => {
     onAlertEvent('stopRingtone');
+    onAlertEvent('stopAlarm');
     
     if (isManualClose) {
         onSoundEvent('startCall');
-        onAlertEvent('stopAlarm');
     }
     
     if (activeCall && !activeCall.isFinished) {
@@ -676,7 +676,6 @@ Opérateur: Dr. Omen
       folder: 'sent',
     };
 
-    onSoundEvent('email');
     setEmails(prev => [...prev, newEmail]);
     addLog(`EMAIL: Email envoyé à ${email.recipient} avec le sujet "${email.subject}"`);
 
@@ -691,6 +690,27 @@ Opérateur: Dr. Omen
             receiveEmail(autoReply);
             setTimeout(() => triggerCall(alexIntroCall), 10000);
         }, 1500);
+    }
+    if (email.recipient === 'recruit@blackwire.net' && email.body.includes('CODE_OMEGA_7')) {
+        const dropzonePC = network.find(pc => pc.id === 'blackwire-dropzone');
+        const uploadFolder = dropzonePC?.fileSystem.find(f => f.name === 'upload');
+        const fileExists = uploadFolder?.children?.some(f => f.name === 'mission_data.zip');
+
+        if (fileExists) {
+            const successEmail = {
+                sender: 'recruit@blackwire.net',
+                subject: 'Re: Preuve de compétence',
+                body: "Bien joué. Le fichier est là où il doit être. Le code est correct.\n\nConsidérez ceci comme votre admission. Vous êtes une Recrue de Blackwire maintenant. Ne nous décevez pas.\n\n- Blackwire"
+            };
+            setTimeout(() => receiveEmail(successEmail), 2000);
+        } else {
+             const failureEmail = {
+                sender: 'recruit@blackwire.net',
+                subject: 'Re: Preuve de compétence',
+                body: "Le code est bon, mais le paquet est manquant. On ne travaille pas avec des amateurs qui font le travail à moitié. Réessayez."
+            };
+            setTimeout(() => receiveEmail(failureEmail), 2000);
+        }
     }
   };
 
@@ -995,6 +1015,7 @@ Opérateur: Dr. Omen
       
 
     
+
 
 
 

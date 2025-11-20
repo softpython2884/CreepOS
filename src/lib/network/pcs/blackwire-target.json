@@ -1,0 +1,60 @@
+{
+    "id": "blackwire-target",
+    "name": "Target-Alpha",
+    "ip": "18.222.13.116",
+    "type": "Server",
+    "links": ["alex-toolbox"],
+    "auth": { "user": "admin", "pass": "alpha_pass" },
+    "firewall": { "enabled": true, "complexity": 1, "solution": "S3CUR1TY_BYP4SS" },
+    "proxy": { "enabled": false, "level": 0 },
+    "traceTime": 45,
+    "requiredPorts": 0,
+    "ports": [],
+    "traceability": 20,
+    "fileSystem": [
+        {
+            "id": "bw-target-docs",
+            "name": "documents",
+            "type": "folder",
+            "children": [
+                { 
+                    "id": "bw-target-zip", 
+                    "name": "mission_data.zip", 
+                    "type": "file", 
+                    "isLocked": true,
+                    "password": "CODE_OMEGA_7",
+                    "content": "Contenu du fichier ZIP : Informations sensibles sur le projet NÉO."
+                }
+            ]
+        },
+        {
+            "id": "bw-target-notes",
+            "name": "notes",
+            "type": "folder",
+            "children": [
+                {
+                    "id": "bw-target-hint",
+                    "name": "password_hint.txt",
+                    "type": "file",
+                    "content": "J'oublie toujours le mot de passe de l'archive... C'est quelque chose comme 'CODE_OMEGA_7'."
+                }
+            ]
+        },
+        {
+            "id": "bw-target-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "bw-target-access", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
+            ]
+        },
+        {
+            "id": "bw-target-sys",
+            "name": "sys",
+            "type": "folder",
+            "children": [
+                { "id": "file-xserver-bwt", "name": "XserverOS.sys", "type": "file", "content": "SYSTEM KERNEL", "isSystemFile": true }
+            ]
+        }
+    ]
+}

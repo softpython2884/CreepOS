@@ -1,0 +1,30 @@
+{
+    "id": "blackwire-dropzone",
+    "name": "BW-Dropzone",
+    "ip": "18.117.228.214",
+    "type": "Server",
+    "links": [],
+    "auth": { "user": "anonymous", "pass": "" },
+    "firewall": { "enabled": false, "complexity": 0 },
+    "proxy": { "enabled": false, "level": 0 },
+    "traceTime": 0,
+    "requiredPorts": 0,
+    "ports": [],
+    "traceability": 5,
+    "fileSystem": [
+        {
+            "id": "bw-drop-upload",
+            "name": "upload",
+            "type": "folder",
+            "children": []
+        },
+        {
+            "id": "bw-drop-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "bw-drop-access", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
+            ]
+        }
+    ]
+}

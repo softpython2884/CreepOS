@@ -1,5 +1,5 @@
 import type { CallScript } from '../types';
-import { cousinMission1Email } from './cousin-mission-1';
+import { blackwireMission1Email } from './blackwire-mission-1';
 
 export const alexIntroCall: CallScript = {
   id: 'alex-intro-call',
@@ -145,10 +145,10 @@ export const alexIntroCall: CallScript = {
     'final-mission': {
         message: {
             speaker: 'Alex',
-            text: "Dernière chose… Je t’ai mis une mission dans ton mail. Les gars d’un certain collectif 'Cousin' de Corporate Proxy veulent te tester. Fais ce qu'ils disent. En échange, ils t'aideront peut-être. Ton histoire de centre américain… j’aime pas ça.",
+            text: "Dernière chose… Je t’ai mis une mission dans ton mail. Les gars du collectif 'Blackwire' veulent te tester. Fais ce qu'ils disent. En échange, ils t'aideront peut-être. Ton histoire de centre américain… j’aime pas ça.",
         },
         consequences: {
-            triggerEmail: cousinMission1Email,
+            triggerEmail: blackwireMission1Email,
         },
         choices: [
             {
