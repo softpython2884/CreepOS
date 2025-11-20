@@ -307,9 +307,9 @@ export default function Terminal({
       onStopTrace();
 
       const logFile = findNodeByPath(['logs', 'access.log'], currentPc.fileSystem);
-      const hasLogs = logFile && logFile.content && (logFile.content.includes('successful') || logFile.content.includes('disabled') || logFile.content.includes('opened'));
-
-      if (hasLogs && currentPc.traceability) {
+      const hasTraces = logFile && logFile.content && logFile.content.includes(PLAYER_PUBLIC_IP);
+      
+      if (hasTraces && currentPc.traceability) {
         handleIncreaseDanger(currentPc.traceability);
         addLog(`DANGER: Traces laissées sur ${currentPc.ip}. Niveau de danger augmenté de ${currentPc.traceability}%.`);
       }
@@ -709,6 +709,7 @@ export default function Terminal({
                 '  rm <file>      - Supprime un fichier ou vide son contenu (auth requise)',
                 '  rm *           - Supprime tous les fichiers du répertoire actuel (auth requise)',
                 '  cp <src> <dest> - Copie un fichier ou un dossier (auth requise)',
+                '  scp <src> <dest> - Copie un fichier du local vers le distant (auth requise)',
                 '  mv <src> <dest> - Déplace ou renomme un fichier (auth requise)',
                 '  reboot         - Redémarre le système actuel',
                 '  save           - Sauvegarde l\'état actuel du jeu (local uniquement)',
@@ -964,60 +965,60 @@ export default function Terminal({
 
             break;
         }
-        case 'cp':
-        case 'mv': {
+        case 'scp': {
             if (!checkAuth()) break;
         
             const [sourceArg, destArg] = args;
             if (!sourceArg || !destArg) {
-                handleOutput(`${command}: opérande manquant`);
+                handleOutput(`scp: opérande manquant`);
                 break;
             }
         
-            // --- Parse Paths ---
-            let sourcePC = getCurrentPc();
-            let destPC = sourcePC;
+            if (!sourceArg.startsWith('local:')) {
+                handleOutput(`scp: la source doit être locale (ex: local:/path/to/file)`);
+                break;
+            }
+        
+            if (connectedIp === '127.0.0.1') {
+                handleOutput(`scp: ne peut pas copier sur la machine locale elle-même`);
+                break;
+            }
+        
+            const localPathArg = sourceArg.substring(6);
             const playerPC = network.find(p => p.id === 'player-pc');
-        
-            let sourcePathArg = sourceArg;
-            let destPathArg = destArg;
-        
-            if (destArg.startsWith('local:')) {
-                destPC = playerPC;
-                destPathArg = destArg.substring(6);
-            }
-        
-            if (!sourcePC || !destPC) {
-                handleOutput(`${command}: erreur système: machine introuvable.`);
+            if (!playerPC) {
+                handleOutput(`scp: erreur critique: impossible de trouver la machine locale`);
                 break;
             }
-        
-            const sourceFS = personalizeFileSystem(sourcePC.fileSystem, sourcePC.auth.user);
-            let destFS = personalizeFileSystem(destPC.fileSystem, destPC.auth.user);
+            const localFS = personalizeFileSystem(playerPC.fileSystem, username);
         
             // --- Handle wildcard (*) ---
-            if (sourceArg.endsWith('*')) {
-                const sourceDirArg = sourceArg.slice(0, -1);
+            if (localPathArg.endsWith('*')) {
+                const sourceDirArg = localPathArg.slice(0, -1);
                 const sourcePath = resolvePath(sourceDirArg);
-                const sourceDirNode = findNodeByPath(sourcePath, sourceFS);
+                const sourceDirNode = findNodeByPath(sourcePath, localFS);
         
                 if (!sourceDirNode || sourceDirNode.type !== 'folder' || !sourceDirNode.children) {
-                    handleOutput(`${command}: impossible d'accéder à '${sourceArg}': Pas un répertoire valide`);
+                    handleOutput(`scp: impossible d'accéder à '${sourceArg}': Pas un répertoire valide`);
                     break;
                 }
         
-                const destPath = resolvePath(destPathArg);
-                const destDirNode = findNodeByPath(destPath, destFS);
+                const destPath = resolvePath(destArg);
+                const destDirNode = findNodeByPath(destPath, fileSystem);
         
                 if (!destDirNode || destDirNode.type !== 'folder') {
-                    handleOutput(`${command}: la destination '${destArg}' n'est pas un répertoire`);
+                    handleOutput(`scp: la destination '${destArg}' n'est pas un répertoire`);
                     break;
                 }
         
                 const filesToCopy = sourceDirNode.children.filter(f => f.type === 'file');
+                if (filesToCopy.length === 0) {
+                    handleOutput(`scp: aucun fichier à copier dans '${sourceArg}'`);
+                    break;
+                }
         
                 setNetwork(currentNetwork => currentNetwork.map(pc => {
-                    if (pc.id === destPC!.id) {
+                    if (pc.ip === connectedIp) {
                         let newFs = pc.fileSystem;
                         filesToCopy.forEach(file => {
                             const copiedNode = { ...JSON.parse(JSON.stringify(file)), id: `${file.id}-copy-${Date.now()}` };
@@ -1029,12 +1030,84 @@ export default function Terminal({
                 }));
         
                 handleOutput(`${filesToCopy.length} fichiers copiés vers ${destArg}`);
-                addLog(`EVENT: ${filesToCopy.length} fichiers copiés de ${sourcePC.ip}:${sourceDirArg} vers ${destPC.ip}:${destPathArg}`);
+                addRemoteLog(`EVENT: ${filesToCopy.length} fichiers reçus de ${PLAYER_PUBLIC_IP} dans ${destArg}`);
                 break;
             }
         
             // --- Handle single file ---
-            const sourcePath = resolvePath(sourcePathArg);
+            const sourcePath = resolvePath(localPathArg);
+            const sourceNode = findNodeByPath(sourcePath, localFS);
+        
+            if (!sourceNode) {
+                handleOutput(`scp: impossible d'accéder à '${sourceArg}': Aucun fichier ou dossier de ce type`);
+                break;
+            }
+            if (sourceNode.type === 'folder') {
+                handleOutput(`scp: impossible de copier des répertoires pour l'instant.`);
+                break;
+            }
+        
+            let destPath = resolvePath(destArg);
+            let destNode = findNodeByPath(destPath, fileSystem);
+        
+            let finalDestPath: string[];
+            let newFileName: string;
+        
+            if (destNode && destNode.type === 'folder') {
+                finalDestPath = destPath;
+                newFileName = sourceNode.name;
+            } else {
+                finalDestPath = destPath.slice(0, -1);
+                newFileName = destPath[destPath.length - 1] || sourceNode.name;
+            }
+        
+            const copiedNode = { ...JSON.parse(JSON.stringify(sourceNode)), id: `${sourceNode.id}-copy-${Date.now()}`, name: newFileName };
+        
+            setNetwork(currentNetwork => currentNetwork.map(pc => {
+                if (pc.ip === connectedIp) {
+                    const newFs = addNodeByPath(pc.fileSystem, finalDestPath, copiedNode);
+                    return { ...pc, fileSystem: newFs };
+                }
+                return pc;
+            }));
+            
+            handleOutput(`'${sourceArg}' copié vers '${destArg}'`);
+            addRemoteLog(`EVENT: Fichier ${newFileName} reçu de ${PLAYER_PUBLIC_IP} dans ${finalDestPath.join('/') || '/'}`);
+            break;
+        }
+        case 'cp':
+        case 'mv': {
+            if (!checkAuth()) break;
+        
+            const [sourceArg, destArg] = args;
+            if (!sourceArg || !destArg) {
+                handleOutput(`${command}: opérande manquant`);
+                break;
+            }
+        
+            const sourcePC = getCurrentPc();
+            if (!sourcePC) {
+                handleOutput(`${command}: erreur système: machine introuvable.`);
+                break;
+            }
+        
+            let destPC = sourcePC;
+            let destPathArg = destArg;
+            const playerPC = network.find(p => p.id === 'player-pc');
+        
+            if (destArg.startsWith('local:')) {
+                if (!playerPC) {
+                     handleOutput(`${command}: erreur critique: impossible de trouver la machine locale`);
+                     break;
+                }
+                destPC = playerPC;
+                destPathArg = destArg.substring(6);
+            }
+        
+            const sourceFS = personalizeFileSystem(sourcePC.fileSystem, sourcePC.auth.user);
+            const destFS = (destPC.id === sourcePC.id) ? sourceFS : personalizeFileSystem(destPC.fileSystem, destPC.auth.user);
+        
+            const sourcePath = resolvePath(sourceArg);
             const sourceNode = findNodeByPath(sourcePath, sourceFS);
         
             if (!sourceNode) {
@@ -1042,7 +1115,7 @@ export default function Terminal({
                 break;
             }
             if (sourceNode.type === 'folder') {
-                handleOutput(`${command}: impossible de copier des répertoires pour l'instant.`);
+                handleOutput(`${command}: impossible de copier/déplacer des répertoires pour l'instant.`);
                 break;
             }
         
@@ -1057,7 +1130,7 @@ export default function Terminal({
                 newFileName = sourceNode.name;
             } else {
                 finalDestPath = destPath.slice(0, -1);
-                newFileName = destPath[destPath.length - 1];
+                newFileName = destPath[destPath.length - 1] || sourceNode.name;
             }
         
             const copiedNode = { ...JSON.parse(JSON.stringify(sourceNode)), id: `${sourceNode.id}-copy-${Date.now()}`, name: newFileName };
@@ -1247,7 +1320,7 @@ export default function Terminal({
     // Command completion
     if (parts.length === 1) {
         const executables = allExecutables.map(f => f.name.split('.')[0].toLowerCase());
-        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'rm', 'mv', 'cp', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan', 'nano', 'neo', 'call'];
+        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'rm', 'mv', 'cp', 'scp', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan', 'nano', 'neo', 'call'];
         const allCommands = [...new Set([...mainCommands, ...executables])];
         const possibilities = allCommands.filter(cmd => cmd.startsWith(lastPart));
 
