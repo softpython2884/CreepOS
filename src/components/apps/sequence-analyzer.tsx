@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
@@ -133,7 +134,7 @@ export default function SequenceAnalyzer({ onAnalysisComplete, onClose }: { onAn
                     }));
 
                     if (newCompletedPaths.length === puzzle.starts.length) {
-                        setNeoMessages(prev => [...prev, "NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Un rapport a été généré sur votre bureau."]);
+                        setNeoMessages(prev => [...prev, "NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Un rapport a été généré dans vos documents."]);
                         onAnalysisComplete();
                     }
                  }

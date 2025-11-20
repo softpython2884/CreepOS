@@ -210,18 +210,41 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       ...emailDetails,
     };
 
-    setEmails(prev => [...prev, newEmail]);
     onSoundEvent('email');
+    setEmails(prev => [...prev, newEmail]);
     setEmailNotification(true);
     addLog(`EMAIL: Email reçu de ${emailDetails.sender} avec le sujet "${emailDetails.subject}"`);
   }, [onSoundEvent, addLog]);
+
+  const triggerCall = useCallback((script: CallScript) => {
+    if (callState !== 'idle') {
+        callQueueRef.current.push(() => triggerCall(script));
+        return;
+    };
+
+    if (script.id === 'neo-intro-call') {
+        onMusicEvent('none');
+    }
+
+    callScriptRef.current = script;
+    currentNodeIdRef.current = script.startNode;
+    setActiveCall({
+      interlocutor: script.interlocutor,
+      isSecure: script.isSecure,
+      messages: [], 
+      choices: [],
+    });
+    setCallState('incoming');
+    onAlertEvent('ringtone');
+    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
+  }, [callState, onAlertEvent, addLog, onMusicEvent]);
 
   const endCall = useCallback((isManualClose: boolean = false) => {
     onAlertEvent('stopRingtone');
     
     if (isManualClose) {
         onSoundEvent('startCall');
-        onAlertEvent('stopAlert');
+        onAlertEvent('stopAlarm');
     }
     
     if (activeCall && !activeCall.isFinished) {
@@ -261,7 +284,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if(nextCall) {
         setTimeout(nextCall, 2000); 
     }
-  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail, activeCall]);
+  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail, activeCall, triggerCall]);
 
   const advanceCall = useCallback((choiceId: string) => {
     const script = callScriptRef.current;
@@ -338,30 +361,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       }
 
     }, chosenChoice.consequences?.triggerSound ? 1800 : 1000);
-  }, [activeCall, onSoundEvent, receiveEmail]);
-
-  const triggerCall = useCallback((script: CallScript) => {
-    if (callState !== 'idle') {
-        callQueueRef.current.push(() => triggerCall(script));
-        return;
-    };
-
-    if (script.id === 'neo-intro-call') {
-        onMusicEvent('none');
-    }
-
-    callScriptRef.current = script;
-    currentNodeIdRef.current = script.startNode;
-    setActiveCall({
-      interlocutor: script.interlocutor,
-      isSecure: script.isSecure,
-      messages: [], 
-      choices: [],
-    });
-    setCallState('incoming');
-    onAlertEvent('ringtone');
-    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
-  }, [callState, onAlertEvent, addLog, onMusicEvent]);
+  }, [activeCall, onSoundEvent, receiveEmail, triggerCall]);
 
   const answerCall = useCallback(() => {
     const script = callScriptRef.current;
@@ -390,9 +390,11 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     setCallState('idle');
     setActiveCall(null);
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
         triggerCall(script);
     }, 3000);
+    
+    return () => clearTimeout(timer);
   }, [onAlertEvent, triggerCall]);
 
   const handlePlayerChoice = (choiceId: string) => {
@@ -563,15 +565,48 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     onSoundEvent('click');
   }, [nextZIndex, onSoundEvent, openApps]);
 
+  const setPlayerFileSystem = (newFileSystem: FileSystemNode[] | ((fs: FileSystemNode[]) => FileSystemNode[])) => {
+    setNetwork(prevNetwork => {
+        const playerPcIndex = prevNetwork.findIndex(p => p.id === 'player-pc');
+        if (playerPcIndex === -1) return prevNetwork;
+
+        const playerPc = prevNetwork[playerPcIndex];
+        const updatedFileSystem = typeof newFileSystem === 'function' ? newFileSystem(playerPc.fileSystem) : newFileSystem;
+        const newPlayerPc = { ...playerPc, fileSystem: updatedFileSystem };
+
+        const newNetwork = [...prevNetwork];
+        newNetwork[playerPcIndex] = newPlayerPc;
+        return newNetwork;
+    });
+  };
+
   const handleSequenceAnalysisComplete = useCallback(() => {
     addLog(`EVENT: Analyse de séquence terminée. Rapport généré.`);
     
     setPlayerFileSystem(prevFs => {
         const newFile: FileSystemNode = {
             id: `file-${Date.now()}`,
-            name: 'rapport_sequences.txt',
+            name: 'rapport_sequences_delta7.txt',
             type: 'file',
-            content: `RAPPORT D'ANALYSE DE SÉQUENCE\nDate: ${new Date().toISOString()}\nOpérateur: Dr. Omen\n\nAnalyse des fragments de mémoire brute de data-sequences.bin terminée avec succès.\nStabilité de la séquence restaurée à 100%.\n\nNÉO a identifié et corrigé 3 corruptions de type Delta-7 en utilisant les fonctions logiques ROTATE, SPLIT, et FORWARD.\n\nConclusion: Le jeu de données est maintenant stable et prêt pour une analyse plus approfondie.\n\n- Rapport généré par NÉO -`,
+            content: `RAPPORT D'ANALYSE DE SÉQUENCE - DELTA7
+Date: ${new Date().toISOString()}
+Opérateur: Dr. Omen
+
+Analyse des fragments de mémoire brute de data-sequences.bin terminée avec succès.
+Stabilité de la séquence restaurée à 100%.
+
+NÉO a identifié et corrigé 3 corruptions de type Delta-7.
+
+Conclusion: Le jeu de données est maintenant stable et prêt pour une analyse plus approfondie.
+
+--------------------------------------------------
+PARTIE À TRANSMETTRE AU SUPERVISEUR:
+ID de rapport: ID-SEQ-DELTA7
+STATUT: TERMINÉ
+Opérateur: Dr. Omen
+--------------------------------------------------
+
+- Rapport généré par NÉO -`,
         };
 
         const documentsPath = ['documents'];
@@ -582,10 +617,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
             return docsFolder;
         });
     });
-
-    // Send supervisor email for next phase
-    receiveEmail(supervisorPhase1);
-  }, [addLog, receiveEmail]);
+  }, [addLog]);
 
   const handleSaveFile = (path: string[], newContent: string) => {
       addLog(`EVENT: Fichier sauvegardé à /${path.join('/')}`);
@@ -635,7 +667,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       onSoundEvent('click');
   };
 
-  let handleSendEmail = (email: Omit<Email, 'id' | 'timestamp' | 'folder'>) => {
+  const handleSendEmail = (email: Omit<Email, 'id' | 'timestamp' | 'folder'>) => {
     const newEmail: Email = {
       ...email,
       id: `email-${Date.now()}`,
@@ -647,7 +679,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     setEmails(prev => [...prev, newEmail]);
     addLog(`EMAIL: Email envoyé à ${email.recipient} avec le sujet "${email.subject}"`);
 
-    if(email.recipient === 'Superviseur@recherche-lab.net' && email.subject.includes('Rapport de Séquence')) {
+    // Story progression logic based on email
+    if(email.recipient === 'Superviseur@recherche-lab.net' && email.body.includes('ID-SEQ-DELTA7')) {
         const autoReply: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
             sender: 'MAILER-DAEMON@recherche-lab.net',
             subject: `Re: ${email.subject}`,
@@ -661,21 +694,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     const playerPc = network.find(p => p.id === 'player-pc');
     return playerPc ? playerPc.fileSystem : [];
   }, [network]);
-
-  const setPlayerFileSystem = (newFileSystem: FileSystemNode[] | ((fs: FileSystemNode[]) => FileSystemNode[])) => {
-    setNetwork(prevNetwork => {
-        const playerPcIndex = prevNetwork.findIndex(p => p.id === 'player-pc');
-        if (playerPcIndex === -1) return prevNetwork;
-
-        const playerPc = prevNetwork[playerPcIndex];
-        const updatedFileSystem = typeof newFileSystem === 'function' ? newFileSystem(playerPc.fileSystem) : newFileSystem;
-        const newPlayerPc = { ...playerPc, fileSystem: updatedFileSystem };
-
-        const newNetwork = [...prevNetwork];
-        newNetwork[playerPcIndex] = newPlayerPc;
-        return newNetwork;
-    });
-  };
 
   const handleOpenLink = (url: string) => {
     if (url === 'app://sequence-analyzer') {
@@ -973,5 +991,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       
 
     
+
 
 
