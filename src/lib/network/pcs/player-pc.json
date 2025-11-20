@@ -3,7 +3,7 @@
     "name": "Omen",
     "ip": "127.0.0.1",
     "type": "Desktop",
-    "auth": { "user": "Operator", "pass": "" },
+    "auth": { "user": "Operator", "pass": "LaBananeDeLaTech" },
     "links": ["holberton-gateway"],
     "firewall": { "enabled": false, "complexity": 0 },
     "proxy": { "enabled": false, "level": 0 },
