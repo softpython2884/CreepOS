@@ -68,7 +68,7 @@ type EditingFile = {
 type CallState = 'idle' | 'incoming' | 'active';
 
 interface DesktopProps {
-  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | null) => void;
+  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | 'meme' | null) => void;
   onMusicEvent: (event: MusicEvent) => void;
   onAlertEvent: (event: AlertEvent) => void;
   username: string;
@@ -305,7 +305,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     };
 
     if (chosenChoice.consequences?.triggerSound) {
-        onSoundEvent(chosenChoice.consequences.triggerSound);
+        onSoundEvent(chosenChoice.consequences.triggerSound as any);
     }
     if (chosenChoice.consequences?.triggerEmail) {
         receiveEmail(chosenChoice.consequences.triggerEmail);
@@ -359,7 +359,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       }
 
       if (nextNode.consequences?.triggerSound) {
-        onSoundEvent(nextNode.consequences.triggerSound);
+        onSoundEvent(nextNode.consequences.triggerSound as any);
       }
 
     }, chosenChoice.consequences?.triggerSound ? 1800 : 1000);
@@ -732,6 +732,25 @@ Opérateur: Dr. Omen
         openApp('web-browser', { initialUrl: url });
     }
   }
+
+    useEffect(() => {
+        const handleBrowserMessage = (event: MessageEvent) => {
+            if (event.data?.type === 'chattoutpete-crash') {
+                onSoundEvent('meme');
+                saveGameState(username, gameState);
+                // Delay BSOD to let sound play a bit
+                setTimeout(() => {
+                    onSoundEvent('bsod');
+                    setMachineState('bsod');
+                }, 1000);
+            }
+        };
+
+        window.addEventListener('message', handleBrowserMessage);
+        return () => {
+            window.removeEventListener('message', handleBrowserMessage);
+        };
+    }, [gameState, onSoundEvent, setMachineState, username]);
 
   const appConfig: AppConfig = {
     terminal: { 

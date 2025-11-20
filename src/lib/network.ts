@@ -8,6 +8,7 @@ import neoDevNode from './network/pcs/neo-dev-node.json';
 import alexToolbox from './network/pcs/alex-toolbox.json';
 import blackwireTarget from './network/pcs/blackwire-target.json';
 import blackwireDropzone from './network/pcs/blackwire-dropzone.json';
+import chattoutpeteServer from './network/pcs/chattoutpete-server.json';
 import { type PC } from './network/types';
 
 export const network: PC[] = [
@@ -20,5 +21,6 @@ export const network: PC[] = [
     neoDevNode,
     alexToolbox,
     blackwireTarget,
-    blackwireDropzone
+    blackwireDropzone,
+    chattoutpeteServer,
 ];
