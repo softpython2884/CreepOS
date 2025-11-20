@@ -1,3 +1,4 @@
+
 import type { CallScript } from '../types';
 import { neoIntroCall } from './neo-intro-call';
 
@@ -47,7 +48,7 @@ export const directorCall: CallScript = {
             triggerEmail: {
               sender: 'RH@recherche-lab.net',
               subject: 'Accueil & Contrat',
-              body: "Veuillez trouver ci-joint votre contrat d'affectation au projet NÉO.\n\n<a href='/welcome.html' target='_blank' style='color: hsl(var(--accent)); text-decoration: underline;'>Consulter le contrat</a>",
+              body: "Veuillez trouver ci-joint votre contrat d'affectation au projet NÉO.\n\n<a href='#' data-internal-link='/welcome.html' style='color: hsl(var(--accent)); text-decoration: underline;'>Consulter le contrat</a>",
             },
             endCallAndTrigger: neoIntroCall,
           },

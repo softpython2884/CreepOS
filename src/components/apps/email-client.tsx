@@ -49,11 +49,11 @@ export default function EmailClient({ emails, onSend, currentUser, onOpenLink }:
     if (currentView === 'read' && emailBodyRef.current) {
         const links = emailBodyRef.current.querySelectorAll('a');
         links.forEach(link => {
-            const originalHref = link.getAttribute('href');
-            if (originalHref) {
+            const internalLink = link.getAttribute('data-internal-link');
+            if (internalLink) {
               link.onclick = (e) => {
                   e.preventDefault();
-                  onOpenLink(originalHref);
+                  onOpenLink(internalLink);
               };
             }
         });
