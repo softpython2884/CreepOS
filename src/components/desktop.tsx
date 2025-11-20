@@ -65,7 +65,7 @@ type EditingFile = {
 type CallState = 'idle' | 'incoming' | 'active';
 
 interface DesktopProps {
-  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | null) => void;
+  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | null) => void;
   onMusicEvent: (event: MusicEvent) => void;
   onAlertEvent: (event: AlertEvent) => void;
   username: string;
@@ -134,6 +134,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [traceTimeLeft, setTraceTimeLeft] = useState(0);
   const [traceTarget, setTraceTarget] = useState({ name: '', time: 0 });
   const [emailNotification, setEmailNotification] = useState(false);
+  const [isNeoInstalled, setIsNeoInstalled] = useState(false);
   
 
   const [emails, setEmails] = useState<Email[]>(() => {
@@ -220,12 +221,13 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     onAlertEvent('stopScream');
     
     const lastScript = callScriptRef.current;
+    const lastNodeId = currentNodeIdRef.current;
 
     setCallState('idle');
     setActiveCall(null);
     callScriptRef.current = null;
     currentNodeIdRef.current = null;
-    onSoundEvent('close');
+    onSoundEvent('endCall');
     
     setTimeout(() => {
       if (!isTraced) {
@@ -233,8 +235,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       }
     }, 1000);
 
-    if (lastScript) {
-        const lastNode = lastScript.nodes[currentNodeIdRef.current || ''];
+    if (lastScript && lastNodeId) {
+        const lastNode = lastScript.nodes[lastNodeId];
         const trigger = lastNode?.consequences?.endCallAndTrigger;
         
         if (trigger) {
@@ -290,7 +292,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       choices: startNode.choices || [],
     }) : null);
     setCallState('active');
-    onSoundEvent('click');
+    onSoundEvent('startCall');
   }, [callState, onAlertEvent, onSoundEvent]);
 
   const declineCall = useCallback(() => {
@@ -402,17 +404,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const handleNeoExecute = useCallback((isInitialInstall: boolean) => {
     if (isInitialInstall) {
-        callQueueRef.current = [
-          () => triggerCall(directorCall)
-        ];
-        const firstCall = callQueueRef.current.shift();
-        if(firstCall) {
-            firstCall();
-        }
+        setIsNeoInstalled(true);
+        // This triggers the Director's call
+        triggerCall(directorCall);
     } else {
+        // This triggers the "Phase 1" dialogue with Néo
         triggerCall(neoPhase1Call);
     }
-  }, [triggerCall]);
+}, [triggerCall]);
 
 
   useEffect(() => {
