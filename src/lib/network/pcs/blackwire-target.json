@@ -1,3 +1,4 @@
+
 {
     "id": "blackwire-target",
     "name": "Target-Alpha",
@@ -5,7 +6,7 @@
     "type": "Server",
     "links": ["alex-toolbox"],
     "auth": { "user": "admin", "pass": "alpha_pass" },
-    "firewall": { "enabled": true, "complexity": 1, "solution": "S3CUR1TY_BYP4SS" },
+    "firewall": { "enabled": false, "complexity": 1, "solution": "S3CUR1TY_BYP4SS" },
     "proxy": { "enabled": false, "level": 0 },
     "traceTime": 45,
     "requiredPorts": 0,

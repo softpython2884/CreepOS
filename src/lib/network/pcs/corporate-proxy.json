@@ -12,7 +12,7 @@
         "pass": "proxySecurePa$$"
     },
     "firewall": {
-        "enabled": true,
+        "enabled": false,
         "complexity": 5,
         "solution": "PASSKEY_ALPHA"
     },
