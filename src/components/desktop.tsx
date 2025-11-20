@@ -577,7 +577,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const handleOpenLink = (url: string) => {
     if (url.startsWith('/')) {
         // It's a local file link
-        openApp('contract-viewer', { url: url });
+        const fileName = url.split('/').pop() || 'document';
+        openApp('contract-viewer', { initialUrl: url, fileName: fileName });
     } else {
         // It's a domain for the web browser
         openApp('web-browser', { initialUrl: url });

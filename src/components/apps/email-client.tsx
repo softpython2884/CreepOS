@@ -47,13 +47,19 @@ export default function EmailClient({ emails, onSend, currentUser, onOpenLink }:
 
   useEffect(() => {
     if (currentView === 'read' && emailBodyRef.current) {
-        const links = emailBodyRef.current.querySelectorAll('a');
+        const links = emailBodyRef.current.querySelectorAll('a[data-internal-link]');
         links.forEach(link => {
             const internalLink = link.getAttribute('data-internal-link');
             if (internalLink) {
-              link.onclick = (e) => {
+              const handleClick = (e: Event) => {
                   e.preventDefault();
                   onOpenLink(internalLink);
+              };
+              link.addEventListener('click', handleClick);
+              
+              // Cleanup function to remove the event listener
+              return () => {
+                link.removeEventListener('click', handleClick);
               };
             }
         });
