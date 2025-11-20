@@ -115,7 +115,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const [network, setNetwork] = useState<PC[]>(() => loadGameState(username).network);
   const [hackedPcs, setHackedPcs] = useState<Set<string>>(() => loadGameState(username).hackedPcs);
-  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => new Set(['player-pc']));
+  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => new Set(['player-pc', 'cheat-pc']));
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
   const [dangerLevel, setDangerLevel] = useState(0);
 
@@ -228,7 +228,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     
     const nextCall = callQueueRef.current.shift();
     if(nextCall) {
-        setTimeout(nextCall, 1000); 
+        setTimeout(nextCall, 2000); 
     }
   }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced]);
 
@@ -327,7 +327,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         onSoundEvent(nextNode.consequences.triggerSound);
       }
 
-      onSoundEvent('email');
     }, 1000);
   }
 

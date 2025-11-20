@@ -15,7 +15,7 @@ export const neoIntroCall: CallScript = {
       choices: [
         {
           id: 'who-is-this',
-          text: 'Qui est à l\'appareil ?',
+          text: "Qui est à l'appareil ?",
           nextNode: 'ask-question',
         },
       ],
@@ -28,7 +28,7 @@ export const neoIntroCall: CallScript = {
       consequences: {
         triggerSound: 'tension',
         endCallAndTrigger: directorCallback,
-      }
+      },
     },
   },
 };

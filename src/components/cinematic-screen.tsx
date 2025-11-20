@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 const lines = [
     { text: 'Productions Forge Network', duration: 3000, className: 'text-2xl' },
     { text: 'Créé par Enzo Prados', duration: 3000, className: 'text-2xl' },
-    { text: 'Powered by Google', duration: 2000, className: 'text-lg' },
+    { text: 'Powered why Firebase', duration: 2000, className: 'text-lg' },
     { text: 'Avec nos remerciements à Holberton School Fréjus, son personnel et ses étudiants.', duration: 5000, className: 'text-lg' },
     { text: '2025 — Centre de recherche NEXUS', duration: 4000, className: 'text-xl tracking-widest', typing: true },
     { text: 'Docteur Omen — Résidence temporaire, mission : Participant au projet NÉO', duration: 5000, className: 'text-xl tracking-widest', typing: true },
