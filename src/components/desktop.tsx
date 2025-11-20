@@ -922,7 +922,7 @@ Si vous voyez ce message, elle vous surveille déjà.
       }
     },
     'sequence-analyzer': {
-      title: 'Analyseur de Séquence',
+      title: 'Analyseur de Fragments',
       component: SequenceAnalyzer,
       width: 900,
       height: 650,

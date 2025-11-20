@@ -90,15 +90,16 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
 
     const size = 4; // Grid size
 
-    useMemo(() => {
+    const generateGrid = useCallback(() => {
         const newGrid: Hex[] = [];
         for (let q = -size; q <= size; q++) {
             for (let r = -size; r <= size; r++) {
                 const s = -q - r;
                 if (s >= -size && s <= size) {
-                    const start = puzzle.starts.find(p => p.q === q && p.r === r);
-                    const end = puzzle.ends.find(p => p.q === q && p.r === r);
-                    const block = puzzle.blocks.find(b => b.q === q && b.r === r);
+                    const currentPuzzle = puzzles[puzzleId] || puzzles['DELTA7'];
+                    const start = currentPuzzle.starts.find(p => p.q === q && p.r === r);
+                    const end = currentPuzzle.ends.find(p => p.q === q && p.r === r);
+                    const block = currentPuzzle.blocks.find(b => b.q === q && b.r === r);
                     newGrid.push({
                         q, r, s,
                         isStart: !!start,
@@ -111,17 +112,40 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
             }
         }
         setGrid(newGrid);
-    }, [puzzle]);
+        setCompletedPaths([]);
+        setCurrentPath([]);
+        setActiveColor(null);
+    }, [puzzleId]);
+
+    useMemo(() => {
+        generateGrid();
+    }, [generateGrid]);
+    
+    const checkWinCondition = useCallback(() => {
+        const allPathsComplete = puzzle.starts.every(start => completedPaths.includes(start.color));
+        const allBlocksCorrected = puzzle.blocks.every(block => grid.find(hex => hex.q === block.q && hex.r === block.r)?.isCorrectedBlock);
+        
+        if (puzzleId === 'MEMO_BIN' && allBlocksCorrected) {
+             setNeoMessages(prev => [...prev, "NÉO: Analyse des blocs terminée. Application de la correction finale..."]);
+            setTimeout(() => {
+                setNeoMessages(prev => [...prev, "NÉO: Correction automatique appliquée. Le fichier a été restauré."]);
+                onAnalysisComplete(puzzleId);
+            }, 1500);
+        } else if (allPathsComplete && allBlocksCorrected) {
+             setNeoMessages(prev => [...prev, "NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Un rapport a été généré dans vos documents."]);
+            onAnalysisComplete(puzzleId);
+        }
+    }, [puzzle.starts, puzzle.blocks, completedPaths, grid, puzzleId, onAnalysisComplete]);
 
     const handleHexClick = (hex: Hex) => {
-        // Start a new path
+        if(puzzleId === 'MEMO_BIN') return; // Click logic disabled for this puzzle
+
         if (hex.isStart && !completedPaths.includes(hex.color!) && !activeColor) {
             setActiveColor(hex.color!);
             setCurrentPath([hex]);
             return;
         }
 
-        // Continue the current path
         if (activeColor) {
             const lastHex = currentPath[currentPath.length - 1];
             const isAdjacent = Math.abs(lastHex.q - hex.q) + Math.abs(lastHex.r - hex.r) + Math.abs(lastHex.s - hex.s) === 2;
@@ -131,7 +155,6 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
                  const newPath = [...currentPath, hex];
                  setCurrentPath(newPath);
 
-                 // Check if path is complete
                  if (hex.isEnd && hex.color === activeColor) {
                     const newCompletedPaths = [...completedPaths, activeColor];
                     setCompletedPaths(newCompletedPaths);
@@ -141,11 +164,7 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
                         const pathNode = newPath.find(p => p.q === h.q && p.r === h.r);
                         return pathNode ? { ...h, isPath: true, pathColor: activeColor } : h;
                     }));
-
-                    if (newCompletedPaths.length === puzzle.starts.length) {
-                        setNeoMessages(prev => [...prev, "Analyse terminée. Stabilité de la mémoire à 100%. Un rapport a été généré dans vos documents."]);
-                        onAnalysisComplete(puzzleId);
-                    }
+                    checkWinCondition();
                  }
             }
         }
@@ -174,10 +193,31 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
         e.preventDefault();
         const tool = e.dataTransfer.getData("tool") as Tool;
         if (hex.isBlock && hex.solution === tool) {
-            setGrid(g => g.map(h => (h.q === hex.q && h.r === hex.r) ? { ...h, isCorrectedBlock: true, isBlock: false } : h));
+            const newGrid = grid.map(h => (h.q === hex.q && h.r === hex.r) ? { ...h, isCorrectedBlock: true, isBlock: false } : h);
+            setGrid(newGrid);
             setNeoMessages(prev => [...prev, `NÉO: Opérateur '${tool}' appliqué. Corruption corrigée.`]);
+            
+            // We need to use a callback with setGrid to get the latest state for checkWinCondition
+            setGrid(currentGrid => {
+                const updatedGrid = currentGrid.map(h => (h.q === hex.q && h.r === hex.r) ? { ...h, isCorrectedBlock: true, isBlock: false } : h);
+                const allBlocksCorrected = puzzle.blocks.every(block => updatedGrid.find(h => h.q === block.q && h.r === block.r)?.isCorrectedBlock);
+                
+                if (puzzleId === 'MEMO_BIN' && allBlocksCorrected) {
+                    setNeoMessages(prev => [...prev, "NÉO: Analyse des blocs terminée. Application de la correction finale..."]);
+                    setTimeout(() => {
+                        setNeoMessages(prev => [...prev, "NÉO: Correction automatique appliquée. Le fichier a été restauré."]);
+                        onAnalysisComplete(puzzleId);
+                    }, 1500);
+                }
+                return updatedGrid;
+            });
+
         } else if (hex.isBlock) {
-             setNeoMessages(prev => [...prev, `NÉO: Erreur. L'opérateur '${tool}' est incorrect pour ce nœud.`]);
+             setNeoMessages(prev => [...prev, `NÉO: erreur détectée – restauration...`]);
+             setTimeout(() => {
+                generateGrid();
+                setNeoMessages([]);
+             }, 1000);
         }
         setSelectedTool(null);
     };
@@ -236,7 +276,7 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
                                 <div className="bg-green-600 h-2.5 rounded-full" style={{ width: `${(completedPaths.length / puzzle.starts.length) * 100}%` }}></div>
                             </div>
                         </div>
-                        <Button onClick={analyzePath} disabled={!activeColor} className="w-full mt-4">
+                        <Button onClick={analyzePath} disabled={!activeColor || puzzleId === 'MEMO_BIN'} className="w-full mt-4">
                             <Cpu className="mr-2" /> Analyser le chemin
                         </Button>
                     </div>
