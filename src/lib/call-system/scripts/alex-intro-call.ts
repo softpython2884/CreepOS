@@ -139,6 +139,9 @@ export const alexIntroCall: CallScript = {
                 id: 'thanks',
                 text: 'Utile. Merci.',
                 nextNode: 'final-mission',
+                consequences: {
+                    triggerEmail: blackwireMission1Email,
+                },
             }
         ]
     },
@@ -146,9 +149,6 @@ export const alexIntroCall: CallScript = {
         message: {
             speaker: 'Alex',
             text: "Dernière chose… Je t’ai mis une mission dans ton mail. Les gars du collectif 'Blackwire' veulent te tester. Fais ce qu'ils disent. En échange, ils t'aideront peut-être. Ton histoire de centre américain… j’aime pas ça.",
-        },
-        consequences: {
-            triggerEmail: blackwireMission1Email,
         },
         choices: [
             {
