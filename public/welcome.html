@@ -1,71 +1,147 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contrat d'Affectation - Projet NÉO</title>
     <style>
         body {
-            background-color: #0d0d1a;
-            color: #c0c0c0;
-            font-family: 'Courier New', Courier, monospace;
+            background-color: #e2e8f0; /* gray-200 */
+            color: #1a202c; /* gray-800 */
+            font-family: 'Times New Roman', Times, serif;
             line-height: 1.6;
             margin: 0;
             padding: 2rem;
         }
+        .dark body {
+            background-color: #2d3748; /* gray-800 */
+            color: #e2e8f0; /* gray-200 */
+        }
         .container {
             max-width: 800px;
-            margin: auto;
-            border: 1px solid #334;
+            margin: 0 auto;
             padding: 2rem;
-            background-color: #1a1a2e;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e0;
+        }
+        .dark .container {
+            background-color: #1a202c; /* gray-900 */
+            border-color: #4a5568; /* gray-600 */
         }
         h1, h2 {
-            color: #50fa7b;
-            border-bottom: 1px solid #334;
+            text-align: center;
+            border-bottom: 2px solid #a0aec0;
             padding-bottom: 0.5rem;
+            color: #2d3748;
         }
-        strong {
-            color: #ff79c6;
+        .dark h1, .dark h2 {
+            border-color: #718096;
+            color: #e2e8f0;
         }
-        .signature {
-            margin-top: 4rem;
-            border-top: 1px solid #334;
-            padding-top: 1rem;
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
         }
         .logo {
-            font-size: 1.5rem;
             font-weight: bold;
-            color: #8be9fd;
-            text-align: right;
+            font-size: 1.5rem;
+        }
+        .section {
+            margin-bottom: 1.5rem;
+        }
+        .signature-area {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px dashed #a0aec0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .dark .signature-area {
+            border-top-color: #718096;
+        }
+        .signature-box {
+            width: 45%;
+        }
+        .signature-line {
+            border-bottom: 1px solid #2d3748;
+            margin-top: 3rem;
+        }
+        .dark .signature-line {
+            border-bottom-color: #e2e8f0;
+        }
+        .footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #718096;
+        }
+        .dark .footer {
+            color: #a0aec0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">NEXUS RESEARCH CENTER</div>
-        <h1>CONTRAT D'AFFECTATION TEMPORAIRE</h1>
-        <p><strong>Employé :</strong> Dr. Omen</p>
-        <p><strong>Poste :</strong> Opérateur de Recherche Senior</p>
-        <p><strong>Projet :</strong> NÉO</p>
-        <p><strong>Durée :</strong> Trois (3) mois</p>
+        <div class="header">
+            <div class="logo">CENTRE DE RECHERCHE NEXUS</div>
+            <div>DOCUMENT INTERNE - NIVEAU DE CONFIDENTIALITÉ : ÉLEVÉ</div>
+        </div>
 
-        <h2>Article 1: Mission</h2>
-        <p>Le Dr. Omen est assigné à l'étude, l'interaction et l'amélioration de l'intelligence artificielle expérimentale "NÉO". L'objectif est de quantifier ses capacités d'apprentissage et de raisonnement autonome.</p>
+        <h1>Contrat d'Affectation Temporaire</h1>
+        <h2>Projet NÉO</h2>
 
-        <h2>Article 2: Confidentialité</h2>
-        <p>Toutes les données, interactions et observations relatives au projet NÉO sont classées <strong>SECRET DÉFENSE</strong>. Toute divulgation, même partielle, entraînera des poursuites judiciaires maximales en vertu des lois sur la sécurité nationale.</p>
+        <div class="section">
+            <p><strong>Employé :</strong> Dr. Omen</p>
+            <p><strong>Poste :</strong> Consultant Spécialisé en Systèmes IA</p>
+            <p><strong>Durée de l'affectation :</strong> Trois (3) mois, à compter de la date de signature.</p>
+        </div>
 
-        <h2>Article 3: Clause de Non-Divulgation Post-Contrat</h2>
-        <p>Le Dr. Omen s'engage à une période de silence absolu de vingt (20) ans concernant le projet NÉO après la fin de ce contrat. Cette clause est non négociable.</p>
+        <div class="section">
+            <h2>Article 1 : Mission</h2>
+            <p>Le consultant est affecté à l'étude, au diagnostic et à l'amélioration de l'intelligence artificielle expérimentale "NÉO". Le consultant devra interagir avec le système, documenter ses observations et mettre en œuvre les protocoles fournis par la direction du projet.</p>
+        </div>
 
-        <h2>Article 4: Surveillance</h2>
-        <p>Toutes les activités de l'Opérateur (communications, accès système, activité biométrique) sont sujettes à une surveillance constante et automatisée. En acceptant ce contrat, le Dr. Omen consent à cette surveillance sans restriction.</p>
+        <div class="section">
+            <h2>Article 2 : Confidentialité</h2>
+            <p>Le consultant s'engage à une confidentialité absolue concernant la nature du projet NÉO, ses objectifs, et toute information obtenue durant son affectation. Toute divulgation non autorisée entraînera la résiliation immédiate du contrat et des poursuites judiciaires conformes à la législation sur la sécurité nationale.</p>
+        </div>
 
-        <div class="signature">
-            <p>Fait à Nexus Research Center,</p>
-            <p>Signature numérique validée.</p>
+        <div class="section">
+            <h2>Article 3 : Conditions de travail</h2>
+            <p>Le consultant sera logé dans une résidence fournie par le Centre Nexus pour la durée de la mission. Une surveillance automatisée des systèmes et des communications est en place pour des raisons de sécurité. Le consultant accepte ces conditions en signant ce contrat.</p>
+        </div>
+        
+        <div class="section">
+            <h2>Article 4 : Risques et Responsabilités</h2>
+            <p>Le projet NÉO est de nature expérimentale. Le consultant reconnaît être informé des risques potentiels liés à l'interaction avec une IA non stabilisée, incluant mais ne se limitant pas à : la corruption de données, l'instabilité du système d'exploitation et des anomalies cognitives. Le Centre Nexus décline toute responsabilité en cas d'incident résultant d'une violation des protocoles par le consultant.</p>
+        </div>
+
+        <div class="signature-area">
+            <div class="signature-box">
+                <p>Signature du consultant :</p>
+                <div class="signature-line"></div>
+                <p>Dr. Omen</p>
+            </div>
+            <div class="signature-box">
+                <p>Pour le Centre Nexus :</p>
+                <div class="signature-line"></div>
+                <p>Le Directeur</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Doc ID: NEX-NEO-CTR-001</p>
         </div>
     </div>
+    <script>
+        // Check for dark mode in parent window if available
+        try {
+            if (window.parent.document.documentElement.classList.contains('dark')) {
+                document.body.classList.add('dark');
+            }
+        } catch (e) {
+            // Could fail due to cross-origin policies if not served correctly
+        }
+    </script>
 </body>
 </html>

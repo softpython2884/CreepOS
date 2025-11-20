@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Inbox, Send, Edit, CornerUpLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -24,14 +24,16 @@ interface EmailClientProps {
   emails: Email[];
   onSend: (email: Omit<Email, 'id' | 'timestamp' | 'folder'>) => void;
   currentUser: string;
+  onOpenLink: (url: string) => void;
 }
 
 type View = 'list' | 'read' | 'compose';
 
-export default function EmailClient({ emails, onSend, currentUser }: EmailClientProps) {
+export default function EmailClient({ emails, onSend, currentUser, onOpenLink }: EmailClientProps) {
   const [currentView, setCurrentView] = useState<View>('list');
   const [currentFolder, setCurrentFolder] = useState<'inbox' | 'sent'>('inbox');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
+  const emailBodyRef = useRef<HTMLDivElement>(null);
 
   const filteredEmails = useMemo(() => {
     return emails
@@ -42,6 +44,22 @@ export default function EmailClient({ emails, onSend, currentUser }: EmailClient
   const selectedEmail = useMemo(() => {
     return emails.find(email => email.id === selectedEmailId) || null;
   }, [emails, selectedEmailId]);
+
+  useEffect(() => {
+    if (currentView === 'read' && emailBodyRef.current) {
+        const links = emailBodyRef.current.querySelectorAll('a');
+        links.forEach(link => {
+            const originalHref = link.getAttribute('href');
+            if (originalHref) {
+              link.onclick = (e) => {
+                  e.preventDefault();
+                  onOpenLink(originalHref);
+              };
+            }
+        });
+    }
+  }, [currentView, selectedEmail, onOpenLink]);
+
 
   const handleSelectEmail = (emailId: string) => {
     setSelectedEmailId(emailId);
@@ -122,7 +140,11 @@ export default function EmailClient({ emails, onSend, currentUser }: EmailClient
               </div>
               <p className="text-xs text-muted-foreground">{formatTimestamp(selectedEmail.timestamp)}</p>
             </div>
-            <p className="whitespace-pre-wrap text-sm">{selectedEmail.body}</p>
+            <div 
+              ref={emailBodyRef}
+              className="whitespace-pre-wrap text-sm" 
+              dangerouslySetInnerHTML={{ __html: selectedEmail.body }}
+            />
           </div>
         </ScrollArea>
       )}

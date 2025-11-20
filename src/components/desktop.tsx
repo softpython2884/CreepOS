@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useCallback, createRef, useEffect } from 'react';
@@ -29,7 +30,7 @@ import { neoIntroCall } from '@/lib/call-system/scripts/neo-intro-call';
 import { directorCallback } from '@/lib/call-system/scripts/director-callback';
 
 
-export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player';
+export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player' | 'contract-viewer';
 
 type AppConfig = {
   [key in AppId]: {
@@ -573,6 +574,16 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     });
   };
 
+  const handleOpenLink = (url: string) => {
+    if (url.startsWith('/')) {
+        // It's a local file link
+        openApp('contract-viewer', { url: url });
+    } else {
+        // It's a domain for the web browser
+        openApp('web-browser', { initialUrl: url });
+    }
+  }
+
   const appConfig: AppConfig = {
     terminal: { 
         title: 'Terminal', 
@@ -649,6 +660,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         emails: emails,
         onSend: handleSendEmail,
         currentUser: 'Dr.Omen@recherche-lab.net',
+        onOpenLink: handleOpenLink,
       },
       isSingular: true,
     },
@@ -661,6 +673,16 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         network: network,
       },
       isSingular: true,
+    },
+     'contract-viewer': {
+      title: 'Visionneur de Contrat',
+      component: WebBrowser,
+      width: 800,
+      height: 600,
+      props: {
+        network: network, // Pass network for consistency, even if not used directly
+      },
+      isSingular: false, // Can open multiple contracts
     },
     'media-player': {
       title: 'Lecteur Média',
@@ -789,7 +811,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
               >
                 <div ref={app.nodeRef} style={{ zIndex: app.zIndex, position: 'absolute' }}>
                     <Window 
-                      title={app.appId === 'media-player' ? app.props?.fileName || 'Lecteur Média' : currentAppConfig.title} 
+                      title={(app.appId === 'media-player' || app.appId === 'contract-viewer') ? app.props?.fileName || currentAppConfig.title : currentAppConfig.title} 
                       onClose={() => closeApp(app.instanceId)} 
                       width={currentAppConfig.width}
                       height={currentAppConfig.height}

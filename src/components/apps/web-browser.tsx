@@ -9,6 +9,7 @@ import { PC } from '@/lib/network/types';
 
 interface WebBrowserProps {
   network: PC[];
+  initialUrl?: string; // To open a specific URL on launch
 }
 
 const defaultHomePageContent = (network: PC[]): string => {
@@ -22,15 +23,33 @@ const defaultHomePageContent = (network: PC[]): string => {
 };
 
 
-export default function WebBrowser({ network }: WebBrowserProps) {
-  const [address, setAddress] = useState('hyp.net');
+export default function WebBrowser({ network, initialUrl }: WebBrowserProps) {
+  const [address, setAddress] = useState(initialUrl || 'hyp.net');
   const [currentContent, setCurrentContent] = useState('');
   const [currentDomain, setCurrentDomain] = useState('');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const isInitialMount = useRef(true);
 
   const navigate = (targetDomain?: string) => {
     const domain = (targetDomain || address).trim().toLowerCase();
     if (!domain) return;
+    
+    if (domain.startsWith('/')) {
+        // Handle local file paths
+        setAddress(domain);
+        setCurrentDomain(domain.split('/').pop() || 'file');
+
+        fetch(domain)
+            .then(res => res.text())
+            .then(text => setCurrentContent(text))
+            .catch(() => setCurrentContent(`
+                <div class='h-full flex flex-col justify-center items-center text-center text-red-400 p-8 font-code'>
+                    <h1 class='text-2xl mb-4'>ERR_FILE_NOT_FOUND</h1>
+                    <p>The file '${domain}' could not be loaded.</p>
+                </div>`
+            ));
+        return;
+    }
 
     const targetServer = network.find(pc => pc.type === 'WebServer' && pc.domain?.toLowerCase() === domain);
     
@@ -51,15 +70,19 @@ export default function WebBrowser({ network }: WebBrowserProps) {
 
   useEffect(() => {
     if (isInitialMount.current) {
-        // Set home page on initial load
-        const homeContent = defaultHomePageContent(network);
-        setCurrentContent(homeContent);
-        setCurrentDomain('hyp.net');
-        setAddress('hyp.net');
+        if(initialUrl) {
+            navigate(initialUrl);
+        } else {
+             // Set home page on initial load
+            const homeContent = defaultHomePageContent(network);
+            setCurrentContent(homeContent);
+            setCurrentDomain('hyp.net');
+            setAddress('hyp.net');
+        }
         isInitialMount.current = false;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array ensures this runs only once
+  }, []); 
 
 
   useEffect(() => {
@@ -79,7 +102,7 @@ export default function WebBrowser({ network }: WebBrowserProps) {
         window.removeEventListener('message', handleMessage);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [network]); // Re-add listener if network changes, so navigate has fresh data.
+  }, [network]); 
 
 
   const injectedScript = `
@@ -120,6 +143,7 @@ export default function WebBrowser({ network }: WebBrowserProps) {
       </div>
       <div className="flex-grow bg-gray-100 dark:bg-gray-900 overflow-y-auto">
         <iframe
+          ref={iframeRef}
           srcDoc={contentWithScript}
           sandbox="allow-scripts allow-same-origin"
           className="w-full h-full border-0"
@@ -133,3 +157,4 @@ export default function WebBrowser({ network }: WebBrowserProps) {
     
 
     
+
