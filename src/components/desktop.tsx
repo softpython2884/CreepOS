@@ -219,7 +219,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     onAlertEvent('stopRingtone');
     onAlertEvent('stopScream'); // Just in case
     
-    const wasDirectorCallback = callScriptRef.current?.id === 'director-callback';
+    const lastScript = callScriptRef.current;
 
     setCallState('idle');
     setActiveCall(null);
@@ -230,15 +230,25 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if(!isTraced) {
       onMusicEvent('calm');
     }
+
+    if (lastScript) {
+        // Find if the last node had a trigger
+        const lastNode = lastScript.nodes[currentNodeIdRef.current || ''];
+        const trigger = lastNode?.consequences?.endCallAndTrigger;
+        
+        if (trigger) {
+             callQueueRef.current.push(() => triggerCall(trigger));
+        } else if (lastScript.id === 'director-callback') {
+            // If the director callback just finished, send the mission email.
+            receiveEmail(supervisorPhase1);
+        }
+    }
     
     const nextCall = callQueueRef.current.shift();
     if(nextCall) {
         setTimeout(nextCall, 2000); 
-    } else if (wasDirectorCallback) {
-        // If the director callback just finished and there's nothing else queued, send the mission email.
-        receiveEmail(supervisorPhase1);
     }
-  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail]);
+  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail, callScriptRef, currentNodeIdRef]);
 
 
   const triggerCall = useCallback((script: CallScript) => {
@@ -320,7 +330,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       }
 
       if (nextNode.consequences?.endCallAndTrigger) {
-          setTimeout(() => triggerCall(nextNode.consequences!.endCallAndTrigger!), 1500);
+          callQueueRef.current.push(() => triggerCall(nextNode.consequences!.endCallAndTrigger!));
       }
       
       currentNodeIdRef.current = nextNodeId;
@@ -628,13 +638,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
     if (url.startsWith('/')) {
         const fileName = url.split('/').pop() || 'document';
-        openApp('contract-viewer', { initialUrl: url, fileName: fileName });
         
         if (url === '/welcome.html') {
-            setTimeout(() => {
+             setTimeout(() => {
                 triggerCall(neoIntroCall);
             }, 15000);
         }
+
+        openApp('contract-viewer', { initialUrl: url, fileName: fileName });
     } else {
         openApp('web-browser', { initialUrl: url });
     }
@@ -907,5 +918,3 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     </main>
   );
 }
-
-    
