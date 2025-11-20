@@ -21,12 +21,12 @@ const initialGameState: GameState = {
     machineState: 'off',
 };
 
-export const saveGameState = (username: string, gameState: Omit<GameState, 'hackedPcs' | 'discoveredPcs'> & { hackedPcs: Set<string> | string[], discoveredPcs: Set<string> | string[] }) => {
+export const saveGameState = (username: string, gameState: Omit<GameState, 'hackedPcs' | 'discoveredPcs'> & { hackedPcs?: Set<string> | string[], discoveredPcs?: Set<string> | string[] }) => {
     try {
         const stateToSave = {
             ...gameState,
-            hackedPcs: Array.from(gameState.hackedPcs), // Convert Set to Array for JSON
-            discoveredPcs: Array.from(gameState.discoveredPcs),
+            hackedPcs: Array.from(gameState.hackedPcs || []), // Convert Set to Array for JSON
+            discoveredPcs: Array.from(gameState.discoveredPcs || []),
         };
         localStorage.setItem(`gameState_${username}`, JSON.stringify(stateToSave));
     } catch (error) {
@@ -56,6 +56,7 @@ export const loadGameState = (username: string): GameState => {
     return {
         ...initialGameState,
         network: JSON.parse(JSON.stringify(initialNetwork)), // ensure deep copy
+        hackedPcs: new Set(['player-pc']),
         discoveredPcs: new Set(['player-pc']),
     };
 };

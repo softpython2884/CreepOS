@@ -4,7 +4,7 @@
     "ip": "18.117.228.214",
     "type": "Server",
     "links": [],
-    "auth": { "user": "anonymous", "pass": "" },
+    "auth": { "user": "admin", "pass": "anonymous" },
     "firewall": { "enabled": false, "complexity": 0 },
     "proxy": { "enabled": false, "level": 0 },
     "traceTime": 0,

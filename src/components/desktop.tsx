@@ -33,6 +33,7 @@ import { neoPhase1Call } from '@/lib/call-system/scripts/neo-phase1-call';
 import { supervisorPhase1 } from '@/lib/call-system/scripts/supervisor-phase1';
 import { alexIntroCall } from '@/lib/call-system/scripts/alex-intro-call';
 import TextEditor from './apps/text-editor';
+import { blackwireMission1Email } from '@/lib/call-system/scripts/blackwire-mission-1';
 
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player' | 'contract-viewer' | 'sequence-analyzer';
@@ -120,7 +121,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const [network, setNetwork] = useState<PC[]>(() => loadGameState(username).network);
   const [hackedPcs, setHackedPcs] = useState<Set<string>>(() => loadGameState(username).hackedPcs);
-  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => new Set(['player-pc', 'cheat-pc']));
+  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => loadGameState(username).discoveredPcs || new Set(['player-pc']));
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
   const [dangerLevel, setDangerLevel] = useState(0);
 
@@ -166,7 +167,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     ];
   });
 
-  const gameState = { network, hackedPcs, emails, machineState: 'desktop' };
+  const gameState = { network, hackedPcs, discoveredPcs, emails, machineState: 'desktop' };
 
   const addLog = useCallback((message: string) => {
     setLogs(prev => {
@@ -306,14 +307,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if (chosenChoice.consequences?.triggerSound) {
         onSoundEvent(chosenChoice.consequences.triggerSound);
     }
+    if (chosenChoice.consequences?.triggerEmail) {
+        receiveEmail(chosenChoice.consequences.triggerEmail);
+    }
 
     setActiveCall(prev => prev ? ({ ...prev, messages: [...prev.messages, playerMessage], choices: [] }) : null);
 
     if (chosenChoice.consequences?.danger) {
         handleIncreaseDanger(chosenChoice.consequences.danger);
-    }
-    if (chosenChoice.consequences?.triggerEmail) {
-        receiveEmail(chosenChoice.consequences.triggerEmail);
     }
     
     const nextNodeId = chosenChoice.nextNode;
@@ -384,19 +385,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   }, [callState, onAlertEvent, onSoundEvent]);
 
   const declineCall = useCallback(() => {
-    const script = callScriptRef.current;
-    if (!script) return;
-    
-    onAlertEvent('stopRingtone');
-    setCallState('idle');
-    setActiveCall(null);
-
-    const timer = setTimeout(() => {
-        triggerCall(script);
-    }, 3000);
-    
-    return () => clearTimeout(timer);
-  }, [onAlertEvent, triggerCall]);
+    endCall(true);
+  }, [endCall]);
 
   const handlePlayerChoice = (choiceId: string) => {
     advanceCall(choiceId);
@@ -429,6 +419,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   // Initial supervisor call
   useEffect(() => {
+    const hasPlayedIntro = localStorage.getItem('hasPlayedIntro_v1');
+    if (!hasPlayedIntro) return;
+
     const timer = setTimeout(() => {
         triggerCall(supervisorCall1);
     }, 5000); 
@@ -455,7 +448,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     }, 5000); 
 
     return () => clearInterval(saveInterval);
-  }, [network, hackedPcs, emails, username, gameState]);
+  }, [network, hackedPcs, discoveredPcs, emails, username, gameState]);
 
     useEffect(() => {
         if (dangerLevel >= 100) {
@@ -502,7 +495,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, hackedPcs, handleStopTrace, gameState]);
+}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, hackedPcs, discoveredPcs, handleStopTrace, gameState]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
@@ -1009,15 +1002,3 @@ Opérateur: Dr. Omen
     </main>
   );
 }
-
-    
-
-      
-
-    
-
-
-
-
-
-
