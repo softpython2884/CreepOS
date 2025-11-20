@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useCallback, createRef, useEffect } from 'react';
@@ -216,42 +217,44 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   }, [addLog, onSoundEvent]);
 
 
-  const endCall = useCallback(() => {
-    onAlertEvent('stopRingtone');
-    onAlertEvent('stopScream');
-    
-    const lastScript = callScriptRef.current;
-    const lastNodeId = currentNodeIdRef.current;
+  const endCall = useCallback((isManualClose: boolean = false) => {
+      onAlertEvent('stopRingtone');
+      
+      const lastScript = callScriptRef.current;
+      const lastNodeId = currentNodeIdRef.current;
 
-    setCallState('idle');
-    setActiveCall(null);
-    callScriptRef.current = null;
-    currentNodeIdRef.current = null;
-    onSoundEvent('endCall');
-    
-    setTimeout(() => {
-      if (!isTraced) {
-        onMusicEvent('calm');
+      setCallState('idle');
+      setActiveCall(null);
+      callScriptRef.current = null;
+      currentNodeIdRef.current = null;
+
+      if (!isManualClose) {
+        onSoundEvent('endCall');
       }
-    }, 1000);
-
-    if (lastScript && lastNodeId) {
-        const lastNode = lastScript.nodes[lastNodeId];
-        const trigger = lastNode?.consequences?.endCallAndTrigger;
-        
-        if (trigger) {
-            if (trigger.type === 'call') {
-                callQueueRef.current.push(() => triggerCall(trigger.script));
-            } else if (trigger.type === 'email') {
-                receiveEmail(trigger.email);
-            }
+      
+      setTimeout(() => {
+        if (!isTraced) {
+          onMusicEvent('calm');
         }
-    }
-    
-    const nextCall = callQueueRef.current.shift();
-    if(nextCall) {
-        setTimeout(nextCall, 2000); 
-    }
+      }, 1000);
+
+      if (lastScript && lastNodeId) {
+          const lastNode = lastScript.nodes[lastNodeId];
+          const trigger = lastNode?.consequences?.endCallAndTrigger;
+          
+          if (trigger) {
+              if (trigger.type === 'call') {
+                  callQueueRef.current.push(() => triggerCall(trigger.script));
+              } else if (trigger.type === 'email') {
+                  receiveEmail(trigger.email);
+              }
+          }
+      }
+      
+      const nextCall = callQueueRef.current.shift();
+      if(nextCall) {
+          setTimeout(nextCall, 2000); 
+      }
   }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail]);
 
 
@@ -283,22 +286,33 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if (!script || callState !== 'incoming') return;
     
     onAlertEvent('stopRingtone');
-    
-    const startNode = script.nodes[script.startNode];
-    
-    setActiveCall(prev => prev ? ({
-      ...prev,
-      messages: [startNode.message],
-      choices: startNode.choices || [],
-    }) : null);
-    setCallState('active');
     onSoundEvent('startCall');
+    setCallState('active');
+
+    // Add a delay to sync with audio
+    setTimeout(() => {
+        const startNode = script.nodes[script.startNode];
+        setActiveCall(prev => prev ? ({
+          ...prev,
+          messages: [startNode.message],
+          choices: startNode.choices || [],
+        }) : null);
+    }, 800);
   }, [callState, onAlertEvent, onSoundEvent]);
 
   const declineCall = useCallback(() => {
-    addLog(`EVENT: Appel refusé de ${callScriptRef.current?.interlocutor}.`);
-    endCall();
-  }, [addLog, endCall]);
+    const script = callScriptRef.current;
+    if (!script) return;
+    
+    addLog(`EVENT: Appel refusé de ${script.interlocutor}. Nouvelle tentative dans 3s...`);
+    onAlertEvent('stopRingtone');
+    setCallState('idle');
+    setActiveCall(null);
+
+    setTimeout(() => {
+        triggerCall(script);
+    }, 3000);
+  }, [addLog, onAlertEvent, triggerCall]);
 
   const advanceCall = (choiceId: string) => {
     const script = callScriptRef.current;
@@ -332,8 +346,11 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     
     setTimeout(() => {
       const nextNode = script.nodes[nextNodeId];
+      const isFinished = !nextNode?.choices || nextNode.choices.length === 0;
+
       if (!nextNode) {
           setActiveCall(prev => prev ? ({ ...prev, isFinished: true, choices: [] }) : null);
+          onSoundEvent('endCall');
           return;
       }
       
@@ -353,8 +370,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
           ...prev,
           messages: newMessages,
           choices: nextNode.choices || [],
-          isFinished: !nextNode.choices || nextNode.choices.length === 0,
+          isFinished: isFinished,
       }) : null);
+
+      if (isFinished) {
+        onSoundEvent('endCall');
+      }
 
       if (nextNode.consequences?.triggerSound) {
         onSoundEvent(nextNode.consequences.triggerSound);
@@ -550,7 +571,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
             return docsFolder;
         });
     });
-  }, [addLog]);
+
+    // Send supervisor email for next phase
+    receiveEmail(supervisorPhase1);
+  }, [addLog, receiveEmail]);
 
   const handleSaveFile = (path: string[], newContent: string) => {
       addLog(`EVENT: Fichier sauvegardé à /${path.join('/')}`);
@@ -600,7 +624,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       onSoundEvent('click');
   };
 
-  const handleSendEmail = (email: Omit<Email, 'id' | 'timestamp' | 'folder'>) => {
+  let handleSendEmail = (email: Omit<Email, 'id' | 'timestamp' | 'folder'>) => {
     const newEmail: Email = {
       ...email,
       id: `email-${Date.now()}`,
@@ -782,6 +806,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       height: 650,
       props: {
         onAnalysisComplete: handleSequenceAnalysisComplete,
+        onClose: () => closeApp(openApps.find(app => app.appId === 'sequence-analyzer')?.instanceId || -1),
       },
       isSingular: true,
     }
@@ -874,7 +899,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
       {callState === 'active' && activeCall && (
         <div className="absolute top-4 right-4 z-[9999]">
-            <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} onClose={endCall} />
+            <CallView call={activeCall} onPlayerChoice={handlePlayerChoice} onClose={() => endCall(true)} />
         </div>
       )}
 
@@ -931,5 +956,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     </main>
   );
 }
+
+    
+
+      
 
     
