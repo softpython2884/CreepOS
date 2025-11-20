@@ -167,21 +167,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const gameState = { network, hackedPcs, emails, machineState: 'desktop' };
 
-  const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => {
-    const newEmail: Email = {
-      id: `email-${Date.now()}`,
-      recipient: 'Dr.Omen@recherche-lab.net',
-      folder: 'inbox',
-      timestamp: new Date().toISOString(),
-      ...emailDetails,
-    };
-
-    setEmails(prev => [...prev, newEmail]);
-    onSoundEvent('email');
-    setEmailNotification(true);
-    addLog(`EMAIL: Email reçu de ${emailDetails.sender} avec le sujet "${emailDetails.subject}"`);
-  }, [onSoundEvent]);
-  
   const addLog = useCallback((message: string) => {
     setLogs(prev => {
         const timestamp = new Date().toISOString();
@@ -216,42 +201,34 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     });
   }, []);
 
-  const triggerCall = useCallback((script: CallScript) => {
-    if (callState !== 'idle') {
-        callQueueRef.current.push(() => triggerCall(script));
-        return;
+  const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => {
+    const newEmail: Email = {
+      id: `email-${Date.now()}`,
+      recipient: 'Dr.Omen@recherche-lab.net',
+      folder: 'inbox',
+      timestamp: new Date().toISOString(),
+      ...emailDetails,
     };
 
-    if (script.id === 'neo-intro-call') {
-        onMusicEvent('none');
-    }
-
-    callScriptRef.current = script;
-    currentNodeIdRef.current = script.startNode;
-    setActiveCall({
-      interlocutor: script.interlocutor,
-      isSecure: script.isSecure,
-      messages: [], 
-      choices: [],
-    });
-    setCallState('incoming');
-    onAlertEvent('ringtone');
-    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
-  }, [callState, onAlertEvent, addLog, onMusicEvent]);
+    setEmails(prev => [...prev, newEmail]);
+    onSoundEvent('email');
+    setEmailNotification(true);
+    addLog(`EMAIL: Email reçu de ${emailDetails.sender} avec le sujet "${emailDetails.subject}"`);
+  }, [onSoundEvent, addLog]);
 
   const endCall = useCallback((isManualClose: boolean = false) => {
     onAlertEvent('stopRingtone');
     
-    const lastScript = callScriptRef.current;
-    const lastNodeId = currentNodeIdRef.current;
-
     if (isManualClose) {
-      onSoundEvent('startCall');
-      onAlertEvent('stopAlarm');
+        onSoundEvent('startCall');
+        onAlertEvent('stopAlert');
     }
     
     if (activeCall && !activeCall.isFinished) {
-      if (isManualClose && lastScript && lastNodeId) {
+      const lastScript = callScriptRef.current;
+      const lastNodeId = currentNodeIdRef.current;
+
+      if (lastScript && lastNodeId) {
           const triggerKey = `${lastScript.id}-${lastNodeId}-end`;
           if (!callConsequencesTriggeredRef.current.has(triggerKey)) {
               const lastNode = lastScript.nodes[lastNodeId];
@@ -284,42 +261,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if(nextCall) {
         setTimeout(nextCall, 2000); 
     }
-}, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail, triggerCall, activeCall]);
+  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail, activeCall]);
 
-
-  const answerCall = useCallback(() => {
-    const script = callScriptRef.current;
-    if (!script || callState !== 'incoming') return;
-    
-    onAlertEvent('stopRingtone');
-    onSoundEvent('startCall');
-    setCallState('active');
-
-    // Add a delay to sync with audio
-    setTimeout(() => {
-        const startNode = script.nodes[script.startNode];
-        setActiveCall(prev => prev ? ({
-          ...prev,
-          messages: [startNode.message],
-          choices: startNode.choices || [],
-        }) : null);
-    }, 800);
-  }, [callState, onAlertEvent, onSoundEvent]);
-
-  const declineCall = useCallback(() => {
-    const script = callScriptRef.current;
-    if (!script) return;
-    
-    onAlertEvent('stopRingtone');
-    setCallState('idle');
-    setActiveCall(null);
-
-    setTimeout(() => {
-        triggerCall(script);
-    }, 3000);
-  }, [onAlertEvent, triggerCall]);
-
-  const advanceCall = (choiceId: string) => {
+  const advanceCall = useCallback((choiceId: string) => {
     const script = callScriptRef.current;
     if (!script || !activeCall) return;
 
@@ -394,7 +338,62 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       }
 
     }, chosenChoice.consequences?.triggerSound ? 1800 : 1000);
-  }
+  }, [activeCall, onSoundEvent, receiveEmail]);
+
+  const triggerCall = useCallback((script: CallScript) => {
+    if (callState !== 'idle') {
+        callQueueRef.current.push(() => triggerCall(script));
+        return;
+    };
+
+    if (script.id === 'neo-intro-call') {
+        onMusicEvent('none');
+    }
+
+    callScriptRef.current = script;
+    currentNodeIdRef.current = script.startNode;
+    setActiveCall({
+      interlocutor: script.interlocutor,
+      isSecure: script.isSecure,
+      messages: [], 
+      choices: [],
+    });
+    setCallState('incoming');
+    onAlertEvent('ringtone');
+    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
+  }, [callState, onAlertEvent, addLog, onMusicEvent]);
+
+  const answerCall = useCallback(() => {
+    const script = callScriptRef.current;
+    if (!script || callState !== 'incoming') return;
+    
+    onAlertEvent('stopRingtone');
+    onSoundEvent('startCall');
+    setCallState('active');
+
+    // Add a delay to sync with audio
+    setTimeout(() => {
+        const startNode = script.nodes[script.startNode];
+        setActiveCall(prev => prev ? ({
+          ...prev,
+          messages: [startNode.message],
+          choices: startNode.choices || [],
+        }) : null);
+    }, 800);
+  }, [callState, onAlertEvent, onSoundEvent]);
+
+  const declineCall = useCallback(() => {
+    const script = callScriptRef.current;
+    if (!script) return;
+    
+    onAlertEvent('stopRingtone');
+    setCallState('idle');
+    setActiveCall(null);
+
+    setTimeout(() => {
+        triggerCall(script);
+    }, 3000);
+  }, [onAlertEvent, triggerCall]);
 
   const handlePlayerChoice = (choiceId: string) => {
     advanceCall(choiceId);
@@ -974,4 +973,5 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       
 
     
+
 
