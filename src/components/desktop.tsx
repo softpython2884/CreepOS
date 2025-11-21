@@ -125,7 +125,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const [network, setNetwork] = useState<PC[]>(() => loadGameState(username).network);
   const [hackedPcs, setHackedPcs] = useState<Set<string>>(() => loadGameState(username).hackedPcs);
-  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => loadGameState(username).discoveredPcs);
+  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => loadGameState(username).discoveredPcs || new Set(['player-pc']));
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
   const [dangerLevel, setDangerLevel] = useState(0);
 
@@ -755,12 +755,23 @@ Si vous voyez ce message, elle vous surveille déjà.
     }
 
     if (url.startsWith('download://')) {
-        const folderToUnlock = url.substring(11);
-        if (folderToUnlock === '/documents/mem-ops/') {
-            addLog("EVENT: Répertoire 'mem-ops' déverrouillé.");
-            setPlayerFileSystem(prevFs => 
-                updateNodeByPath(prevFs, ['documents', 'mem-ops'], (node) => ({ ...node, isLocked: false }))
-            );
+        const pathString = url.substring(11); // e.g., '/documents/mem-ops/'
+        const pathArray = pathString.split('/').filter(p => p); // e.g., ['documents', 'mem-ops']
+        
+        addLog(`EVENT: Téléchargement de ${pathArray[pathArray.length - 1]}...`);
+        
+        setPlayerFileSystem(prevFs => 
+            updateNodeByPath(prevFs, pathArray, (node) => ({ ...node, isHidden: false }))
+        );
+
+        // Also unhide parent folders if they are hidden
+        if (pathArray.length > 1) {
+            for (let i = 1; i < pathArray.length; i++) {
+                const parentPath = pathArray.slice(0, i);
+                setPlayerFileSystem(prevFs => 
+                    updateNodeByPath(prevFs, parentPath, (node) => ({ ...node, isHidden: false }))
+                );
+            }
         }
         return;
     }

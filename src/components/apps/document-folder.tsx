@@ -39,7 +39,7 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
     useEffect(() => {
         const getNodeFromPath = (nodes: FileSystemNode[], path: string[]): FileSystemNode[] => {
             if (path.length === 0) {
-                return nodes;
+                return nodes.filter(node => !node.isHidden);
             }
             let currentLevel = nodes;
             for (let i = 0; i < path.length; i++) {
@@ -51,7 +51,7 @@ export default function DocumentFolder({ fileSystem, onFileSystemUpdate, onSound
                     return []; // Path not found
                 }
             }
-            return currentLevel;
+            return currentLevel.filter(node => !node.isHidden);
         };
         setCurrentFolderItems(getNodeFromPath(personalizedFs, currentPath));
     }, [currentPath, personalizedFs]);

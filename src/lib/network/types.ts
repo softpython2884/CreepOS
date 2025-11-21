@@ -18,6 +18,7 @@ export interface FileSystemNode {
     isLocked?: boolean;
     password?: string;
     isSystemFile?: boolean;
+    isHidden?: boolean;
 }
 
 export interface PC {

@@ -57,7 +57,7 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
         if (!currentLevel) return null;
 
         const node = currentLevel.find(n => n.name === part);
-        if (!node) return null;
+        if (!node || node.isHidden) return null;
 
         if (i === path.length - 1) {
             foundNode = node;
@@ -746,7 +746,7 @@ export default function Terminal({
             const targetNode = findNodeByPath(targetPath, fileSystem);
             
             if (targetNode?.type === 'folder') {
-                const content = targetNode.children?.map(node => `${node.name}${node.type === 'folder' ? '/' : ''}`).join('  ');
+                const content = targetNode.children?.filter(node => !node.isHidden).map(node => `${node.name}${node.type === 'folder' ? '/' : ''}`).join('  ');
                 handleOutput(content || "(vide)");
             } else if (targetNode?.type === 'file') {
                  handleOutput(targetNode.name);
@@ -1443,7 +1443,7 @@ export default function Terminal({
     
     if (!targetNode?.children) return;
 
-    const possibilities = targetNode.children.filter(child => child.name.startsWith(partialName));
+    const possibilities = targetNode.children.filter(child => child.name.startsWith(partialName) && !child.isHidden);
 
     if (possibilities.length === 1) {
         const completion = possibilities[0];
