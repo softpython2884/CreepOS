@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -267,3 +268,5 @@ export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSou
 
   return null;
 }
+
+    

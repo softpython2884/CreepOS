@@ -11,6 +11,8 @@ import { type Email } from './email-client';
 import { directorCallback } from '@/lib/call-system/scripts/director-callback';
 import { CallScript } from '@/lib/call-system/types';
 import { blackwireChapter3IntroEmail } from '@/lib/call-system/scripts/blackwire-chapter3-intro';
+import { blackwireMission1Email } from '@/lib/call-system/scripts/blackwire-mission-1';
+import { blackwireChapter3Mission } from '@/lib/call-system/scripts/blackwire-chapter3-mission';
 
 interface HistoryItem {
   type: 'command' | 'output' | 'confirmation';
@@ -316,7 +318,7 @@ export default function Terminal({
             dangerMultiplier = 1;
         } else if (traces >= 5) {
             dangerMultiplier = 0.8;
-        } else if (traces >= 1) {
+        } else if (traces > 1) {
             dangerMultiplier = 0.25
         } else if (traces === 1) {
             dangerMultiplier = 0.03
@@ -513,12 +515,12 @@ export default function Terminal({
     
         if (currentTargetPC.firewall.enabled) {
             handleOutput(`${portName} échoué : Pare-feu actif détecté.`);
-            addRemoteLog(`${portName} échoué sur le port ${portNumber}. Raison : Pare-feu actif.`);
+            addRemoteLog(`${portName} échoué sur le port ${portNumber}. Raison : Pare-feu actif.`, true);
             return;
         }
         if (currentTargetPC.proxy.enabled) {
             handleOutput(`${portName} échoué : Proxy actif détecté.`);
-            addRemoteLog(`${portName} échoué sur le port ${portNumber}. Raison : Proxy actif.`);
+            addRemoteLog(`${portName} échoué sur le port ${portNumber}. Raison : Proxy actif.`, true);
             return;
         }
         const port = currentTargetPC.ports.find(p => p.port === portNumber);
@@ -690,11 +692,11 @@ export default function Terminal({
                     setTimeout(onReboot, 1000);
                 } else {
                     if (targetPC) {
-                        addRemoteLog(`CRITIQUE: XserverOS.sys non trouvé. Crash du système.`);
+                        addRemoteLog(`CRITIQUE: Forkbomb exécuté. Crash du système.`);
                         
                         setNetwork(currentNetwork => currentNetwork.map(pc => {
                             if (pc.id === targetPC!.id) {
-                                const newFileSystem = updateNodeByPath(pc.fileSystem, ['sys', 'XserverOS.sys'], (node) => ({ ...node, content: 'NOYAU SYSTÈME CORROMPU' }));
+                                const newFileSystem = updateNodeByPath(pc.fileSystem, ['sys', 'XserverOS.sys'], () => null);
                                 return { ...pc, fileSystem: newFileSystem };
                             }
                             return pc;
@@ -734,7 +736,7 @@ export default function Terminal({
                 '  disconnect / dc- Se déconnecte du système distant actuel',
                 '  login <user> <pass> - S\'authentifie sur un système connecté',
                 '  solve <solution> - Tente de désactiver un pare-feu avec une solution.',
-                '  call --[ip] --secure - Lance un appel sécurisé vers une IP',
+                '  call <ip> [--secure|--notsecure] - Lance un appel vers une IP',
                 '',
                 'Outils de piratage (généralement exécutés depuis votre machine sur une cible distante):',
             ];
@@ -864,7 +866,7 @@ export default function Terminal({
                                 for (const file of childrenCopy) {
                                     if (file.type === 'file' && !file.isSystemFile) {
                                         const filePath = [...currentDirectory, file.name];
-                                        if (file.name.endsWith('.log')) {
+                                        if (file.name.endsWith('access.log')) {
                                             filesCleared.push(file);
                                             newFs = updateNodeByPath(newFs, filePath, (node) => ({ ...node, content: `` }));
                                         } else {
@@ -941,7 +943,7 @@ export default function Terminal({
                        handleOutput('Suppression de XserverOS.sys terminée.');
                     }, 100);
                 } else {
-                    addRemoteLog(`CRITIQUE: XserverOS.sys non trouvé. Crash du système.`);
+                    addRemoteLog(`CRITIQUE: Forkbomb exécuté. Crash du système.`);
                     disconnect(true);
                 }
                 break;
@@ -1368,16 +1370,15 @@ export default function Terminal({
             break;
         }
         case 'call': {
-            const ipArg = args.find(a => a.startsWith('--'))?.substring(2);
+            const ipArg = args.find(a => !a.startsWith('--'));
             const isSecure = args.includes('--secure');
             const isNotSecure = args.includes('--notsecure');
 
             if (!ipArg) {
-                handleOutput('call: IP de destination manquante. Utilisation : call --[ip]');
+                handleOutput('call: IP de destination manquante. Utilisation : call <ip> [--secure|--notsecure]');
                 break;
             }
             
-            // Chapter 3 trigger
             if (ipArg === '198.51.100.17' && isNotSecure) {
                 const backdoorPC = network.find(pc => pc.ip === '198.51.100.17');
                 const backdoorFile = findNodeByPath(['backdoor.sys'], backdoorPC?.fileSystem || []);
@@ -1385,7 +1386,7 @@ export default function Terminal({
                 if(backdoorFile) {
                     handleOutput('Séquence de la porte dérobée activée... Début du chapitre 3.');
                     addLog('EVENT: Chapitre 3 initié via la porte dérobée.');
-                    // Future logic for chapter 3 will go here.
+                    triggerCall(blackwireChapter3Mission);
                 } else {
                     handleOutput(`call: Le script requis 'backdoor.sys' est introuvable sur la cible.`);
                 }
@@ -1538,3 +1539,5 @@ export default function Terminal({
     </div>
   );
 }
+
+    
