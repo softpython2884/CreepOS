@@ -4,12 +4,10 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { BrainCircuit, Cpu, RotateCcw, GitFork, Forward, AlertCircle } from 'lucide-react';
+import { Cpu, RotateCcw, GitFork, Forward } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '../ui/scroll-area';
 
-type Tool = 'FORWARD' | 'ROTATE' | 'SPLIT';
 type Hex = {
   q: number;
   r: number;
@@ -18,21 +16,13 @@ type Hex = {
   isEnd?: boolean;
   color?: string;
   isPath?: boolean;
-  isBlock?: boolean;
-  isCorrectedBlock?: boolean;
   pathColor?: string;
-  solution?: Tool;
 };
 
-const puzzles: Record<string, { starts: any[], ends: any[], blocks: any[] }> = {
+const puzzles: Record<string, { starts: any[], ends: any[] }> = {
     DELTA7: {
         starts: [{ q: -2, r: 0, color: 'blue' }, {q: 2, r: -2, color: 'green'}],
         ends: [{ q: 2, r: 2, color: 'blue' }, {q: -1, r: 3, color: 'green'}],
-        blocks: [
-            { q: 0, r: 1, solution: 'ROTATE' },
-            { q: 1, r: -1, solution: 'SPLIT' },
-            { q: 0, r: -2, solution: 'FORWARD' },
-        ]
     },
 };
 
@@ -50,9 +40,7 @@ const Hexagon = ({ hex, onClick }: { hex: Hex; onClick: () => void; }) => {
 
   const getFill = () => {
     if (hex.isPath) return hex.pathColor;
-    if (hex.isCorrectedBlock) return 'hsl(var(--accent))';
     if (hex.isStart || hex.isEnd) return hex.color;
-    if (hex.isBlock) return 'hsl(var(--destructive))';
     return 'hsl(var(--secondary) / 0.5)';
   }
 
@@ -64,40 +52,34 @@ const Hexagon = ({ hex, onClick }: { hex: Hex; onClick: () => void; }) => {
   return (
     <g transform={`translate(${x}, ${y})`} onClick={onClick} className="cursor-pointer transition-opacity duration-300 hover:opacity-80">
       <polygon points={points} fill={getFill()} stroke={getStroke()} strokeWidth="2" />
-       {hex.isBlock && !hex.isCorrectedBlock && <AlertCircle className="text-white" x="-10" y="-10" size={20} />}
     </g>
   );
 };
 
 
 export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComplete, onClose }: { puzzleId?: string, onAnalysisComplete: (puzzleId: string) => void, onClose: () => void }) {
-    const [puzzle, setPuzzle] = useState(puzzles[puzzleId] || puzzles['DELTA7']);
+    const [puzzle] = useState(puzzles[puzzleId] || puzzles['DELTA7']);
     const [grid, setGrid] = useState<Hex[]>([]);
     const [currentPath, setCurrentPath] = useState<Hex[]>([]);
     const [activeColor, setActiveColor] = useState<string | null>(null);
     const [completedPaths, setCompletedPaths] = useState<string[]>([]);
-    const [neoMessages, setNeoMessages] = useState<string[]>([]);
-    const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
-
+    const [neoMessages, setNeoMessages] = useState<string[]>(["NÉO: Initialisation de l'analyseur. Veuillez tracer les chemins de données."]);
+    
     const size = 4; // Grid size
 
-    const generateGrid = useCallback(() => {
+    useEffect(() => {
         const newGrid: Hex[] = [];
         for (let q = -size; q <= size; q++) {
             for (let r = -size; r <= size; r++) {
                 const s = -q - r;
                 if (s >= -size && s <= size) {
-                    const currentPuzzle = puzzles[puzzleId] || puzzles['DELTA7'];
-                    const start = currentPuzzle.starts.find(p => p.q === q && p.r === r);
-                    const end = currentPuzzle.ends.find(p => p.q === q && p.r === r);
-                    const block = currentPuzzle.blocks.find(b => b.q === q && b.r === r);
+                    const start = puzzle.starts.find(p => p.q === q && p.r === r);
+                    const end = puzzle.ends.find(p => p.q === q && p.r === r);
                     newGrid.push({
                         q, r, s,
                         isStart: !!start,
                         isEnd: !!end,
                         color: start?.color || end?.color,
-                        isBlock: !!block,
-                        solution: block?.solution,
                     });
                 }
             }
@@ -106,116 +88,71 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
         setCompletedPaths([]);
         setCurrentPath([]);
         setActiveColor(null);
-    }, [puzzleId]);
-
-    useEffect(() => {
-        generateGrid();
-    }, [generateGrid]);
+    }, [puzzle]);
     
-    const checkWinCondition = useCallback((currentGrid: Hex[], currentCompletedPaths: string[]) => {
-        const allPathsComplete = puzzle.starts.every(start => currentCompletedPaths.includes(start.color));
-        const allBlocksCorrected = puzzle.blocks.every(block => currentGrid.find(hex => hex.q === block.q && hex.r === block.r)?.isCorrectedBlock);
-        
-        if (allPathsComplete && allBlocksCorrected) {
-             setNeoMessages(prev => [...prev, "NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Un rapport a été généré dans vos documents."]);
+    const checkWinCondition = useCallback((currentCompletedPaths: string[]) => {
+        if (currentCompletedPaths.length === puzzle.starts.length) {
+            setNeoMessages(prev => [...prev, "NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Un rapport a été généré dans vos documents."]);
             onAnalysisComplete(puzzleId);
         }
-    }, [puzzle.starts, puzzle.blocks, puzzleId, onAnalysisComplete]);
+    }, [puzzle.starts, puzzleId, onAnalysisComplete]);
 
     const handleHexClick = (hex: Hex) => {
         if (hex.isStart && !completedPaths.includes(hex.color!) && !activeColor) {
             setActiveColor(hex.color!);
             setCurrentPath([hex]);
+            setNeoMessages(prev => [...prev, `NÉO: Chemin '${hex.color}' initié.`]);
             return;
         }
 
         if (activeColor) {
             const lastHex = currentPath[currentPath.length - 1];
             const isAdjacent = Math.abs(lastHex.q - hex.q) + Math.abs(lastHex.r - hex.r) + Math.abs(lastHex.s - hex.s) === 2;
-            const isAlreadyInPath = currentPath.find(h => h.q === hex.q && h.r === hex.r);
+            const isAlreadyInPath = currentPath.some(h => h.q === hex.q && h.r === hex.r);
 
-            if (isAdjacent && !isAlreadyInPath && !hex.isBlock) {
+            if (isAdjacent && !isAlreadyInPath) {
                  const newPath = [...currentPath, hex];
                  setCurrentPath(newPath);
 
                  if (hex.isEnd && hex.color === activeColor) {
+                    setNeoMessages(prev => [...prev, `NÉO: Chemin '${activeColor}' complété.`]);
+                    
                     const newCompletedPaths = [...completedPaths, activeColor];
                     setCompletedPaths(newCompletedPaths);
+                    
+                    setGrid(g => g.map(h => {
+                        const pathNode = newPath.find(p => p.q === h.q && p.r === h.r);
+                        return pathNode ? { ...h, isPath: true, pathColor: activeColor } : h;
+                    }));
+
                     setActiveColor(null);
                     setCurrentPath([]);
                     
-                    let updatedGrid: Hex[] = [];
-                    setGrid(g => {
-                        updatedGrid = g.map(h => {
-                            const pathNode = newPath.find(p => p.q === h.q && p.r === h.r);
-                            return pathNode ? { ...h, isPath: true, pathColor: activeColor } : h;
-                        });
-                        return updatedGrid;
-                    });
-                    
-                    checkWinCondition(updatedGrid, newCompletedPaths);
+                    checkWinCondition(newCompletedPaths);
                  }
+            } else {
+                 if (!isAdjacent) {
+                    setNeoMessages(prev => [...prev, `NÉO: Erreur. Le noeud n'est pas adjacent.`]);
+                 }
+                 if (isAlreadyInPath) {
+                     setNeoMessages(prev => [...prev, `NÉO: Erreur. Boucle détectée. Réinitialisation du chemin.`]);
+                 }
+                 setCurrentPath([]);
+                 setActiveColor(null);
             }
         }
     };
-    
-    const analyzePath = () => {
-        if (!activeColor || currentPath.length === 0) return;
-
-        const lastHex = currentPath[currentPath.length - 1];
-        const neighbors = grid.filter(h => Math.abs(lastHex.q - h.q) + Math.abs(lastHex.r - h.r) + Math.abs(lastHex.s - h.s) === 2);
-        const blockedNeighbor = neighbors.find(n => n.isBlock && !n.isCorrectedBlock);
-
-        if (blockedNeighbor) {
-            setNeoMessages(prev => [...prev, `NÉO: Corruption détectée. La séquence requiert une fonction '${blockedNeighbor.solution}'.`]);
-        } else {
-            setNeoMessages(prev => [...prev, `NÉO: Aucun blocage direct détecté. Le chemin semble valide ou une autre approche est nécessaire.`]);
-        }
-    };
-
-    const handleDrop = (e: React.DragEvent, hex: Hex) => {
-        e.preventDefault();
-        const tool = e.dataTransfer.getData("tool") as Tool;
-        if (hex.isBlock && hex.solution === tool) {
-            let updatedGrid: Hex[] = [];
-            setGrid(g => {
-                updatedGrid = g.map(h => (h.q === hex.q && h.r === hex.r) ? { ...h, isCorrectedBlock: true, isBlock: false } : h);
-                return updatedGrid;
-            });
-            setNeoMessages(prev => [...prev, `NÉO: Opérateur '${tool}' appliqué. Corruption corrigée.`]);
-            
-            checkWinCondition(updatedGrid, completedPaths);
-
-        } else if (hex.isBlock) {
-             setNeoMessages(prev => [...prev, `NÉO: erreur détectée – restauration...`]);
-             setTimeout(() => {
-                generateGrid();
-                setNeoMessages([]);
-             }, 1000);
-        }
-        setSelectedTool(null);
-    };
-
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-    };
 
     const gridWithCurrentPath = useMemo(() => {
+        if (!activeColor) return grid;
         return grid.map(hex => {
             const pathHex = currentPath.find(p => p.q === hex.q && p.r === hex.r);
             if (pathHex) {
-                return { ...hex, isPath: true, pathColor: activeColor! };
+                return { ...hex, isPath: true, pathColor: activeColor };
             }
             return hex;
         });
     }, [grid, currentPath, activeColor]);
-
-
-    const tools: { name: Tool, icon: React.ReactNode }[] = [
-        { name: 'FORWARD', icon: <Forward /> },
-        { name: 'ROTATE', icon: <RotateCcw /> },
-        { name: 'SPLIT', icon: <GitFork /> },
-    ];
     
     return (
         <div className="w-full h-full bg-card font-code text-sm flex">
@@ -239,42 +176,12 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
                         ))}
                     </svg>
                 </div>
-                <div className="h-36 border-t bg-secondary/30 flex p-4 items-center gap-8">
-                    <div className="flex-1">
-                        <div className="w-full">
-                            <p className="text-center text-muted-foreground mb-2">Stabilité de la séquence</p>
-                            <div className="w-full bg-border rounded-full h-2.5">
-                                <div className="bg-green-600 h-2.5 rounded-full" style={{ width: `${(completedPaths.length / puzzle.starts.length) * 100}%` }}></div>
-                            </div>
+                <div className="h-24 border-t bg-secondary/30 flex p-4 items-center justify-center">
+                    <div className="w-full max-w-sm">
+                        <p className="text-center text-muted-foreground mb-2">Stabilité de la séquence</p>
+                        <div className="w-full bg-border rounded-full h-2.5">
+                            <div className="bg-green-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${(completedPaths.length / puzzle.starts.length) * 100}%` }}></div>
                         </div>
-                        <Button onClick={analyzePath} disabled={!activeColor} className="w-full mt-4">
-                            <Cpu className="mr-2" /> Analyser le chemin
-                        </Button>
-                    </div>
-
-                    <div className="w-48">
-                        <h3 className="text-lg font-bold text-accent text-center mb-2">Opérateurs</h3>
-                        <TooltipProvider>
-                            <div className="grid grid-cols-3 gap-2">
-                                {tools.map(({ name, icon }) => (
-                                    <Tooltip key={name}>
-                                        <TooltipTrigger asChild>
-                                            <div 
-                                                draggable
-                                                onDragStart={(e) => e.dataTransfer.setData("tool", name)}
-                                                onDragEnd={() => setSelectedTool(null)}
-                                                className={cn("p-2 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-1 cursor-grab active:cursor-grabbing", selectedTool === name && "border-accent ring-2 ring-accent")}>
-                                                {icon}
-                                                <span className="text-xs">{name}</span>
-                                            </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">
-                                            <p>Opérateur logique: {name}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                ))}
-                            </div>
-                        </TooltipProvider>
                     </div>
                 </div>
             </div>
