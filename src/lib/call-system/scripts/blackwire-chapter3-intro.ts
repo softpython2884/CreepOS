@@ -5,7 +5,7 @@ export const blackwireChapter3IntroEmail: Omit<Email, 'id' | 'timestamp' | 'fold
   subject: '[ACTION REQUISE] Porte dérobée détectée',
   body: `Recrue,
 
-Bon travail pour la mission d'initiation.
+Bon travail pour la mission d'initiation. Comme promis, voici un petit cadeau de bienvenue pour faciliter ton intégration.
 
 Nous avons détecté une anomalie réseau. Un port non sécurisé sur un serveur interne de Nexus. C'est une porte dérobée.
 IP: 198.51.100.17
@@ -15,9 +15,15 @@ Votre mission :
 1. Récupérez le fichier 'backdoor.sys'.
 2. Transférez-le à la racine du serveur 198.51.100.17.
 3. Une fois le fichier en place, exécutez la commande d'appel suivante depuis votre terminal local :
-   call 198.51.100.17 --notsecure
+   call --198.51.100.17 --notsecure
 
 Ne posez pas de questions. Agissez.
 
 - Blackwire`,
+  attachments: [
+    {
+      fileName: 'PasswordCracker.app',
+      link: 'app://password-cracker' // This will need a new app component
+    }
+  ]
 };

@@ -520,7 +520,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const handleIncreaseDanger = (amount: number) => {
     setDangerLevel(prev => Math.min(prev + amount, 100));
-    addLog(`DANGER: Niveau de trace augmenté de ${amount}%`);
   }
 
   const handleOpenFileEditor = (path: string[], content: string) => {
@@ -760,6 +759,7 @@ Si vous voyez ce message, elle vous surveille déjà.
         
         addLog(`EVENT: Téléchargement de ${pathArray[pathArray.length - 1]}...`);
         
+        // Unhide target folder
         setPlayerFileSystem(prevFs => 
             updateNodeByPath(prevFs, pathArray, (node) => ({ ...node, isHidden: false }))
         );
@@ -773,6 +773,14 @@ Si vous voyez ce message, elle vous surveille déjà.
                 );
             }
         }
+        
+        // Unhide journal entry
+        const journalPath = ['journal', 'entry_01.txt'];
+        setPlayerFileSystem(prevFs => 
+            updateNodeByPath(prevFs, journalPath, (node) => ({ ...node, isHidden: false }))
+        );
+        addLog(`INFO: Nouvelle entrée de journal débloquée.`);
+
         return;
     }
 
