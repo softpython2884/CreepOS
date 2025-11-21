@@ -821,6 +821,9 @@ Si vous voyez ce message, elle vous surveille déjà.
         }
         
         if (file.name === 'memo_restored.txt') {
+            setPlayerFileSystem(prevFs => 
+                updateNodeByPath(prevFs, ['journal', 'entry_01.txt'], (node) => ({ ...node, isHidden: false }))
+            );
             setTimeout(() => triggerCall(neoChapter2Call), 4000);
             setTimeout(() => callQueueRef.current.push(() => triggerCall(supervisorChapter2Call)), 6000);
         }

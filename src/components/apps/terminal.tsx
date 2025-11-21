@@ -276,8 +276,8 @@ export default function Terminal({
       return currentLevel || null;
   }
 
-  const addRemoteLog = (message: string) => {
-    if (connectedIp === '127.0.0.1') return;
+  const addRemoteLog = (message: string, isSilent = false) => {
+    if (connectedIp === '127.0.0.1' || isSilent) return;
 
     const timestamp = new Date().toUTCString();
     const logEntry = `[${timestamp}] - ${message}`;
@@ -308,11 +308,23 @@ export default function Terminal({
       onStopTrace();
 
       const logFile = findNodeByPath(['logs', 'access.log'], currentPc.fileSystem);
-      const hasTraces = logFile && logFile.content && logFile.content.includes(PLAYER_PUBLIC_IP);
+      const traces = (logFile?.content?.match(new RegExp(PLAYER_PUBLIC_IP, 'g')) || []).length;
       
-      if (hasTraces && currentPc.traceability) {
-        handleIncreaseDanger(currentPc.traceability);
-        addLog(`DANGER: Traces laissées sur ${currentPc.ip}. Niveau de danger augmenté de ${currentPc.traceability}%.`);
+      if (traces > 0 && currentPc.traceability) {
+        let dangerMultiplier = 0;
+        if (traces >= 20) {
+            dangerMultiplier = 1;
+        } else if (traces >= 5) {
+            dangerMultiplier = 0.8;
+        } else if (traces >= 1) {
+            dangerMultiplier = 0.25
+        } else if (traces === 1) {
+            dangerMultiplier = 0.03
+        }
+
+        const dangerToAdd = Math.ceil(currentPc.traceability * dangerMultiplier);
+        handleIncreaseDanger(dangerToAdd);
+        addLog(`DANGER: ${traces} trace(s) laissée(s) sur ${currentPc.ip}. Niveau de danger augmenté de ${dangerToAdd}%.`);
       }
 
       const previousHostName = currentPc.name;
@@ -854,7 +866,7 @@ export default function Terminal({
                                         const filePath = [...currentDirectory, file.name];
                                         if (file.name.endsWith('.log')) {
                                             filesCleared.push(file);
-                                            newFs = updateNodeByPath(newFs, filePath, (node) => ({ ...node, content: `Log effacé depuis ${PLAYER_PUBLIC_IP} le ${new Date().toISOString()}\n` }));
+                                            newFs = updateNodeByPath(newFs, filePath, (node) => ({ ...node, content: `` }));
                                         } else {
                                             filesToRemove.push(file);
                                             newFs = updateNodeByPath(newFs, filePath, () => null);
@@ -878,7 +890,7 @@ export default function Terminal({
                             if (filesCleared.length > 0) {
                                 newHistoryItems.push({ type: 'output', content: `Contenu de ${filesCleared.length} fichier(s) log effacé.`, onConfirm: () => {} });
                                 addLog(`EVENT: ${filesCleared.length} logs effacés sur ${connectedIp}`);
-                                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: ${filesCleared.length} fichier(s) log effacé(s) par l'utilisateur depuis ${PLAYER_PUBLIC_IP}.`);
+                                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: ${filesCleared.length} fichier(s) log effacé(s) par l'utilisateur depuis ${PLAYER_PUBLIC_IP}.`, true);
                             }
                             if (filesToRemove.length === 0 && filesCleared.length === 0) {
                                 newHistoryItems.push({ type: 'output', content: "rm: aucun fichier amovible trouvé dans ce répertoire.", onConfirm: () => {} });
@@ -943,8 +955,8 @@ export default function Terminal({
                 break;
             }
             
-            const isAccessLog = fileNode.name.endsWith('.log');
-            const updater = isAccessLog ? (node: FileSystemNode) => ({ ...node, content: `Log effacé depuis ${PLAYER_PUBLIC_IP} le ${new Date().toISOString()}\n` }) : () => null;
+            const isAccessLog = fileNode.name.endsWith('access.log');
+            const updater = isAccessLog ? (node: FileSystemNode) => ({ ...node, content: `` }) : () => null;
 
             setNetwork(currentNetwork => currentNetwork.map(pc => {
                 if (pc.ip === connectedIp) {
@@ -956,7 +968,7 @@ export default function Terminal({
 
             if(isAccessLog) {
                 handleOutput(`Contenu de '${fileArg}' effacé`);
-                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: Fichier log '${fileArg}' effacé par l'utilisateur depuis ${PLAYER_PUBLIC_IP}.`);
+                if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: Fichier log '${fileArg}' effacé par l'utilisateur depuis ${PLAYER_PUBLIC_IP}.`, true);
                 addLog(`EVENT: Fichier log '${fileArg}' sur ${connectedIp} effacé.`);
             } else {
                 handleOutput(`'${fileArg}' supprimé`);
@@ -1526,5 +1538,3 @@ export default function Terminal({
     </div>
   );
 }
-
-    

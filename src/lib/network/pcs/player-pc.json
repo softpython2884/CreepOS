@@ -85,7 +85,7 @@
                     "name": "entry_01.txt",
                     "type": "file",
                     "isHidden": true,
-                    "content": "J'ai trouvé les journaux d'un ancien opérateur. Le fichier 'memo.bin' est corrompu. Je devrais peut-être demander de l'aide à Blackwire pour le décrypter. Ils pourraient avoir les outils nécessaires. Je vais leur envoyer un e-mail."
+                    "content": "J'ai trouvé les journaux d'un ancien opérateur. Le fichier 'memo.bin' est corrompu. Je devrais peut-être demander de l'aide à Blackwire pour le décrypter. Ils pourraient avoir les outils nécessaires. Je vais leur envoyer un e-mail avec 'memo.bin' en sujet pour voir."
                 }
             ]
         },
