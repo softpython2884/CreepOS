@@ -34,20 +34,11 @@ const puzzles: Record<string, { starts: any[], ends: any[], blocks: any[] }> = {
             { q: 0, r: -2, solution: 'FORWARD' },
         ]
     },
-    MEMO_BIN: {
-        starts: [{ q: -3, r: 1, color: 'red' }],
-        ends: [{ q: 3, r: -1, color: 'red' }],
-        blocks: [
-            { q: -1, r: 0, solution: 'FORWARD' },
-            { q: 0, r: 0, solution: 'ROTATE' },
-            { q: 1, r: 0, solution: 'SPLIT' },
-        ]
-    }
 };
 
 const HEX_SIZE = 40;
 
-const Hexagon = ({ hex, onClick, onDrop, onDragOver, selectedTool }: { hex: Hex; onClick: () => void; onDrop: (e: React.DragEvent) => void; onDragOver: (e: React.DragEvent) => void; selectedTool: Tool | null; }) => {
+const Hexagon = ({ hex, onClick }: { hex: Hex; onClick: () => void; }) => {
   const x = HEX_SIZE * (3 / 2 * hex.q);
   const y = HEX_SIZE * (Math.sqrt(3) / 2 * hex.q + Math.sqrt(3) * hex.r);
   
@@ -71,7 +62,7 @@ const Hexagon = ({ hex, onClick, onDrop, onDragOver, selectedTool }: { hex: Hex;
   }
 
   return (
-    <g transform={`translate(${x}, ${y})`} onDrop={onDrop} onDragOver={onDragOver} onClick={onClick} className="cursor-pointer transition-opacity duration-300 hover:opacity-80">
+    <g transform={`translate(${x}, ${y})`} onClick={onClick} className="cursor-pointer transition-opacity duration-300 hover:opacity-80">
       <polygon points={points} fill={getFill()} stroke={getStroke()} strokeWidth="2" />
        {hex.isBlock && !hex.isCorrectedBlock && <AlertCircle className="text-white" x="-10" y="-10" size={20} />}
     </g>
@@ -125,21 +116,13 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
         const allPathsComplete = puzzle.starts.every(start => currentCompletedPaths.includes(start.color));
         const allBlocksCorrected = puzzle.blocks.every(block => currentGrid.find(hex => hex.q === block.q && hex.r === block.r)?.isCorrectedBlock);
         
-        if (puzzleId === 'MEMO_BIN' && allBlocksCorrected) {
-             setNeoMessages(prev => [...prev, "NÉO: Analyse des blocs terminée. Application de la correction finale..."]);
-            setTimeout(() => {
-                setNeoMessages(prev => [...prev, "NÉO: Correction automatique appliquée. Le fichier a été restauré."]);
-                onAnalysisComplete(puzzleId);
-            }, 1500);
-        } else if (allPathsComplete && allBlocksCorrected) {
+        if (allPathsComplete && allBlocksCorrected) {
              setNeoMessages(prev => [...prev, "NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Un rapport a été généré dans vos documents."]);
             onAnalysisComplete(puzzleId);
         }
     }, [puzzle.starts, puzzle.blocks, puzzleId, onAnalysisComplete]);
 
     const handleHexClick = (hex: Hex) => {
-        if(puzzleId === 'MEMO_BIN') return; // Click logic disabled for this puzzle
-
         if (hex.isStart && !completedPaths.includes(hex.color!) && !activeColor) {
             setActiveColor(hex.color!);
             setCurrentPath([hex]);
@@ -188,11 +171,6 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
         } else {
             setNeoMessages(prev => [...prev, `NÉO: Aucun blocage direct détecté. Le chemin semble valide ou une autre approche est nécessaire.`]);
         }
-    };
-
-    const handleDragStart = (e: React.DragEvent, tool: Tool) => {
-        e.dataTransfer.setData("tool", tool);
-        setSelectedTool(tool);
     };
 
     const handleDrop = (e: React.DragEvent, hex: Hex) => {
@@ -257,9 +235,6 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
                             key={i} 
                             hex={hex} 
                             onClick={() => handleHexClick(hex)}
-                            onDrop={(e) => handleDrop(e, hex)}
-                            onDragOver={handleDragOver}
-                            selectedTool={selectedTool}
                           />
                         ))}
                     </svg>
@@ -272,7 +247,7 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
                                 <div className="bg-green-600 h-2.5 rounded-full" style={{ width: `${(completedPaths.length / puzzle.starts.length) * 100}%` }}></div>
                             </div>
                         </div>
-                        <Button onClick={analyzePath} disabled={!activeColor || puzzleId === 'MEMO_BIN'} className="w-full mt-4">
+                        <Button onClick={analyzePath} disabled={!activeColor} className="w-full mt-4">
                             <Cpu className="mr-2" /> Analyser le chemin
                         </Button>
                     </div>
@@ -286,7 +261,7 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
                                         <TooltipTrigger asChild>
                                             <div 
                                                 draggable
-                                                onDragStart={(e) => handleDragStart(e, name)}
+                                                onDragStart={(e) => e.dataTransfer.setData("tool", name)}
                                                 onDragEnd={() => setSelectedTool(null)}
                                                 className={cn("p-2 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-1 cursor-grab active:cursor-grabbing", selectedTool === name && "border-accent ring-2 ring-accent")}>
                                                 {icon}
