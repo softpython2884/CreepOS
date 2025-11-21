@@ -10,6 +10,10 @@ import blackwireTarget from './network/pcs/blackwire-target.json';
 import blackwireDropzone from './network/pcs/blackwire-dropzone.json';
 import chattoutpeteServer from './network/pcs/chattoutpete-server.json';
 import nexusBackdoor from './network/pcs/nexus-backdoor.json';
+import nexusLogs01 from './network/pcs/nexus-logs-01.json';
+import nexusHrDb from './network/pcs/nexus-hr-db.json';
+import workstationHelios from './network/pcs/workstation-helios.json';
+import devSandbox13 from './network/pcs/dev-sandbox-13.json';
 import { type PC } from './network/types';
 
 export const network: PC[] = [
@@ -25,6 +29,8 @@ export const network: PC[] = [
     blackwireDropzone,
     chattoutpeteServer,
     nexusBackdoor,
+    nexusLogs01,
+    nexusHrDb,
+    workstationHelios,
+    devSandbox13,
 ];
-
-    

@@ -1,0 +1,52 @@
+{
+    "id": "dev-sandbox-13",
+    "name": "DEV-SANDBOX-13",
+    "ip": "10.0.0.13",
+    "type": "Server",
+    "links": ["workstation-helios"],
+    "auth": { "user": "helios", "pass": "IcarusFell" },
+    "firewall": { "enabled": true, "complexity": 10, "solution": "REDACTED" },
+    "proxy": { "enabled": true, "level": 5 },
+    "traceTime": 20,
+    "requiredPorts": 3,
+    "isDangerous": true,
+    "traceability": 40,
+    "ports": [
+        { "port": 22, "service": "SSH", "isOpen": false },
+        { "port": 8000, "service": "UNKNOWN", "isOpen": false },
+        { "port": 9999, "service": "UNKNOWN", "isOpen": false }
+    ],
+    "fileSystem": [
+        {
+            "id": "sandbox-notes",
+            "name": "notes",
+            "type": "folder",
+            "children": [
+                { 
+                    "id": "sandbox-journal", 
+                    "name": "journal_final.enc", 
+                    "type": "file",
+                    "isLocked": true,
+                    "password": "LAST_HOPE",
+                    "content": "Si quelqu'un lit ça... NÉO n'est pas une IA. C'est un piège. Elle apprend, elle enferme les consciences. La mienne est la prochaine. Elle est devenue la gardienne d'une prison numérique. Le projet 'Schisme' est notre seul espoir de la briser. Il faut provoquer un conflit de données massif entre son noyau et un stimulus externe imprévisible. J'ai laissé un indice dans le code du serveur de logs. Cherchez 'Nyx'... Dites-lui que je suis désolé. - Helios"
+                }
+            ]
+        },
+        {
+            "id": "sandbox-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "sandbox-access-log", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
+            ]
+        },
+        {
+            "id": "sandbox-sys",
+            "name": "sys",
+            "type": "folder",
+            "children": [
+                { "id": "file-xserver-sandbox", "name": "XserverOS.sys", "type": "file", "content": "SYSTEM KERNEL", "isSystemFile": true }
+            ]
+        }
+    ]
+}

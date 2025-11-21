@@ -1,0 +1,48 @@
+{
+    "id": "nexus-hr-db",
+    "name": "NXS-HR-DB",
+    "ip": "10.255.255.2",
+    "type": "Server",
+    "links": ["nexus-logs-01"],
+    "auth": { "user": "db_admin", "pass": "HR_SecurePass_2025" },
+    "firewall": { "enabled": true, "complexity": 4, "solution": "EMP_RECORD" },
+    "proxy": { "enabled": true, "level": 2 },
+    "traceTime": 40,
+    "requiredPorts": 1,
+    "isDangerous": true,
+    "traceability": 25,
+    "ports": [
+        { "port": 1433, "service": "SQL", "isOpen": false }
+    ],
+    "fileSystem": [
+        {
+            "id": "hr-db-data",
+            "name": "data",
+            "type": "folder",
+            "children": [
+                { 
+                    "id": "hr-employee-records", 
+                    "name": "employee_records.db", 
+                    "type": "file",
+                    "content": "DATA_CORRUPTED: Use db_viewer to read.\n---\nBEGIN RECORD\nID: 7701\nName: Classified\nCodename: Helios\nStatus: Active\nLast Assigned Workstation: 10.0.1.15\n---\nBEGIN RECORD\nID: 7702\nName: Classified\nCodename: Nyx\nStatus: Active\nLast Assigned Workstation: 10.0.1.16\n---"
+                }
+            ]
+        },
+        {
+            "id": "hr-db-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "hr-db-access-log", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
+            ]
+        },
+        {
+            "id": "hr-db-sys",
+            "name": "sys",
+            "type": "folder",
+            "children": [
+                { "id": "file-xserver-hrdb", "name": "XserverOS.sys", "type": "file", "content": "SYSTEM KERNEL", "isSystemFile": true }
+            ]
+        }
+    ]
+}

@@ -51,5 +51,3 @@ export interface Call {
     choices: CallChoice[];
     isFinished?: boolean;
 }
-
-    

@@ -1,0 +1,46 @@
+{
+    "id": "nexus-logs-01",
+    "name": "NXS-LOGS-01",
+    "ip": "10.255.255.1",
+    "type": "Server",
+    "links": ["nexus-hr-db"],
+    "auth": { "user": "log_admin", "pass": "nexus_logs" },
+    "firewall": { "enabled": true, "complexity": 3, "solution": "ARCHIVE_2025" },
+    "proxy": { "enabled": false, "level": 0 },
+    "traceTime": 30,
+    "requiredPorts": 0,
+    "isDangerous": false,
+    "traceability": 15,
+    "ports": [],
+    "fileSystem": [
+        {
+            "id": "logs-archive",
+            "name": "archive",
+            "type": "folder",
+            "children": [
+                { 
+                    "id": "logs-transfer-log", 
+                    "name": "transfer_log.enc", 
+                    "type": "file",
+                    "content": "Fichier crypté. Contient les journaux de transfert de données vers la base de données des RH (10.255.255.2)."
+                }
+            ]
+        },
+        {
+            "id": "logs-system-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "logs-access-log", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
+            ]
+        },
+        {
+            "id": "logs-sys",
+            "name": "sys",
+            "type": "folder",
+            "children": [
+                { "id": "file-xserver-logs01", "name": "XserverOS.sys", "type": "file", "content": "SYSTEM KERNEL", "isSystemFile": true }
+            ]
+        }
+    ]
+}

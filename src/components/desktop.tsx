@@ -38,6 +38,7 @@ import { supervisorChapter2Call } from '@/lib/call-system/scripts/supervisor-cha
 import TextEditor from './apps/text-editor';
 import { blackwireMission1Email } from '@/lib/call-system/scripts/blackwire-mission-1';
 import { blackwireChapter3IntroEmail } from '@/lib/call-system/scripts/blackwire-chapter3-intro';
+import { directorChapter3InterrogationCall, directorChapter3AlertEmail } from '@/lib/call-system/scripts/director-chapter3-interrogation';
 
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player' | 'contract-viewer' | 'sequence-analyzer';
@@ -245,6 +246,36 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
   }, [callState, onAlertEvent, addLog, onMusicEvent]);
 
+  const handleCallConsequences = useCallback((consequences: any) => {
+    if (!consequences) return;
+    
+    const trigger = consequences.endCallAndTrigger;
+    if (!trigger) return;
+
+    const triggerKey = `${callScriptRef.current?.id}-${currentNodeIdRef.current}-end`;
+    if (callConsequencesTriggeredRef.current.has(triggerKey)) return;
+
+    if (trigger.type === 'call') {
+        callQueueRef.current.push(() => triggerCall(trigger.script));
+    } else if (trigger.type === 'email') {
+        receiveEmail(trigger.email);
+    } else if (trigger.type === 'trace') {
+        handleStartTrace("CONTACT EXTERNE", trigger.duration, activeInstanceId || 0);
+    } else if (trigger.type === 'alarm') {
+        addLog(`ALARM: Intrusion réseau détectée sur le réseau Nexus.`);
+        onAlertEvent('alarm');
+        setTimeout(() => onAlertEvent('stopAlarm'), trigger.duration);
+        if(trigger.alertEmail) {
+            receiveEmail(trigger.alertEmail);
+        }
+        if(trigger.nextCall) {
+            callQueueRef.current.push(() => triggerCall(trigger.nextCall!));
+        }
+    }
+    callConsequencesTriggeredRef.current.add(triggerKey);
+
+  }, [receiveEmail, triggerCall, handleStartTrace, activeInstanceId, onAlertEvent, addLog]);
+
   const endCall = useCallback((isManualClose: boolean = false) => {
     onAlertEvent('stopRingtone');
     onAlertEvent('stopAlarm');
@@ -258,20 +289,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       const lastNodeId = currentNodeIdRef.current;
 
       if (lastScript && lastNodeId) {
-          const triggerKey = `${lastScript.id}-${lastNodeId}-end`;
-          if (!callConsequencesTriggeredRef.current.has(triggerKey)) {
-              const lastNode = lastScript.nodes[lastNodeId];
-              const trigger = lastNode?.consequences?.endCallAndTrigger;
-              
-              if (trigger) {
-                  if (trigger.type === 'call') {
-                      callQueueRef.current.push(() => triggerCall(trigger.script));
-                  } else if (trigger.type === 'email') {
-                      receiveEmail(trigger.email);
-                  }
-              }
-              callConsequencesTriggeredRef.current.add(triggerKey);
-          }
+          const lastNode = lastScript.nodes[lastNodeId];
+          handleCallConsequences(lastNode?.consequences);
       }
     }
 
@@ -290,7 +309,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if(nextCall) {
         setTimeout(nextCall, 2000); 
     }
-  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, receiveEmail, activeCall, triggerCall]);
+  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, activeCall, handleCallConsequences]);
 
   const advanceCall = useCallback((choiceId: string) => {
     const script = callScriptRef.current;
@@ -339,17 +358,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       
       const newMessages = [...(activeCall?.messages || []), playerMessage, nextNode.message];
 
-      if (nextNode.consequences?.endCallAndTrigger) {
-           const triggerKey = `${script.id}-${nextNodeId}-end`;
-           if (!callConsequencesTriggeredRef.current.has(triggerKey)) {
-                if(nextNode.consequences.endCallAndTrigger.type === 'call') {
-                    callQueueRef.current.push(() => triggerCall(nextNode.consequences!.endCallAndTrigger!.script));
-                } else {
-                    receiveEmail(nextNode.consequences.endCallAndTrigger.email);
-                }
-                callConsequencesTriggeredRef.current.add(triggerKey);
-           }
-      }
+      handleCallConsequences(nextNode.consequences);
 
       setActiveCall(prev => prev ? ({
           ...prev,
@@ -367,7 +376,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       }
 
     }, chosenChoice.consequences?.triggerSound ? 1800 : 1000);
-  }, [activeCall, onSoundEvent, receiveEmail, triggerCall]);
+  }, [activeCall, onSoundEvent, receiveEmail, handleIncreaseDanger, handleCallConsequences]);
 
   const answerCall = useCallback(() => {
     const script = callScriptRef.current;
