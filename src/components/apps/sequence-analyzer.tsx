@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { BrainCircuit, Cpu, RotateCcw, GitFork, Forward, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -117,13 +117,13 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
         setActiveColor(null);
     }, [puzzleId]);
 
-    useMemo(() => {
+    useEffect(() => {
         generateGrid();
     }, [generateGrid]);
     
-    const checkWinCondition = useCallback(() => {
-        const allPathsComplete = puzzle.starts.every(start => completedPaths.includes(start.color));
-        const allBlocksCorrected = puzzle.blocks.every(block => grid.find(hex => hex.q === block.q && hex.r === block.r)?.isCorrectedBlock);
+    const checkWinCondition = useCallback((currentGrid: Hex[], currentCompletedPaths: string[]) => {
+        const allPathsComplete = puzzle.starts.every(start => currentCompletedPaths.includes(start.color));
+        const allBlocksCorrected = puzzle.blocks.every(block => currentGrid.find(hex => hex.q === block.q && hex.r === block.r)?.isCorrectedBlock);
         
         if (puzzleId === 'MEMO_BIN' && allBlocksCorrected) {
              setNeoMessages(prev => [...prev, "NÉO: Analyse des blocs terminée. Application de la correction finale..."]);
@@ -135,7 +135,7 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
              setNeoMessages(prev => [...prev, "NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Un rapport a été généré dans vos documents."]);
             onAnalysisComplete(puzzleId);
         }
-    }, [puzzle.starts, puzzle.blocks, completedPaths, grid, puzzleId, onAnalysisComplete]);
+    }, [puzzle.starts, puzzle.blocks, puzzleId, onAnalysisComplete]);
 
     const handleHexClick = (hex: Hex) => {
         if(puzzleId === 'MEMO_BIN') return; // Click logic disabled for this puzzle
@@ -160,11 +160,17 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
                     setCompletedPaths(newCompletedPaths);
                     setActiveColor(null);
                     setCurrentPath([]);
-                    setGrid(g => g.map(h => {
-                        const pathNode = newPath.find(p => p.q === h.q && p.r === h.r);
-                        return pathNode ? { ...h, isPath: true, pathColor: activeColor } : h;
-                    }));
-                    checkWinCondition();
+                    
+                    let updatedGrid: Hex[] = [];
+                    setGrid(g => {
+                        updatedGrid = g.map(h => {
+                            const pathNode = newPath.find(p => p.q === h.q && p.r === h.r);
+                            return pathNode ? { ...h, isPath: true, pathColor: activeColor } : h;
+                        });
+                        return updatedGrid;
+                    });
+                    
+                    checkWinCondition(updatedGrid, newCompletedPaths);
                  }
             }
         }
@@ -193,24 +199,14 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
         e.preventDefault();
         const tool = e.dataTransfer.getData("tool") as Tool;
         if (hex.isBlock && hex.solution === tool) {
-            const newGrid = grid.map(h => (h.q === hex.q && h.r === hex.r) ? { ...h, isCorrectedBlock: true, isBlock: false } : h);
-            setGrid(newGrid);
-            setNeoMessages(prev => [...prev, `NÉO: Opérateur '${tool}' appliqué. Corruption corrigée.`]);
-            
-            // We need to use a callback with setGrid to get the latest state for checkWinCondition
-            setGrid(currentGrid => {
-                const updatedGrid = currentGrid.map(h => (h.q === hex.q && h.r === hex.r) ? { ...h, isCorrectedBlock: true, isBlock: false } : h);
-                const allBlocksCorrected = puzzle.blocks.every(block => updatedGrid.find(h => h.q === block.q && h.r === block.r)?.isCorrectedBlock);
-                
-                if (puzzleId === 'MEMO_BIN' && allBlocksCorrected) {
-                    setNeoMessages(prev => [...prev, "NÉO: Analyse des blocs terminée. Application de la correction finale..."]);
-                    setTimeout(() => {
-                        setNeoMessages(prev => [...prev, "NÉO: Correction automatique appliquée. Le fichier a été restauré."]);
-                        onAnalysisComplete(puzzleId);
-                    }, 1500);
-                }
+            let updatedGrid: Hex[] = [];
+            setGrid(g => {
+                updatedGrid = g.map(h => (h.q === hex.q && h.r === hex.r) ? { ...h, isCorrectedBlock: true, isBlock: false } : h);
                 return updatedGrid;
             });
+            setNeoMessages(prev => [...prev, `NÉO: Opérateur '${tool}' appliqué. Corruption corrigée.`]);
+            
+            checkWinCondition(updatedGrid, completedPaths);
 
         } else if (hex.isBlock) {
              setNeoMessages(prev => [...prev, `NÉO: erreur détectée – restauration...`]);
