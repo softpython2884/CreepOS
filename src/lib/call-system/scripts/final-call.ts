@@ -52,8 +52,15 @@ export const finalCallScript: CallScript = {
         },
         {
           id: 'end-2',
-          text: 'Choix 2',
+          text: 'Combattre Néo.',
           nextNode: 'end-call',
+          consequences: {
+              endCallAndTrigger: {
+                  type: 'endgame',
+                  endType: 'self_destruct',
+                  lines: ['Tu le savais', 'On te l\'a dit', 'Même mort, tu es sur sa liste']
+              }
+          }
         },
         {
             id: 'end-3',

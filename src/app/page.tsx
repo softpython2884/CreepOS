@@ -17,8 +17,9 @@ import SurvivalMode from '@/components/survival-mode';
 import CinematicScreen from '@/components/cinematic-screen';
 import Terminal from '@/components/apps/terminal';
 import CreditsScreen from '@/components/credits-screen';
+import EndgameScreen from '@/components/endgame-screen';
 
-type MachineState = 'standby' | 'cinematic' | 'off' | 'bios' | 'booting' | 'login' | 'recovery' | 'bsod' | 'survival' | 'desktop' | 'credits';
+type MachineState = 'standby' | 'cinematic' | 'off' | 'bios' | 'booting' | 'login' | 'recovery' | 'bsod' | 'survival' | 'desktop' | 'credits' | 'endgame';
 
 const biosLines = [
     'NEO-SYSTEM BIOS v1.0.3',
@@ -359,6 +360,7 @@ const BsodScreen = ({ onReboot }: { onReboot: () => void }) => {
 
 export default function Home() {
     const [machineState, setMachineState] = useState<MachineState>('standby');
+    const [endgameData, setEndgameData] = useState<{ lines: string[] } | null>(null);
     const [username] = useState('Operator');
     const [soundEvent, setSoundEvent] = useState<SoundEvent>(null);
     const [musicEvent, setMusicEvent] = useState<MusicEvent>('none');
@@ -463,7 +465,7 @@ export default function Home() {
         setMachineState('login');
     }
 
-    const handleEndGame = useCallback((endType: 'credits' | 'wait_for_death' = 'credits') => {
+    const handleEndGame = useCallback((endType: 'credits' | 'wait_for_death' | 'self_destruct' = 'credits', lines: string[] = []) => {
         if (endType === 'wait_for_death') {
             setFadeOut(true);
             setTimeout(() => {
@@ -473,11 +475,23 @@ export default function Home() {
                     setMachineState('credits');
                 }, 3000);
             }, 2000);
+        } else if (endType === 'self_destruct') {
+            setMusicEvent('none');
+            setMachineState('endgame');
+            setEndgameData({ lines });
         } else {
             setMusicEvent('credits');
             setMachineState('credits');
         }
     }, [onSoundEvent]);
+
+    const handleEndgameScreenComplete = () => {
+        onSoundEvent('kill');
+        setTimeout(() => {
+            setMusicEvent('credits');
+            setMachineState('credits');
+        }, 2000);
+    }
 
     const renderState = () => {
         switch (machineState) {
@@ -533,6 +547,8 @@ export default function Home() {
                 />;
             case 'credits':
                 return <CreditsScreen onComplete={() => setMachineState('off')} />;
+            case 'endgame':
+                return <EndgameScreen lines={endgameData?.lines || []} onComplete={handleEndgameScreenComplete} />;
             case 'desktop':
                 return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} onAlertEvent={setAlertEvent} username={username} onReboot={handleReboot} setMachineState={setMachineState} scale={scale} onEndGame={handleEndGame} isNeoFreestyle={isNeoFreestyle} />;
             default:

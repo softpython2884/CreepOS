@@ -85,9 +85,9 @@ interface DesktopProps {
   onAlertEvent: (event: AlertEvent) => void;
   username: string;
   onReboot: () => void;
-  setMachineState: (state: string) => void;
+  setMachineState: (state: string, data?: any) => void;
   scale: number;
-  onEndGame: (endType?: 'credits' | 'wait_for_death') => void;
+  onEndGame: (endType?: 'credits' | 'wait_for_death' | 'self_destruct', lines?: string[]) => void;
   isNeoFreestyle?: boolean;
 }
 
@@ -289,7 +289,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     const endTrigger = consequences.endCallAndTrigger;
     if (endTrigger) {
         if (endTrigger.type === 'endgame') {
-            onEndGame(endTrigger.endType);
+            onEndGame(endTrigger.endType, endTrigger.lines);
         } else if (endTrigger.type === 'call') {
             callQueueRef.current.push(() => triggerCall(endTrigger.script));
         } else if (endTrigger.type === 'email') {
