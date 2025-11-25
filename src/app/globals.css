@@ -113,6 +113,36 @@
     --input: 356 100% 20%;
     --ring: 356 100% 70%;
   }
+
+  .lockdown {
+    --background: 0 0% 8%;
+    --foreground: 3 100% 80%;
+
+    --card: 0 0% 12%;
+    --card-foreground: 3 100% 80%;
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 3 100% 80%;
+
+    --primary: 3 100% 20%;
+    --primary-foreground: 3 100% 90%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 3 100% 80%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 3 100% 60%;
+
+    --accent: 3 100% 50%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 3 100% 30%;
+    --input: 3 100% 30%;
+    --ring: 3 100% 60%;
+  }
 }
 
 @layer base {

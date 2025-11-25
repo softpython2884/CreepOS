@@ -153,6 +153,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [showModuleInit, setShowModuleInit] = useState(false);
   const [moduleProgress, setModuleProgress] = useState(0);
   const [isSystemUnstable, setIsSystemUnstable] = useState(false);
+  const [isNexusLockdown, setIsNexusLockdown] = useState(false);
   
   const [emails, setEmails] = useState<Email[]>(() => {
     const savedState = loadGameState(username);
@@ -549,24 +550,79 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     }, [dangerLevel, setMachineState, onAlertEvent]);
 
     const destroyedNodeCount = useRef(0);
-    const nodeIdsToTrack = [
-        'neo-node-01', 'neo-node-02', 'neo-node-03', 'neo-node-04', 
-        'neo-node-05', 'neo-node-06', 'neo-node-07'
-    ];
+    const nodeIdsToTrack = ['neo-node-01', 'neo-node-02', 'neo-node-03', 'neo-node-04', 'neo-node-05', 'neo-node-06', 'neo-node-07'];
+    
+    useEffect(() => {
+        const checkNeoNodes = () => {
+            const currentDestroyedCount = nodeIdsToTrack.filter(id => network.find(p => p.id === id)?.isDestroyed).length;
+
+            if (currentDestroyedCount > destroyedNodeCount.current) {
+                addLog(`EVENT: NÉO a détecté la destruction d'un noeud. Riposte imminente.`);
+                triggerCall(neoAttackCall);
+            }
+            destroyedNodeCount.current = currentDestroyedCount;
+        };
+        checkNeoNodes();
+    }, [network, addLog, triggerCall]);
+
+    const neoCoreIds = ['neo-core-a', 'neo-core-b', 'neo-core-c'];
+    const neoDefeatedRef = useRef(false);
 
     useEffect(() => {
-        const currentDestroyedCount = nodeIdsToTrack.filter(id => {
-            const pc = network.find(p => p.id === id);
-            return pc?.isDestroyed;
-        }).length;
+        const checkNeoDefeat = () => {
+            if (neoDefeatedRef.current) return;
 
-        if (currentDestroyedCount > destroyedNodeCount.current) {
-            addLog(`EVENT: NÉO a détecté la destruction d'un noeud. Riposte imminente.`);
-            triggerCall(neoAttackCall);
-        }
-        destroyedNodeCount.current = currentDestroyedCount;
+            const coresDestroyed = neoCoreIds.every(id => network.find(p => p.id === id)?.isDestroyed);
+            if (coresDestroyed) {
+                neoDefeatedRef.current = true;
+                addLog('CRITICAL: NÉO core network destroyed. System integrity compromised.');
+                setIsNexusLockdown(true);
+                onAlertEvent('alarm');
+                
+                // Send final emails
+                const alertEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
+                    sender: 'system-alert@nexus-research.net',
+                    subject: 'ALERTE ROUGE - CONFINEMENT TOTAL',
+                    body: 'Attaque externe massive détectée. L\'intégrité du réseau est compromise. Tous les systèmes passent en confinement total. Le protocole de sécurité de niveau 7 est en vigueur. Toute communication externe est coupée. Les équipes d\'intervention sont en route.'
+                };
+                const directorEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
+                    sender: 'directeur@nexus-research.net',
+                    subject: 'Vous.',
+                    body: 'Omen. L\'attaque a commencé au moment précis où un employé européen s\'est connecté. Quelle coïncidence. Ne bougez pas de votre poste. La sécurité vient vous "escorter" pour un débriefing. C\'est terminé pour vous.'
+                };
 
-    }, [network, addLog, triggerCall]);
+                setTimeout(() => receiveEmail(alertEmail), 1000);
+                setTimeout(() => receiveEmail(directorEmail), 2500);
+            }
+        };
+        checkNeoDefeat();
+    }, [network, addLog, onAlertEvent, receiveEmail]);
+
+    useEffect(() => {
+        if (!isNexusLockdown) return;
+
+        // Residual NÉO behavior
+        const chaosInterval = setInterval(() => {
+            const rand = Math.random();
+            if (rand < 0.3) {
+                handleStartTrace('NÉO_GHOST', 5, 0);
+            } else if (rand < 0.5) {
+                setMachineState('survival');
+            } else if (rand < 0.8) {
+                addLog('NÉO_RESIDUE: ...aide...moi...');
+                onSoundEvent('glitch');
+            } else {
+                receiveEmail({
+                    sender: '???',
+                    subject: '...',
+                    body: '...pourquoi...'
+                });
+            }
+        }, 45000); // every 45 seconds
+
+        return () => clearInterval(chaosInterval);
+
+    }, [isNexusLockdown, handleStartTrace, setMachineState, addLog, receiveEmail, onSoundEvent]);
 
 
  useEffect(() => {
@@ -1186,7 +1242,8 @@ Si vous voyez ce message, elle vous surveille déjà.
       className={cn(
         "h-full w-full font-code relative overflow-hidden flex flex-col justify-center items-center p-4 transition-colors duration-500",
         isTraced && "traced",
-        isSystemUnstable && 'animate-system-collapse'
+        isSystemUnstable && 'animate-system-collapse',
+        isNexusLockdown && 'lockdown'
       )}
       style={{ backgroundImage: `linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)`, backgroundSize: `2rem 2rem` }}
     >
@@ -1294,4 +1351,3 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
-
