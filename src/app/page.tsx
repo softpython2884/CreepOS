@@ -18,8 +18,9 @@ import CinematicScreen from '@/components/cinematic-screen';
 import Terminal from '@/components/apps/terminal';
 import CreditsScreen from '@/components/credits-screen';
 import EndgameScreen from '@/components/endgame-screen';
+import TrueEndingScreen from '@/components/true-ending-screen';
 
-type MachineState = 'standby' | 'cinematic' | 'off' | 'bios' | 'booting' | 'login' | 'recovery' | 'bsod' | 'survival' | 'desktop' | 'credits' | 'endgame';
+type MachineState = 'standby' | 'cinematic' | 'off' | 'bios' | 'booting' | 'login' | 'recovery' | 'bsod' | 'survival' | 'desktop' | 'credits' | 'endgame' | 'true_ending';
 
 const biosLines = [
     'NEO-SYSTEM BIOS v1.0.3',
@@ -492,10 +493,9 @@ export default function Home() {
             }, 5700);
         } else if (endType === 'true_ending') {
             setFadeOut(true);
-            // This is a placeholder for the final animation
             setTimeout(() => {
-                setMachineState('endgame');
-                setEndgameData({ lines: ['[PLACEHOLDER: Fin Ultime]'] });
+                setMusicEvent('none');
+                setMachineState('true_ending');
             }, 2000);
         } else {
             setMusicEvent('credits');
@@ -509,6 +509,11 @@ export default function Home() {
             setMusicEvent('credits');
             setMachineState('credits');
         }, 2000);
+    }
+
+    const handleTrueEndingComplete = () => {
+        setMusicEvent('credits');
+        setMachineState('credits');
     }
 
     const renderState = () => {
@@ -567,6 +572,8 @@ export default function Home() {
                 return <CreditsScreen onComplete={() => setMachineState('off')} />;
             case 'endgame':
                 return <EndgameScreen lines={endgameData?.lines || []} onComplete={handleEndgameScreenComplete} />;
+            case 'true_ending':
+                return <TrueEndingScreen onComplete={handleTrueEndingComplete} onSoundEvent={setSoundEvent} />;
             case 'desktop':
                 return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} onAlertEvent={setAlertEvent} username={username} onReboot={handleReboot} setMachineState={setMachineState} scale={scale} onEndGame={handleEndGame} isNeoFreestyle={isNeoFreestyle} />;
             default:

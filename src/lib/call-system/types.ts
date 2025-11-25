@@ -12,11 +12,11 @@ type EndgameType = 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' | 'tr
 
 type ConsequenceTrigger = 
     | { type: 'call'; script: CallScriptType }
-    | { type: 'email'; email: Omit<Email, 'id', 'timestamp', 'folder', 'recipient'> }
+    | { type: 'email'; email: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> }
     | { type: 'trace'; duration: number }
-    | { type: 'alarm', duration: number, nextCall?: CallScriptType, alertEmail?: Omit<Email, 'id', 'timestamp', 'folder', 'recipient'> }
+    | { type: 'alarm', duration: number, nextCall?: CallScriptType, alertEmail?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> }
     | { type: 'endgame', endType: EndgameType, lines?: string[] }
-    | { type: 'machine_state', state: string, email?: Omit<Email, 'id', 'timestamp', 'folder', 'recipient'> };
+    | { type: 'machine_state', state: string, email?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> };
 
 
 export interface CallChoice {
@@ -25,7 +25,7 @@ export interface CallChoice {
     nextNode: string;
     consequences?: {
         danger?: number;
-        triggerEmail?: Omit<Email, 'id', 'timestamp', 'folder', 'recipient'>;
+        triggerEmail?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>;
         triggerSound?: 'tension' | 'glitch' | 'lag';
         startInstability?: boolean;
         endCallAndTrigger?: ConsequenceTrigger;
@@ -36,7 +36,7 @@ export interface CallNode {
     message: CallMessage;
     choices?: CallChoice[];
     consequences?: {
-        triggerEmail?: Omit<Email, 'id', 'timestamp', 'folder', 'recipient'>;
+        triggerEmail?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>;
         triggerSound?: 'tension' | 'glitch' | 'lag';
         startInstability?: boolean;
         endCallAndTrigger?: ConsequenceTrigger;

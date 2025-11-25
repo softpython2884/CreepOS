@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-export type SoundEvent = 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | 'meme' | 'lag' | 'kill' | 'off' | 'cours' | 'soufle' | 'multikill' | null;
+export type SoundEvent = 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | 'meme' | 'lag' | 'kill' | 'off' | 'cours' | 'soufle' | 'multikill' | 'implosion' | 'data-cascade' | 'grid-fracture' | null;
 export type MusicEvent = 'calm' | 'epic' | 'cinematic' | 'credits' | 'none';
 export type AlertEvent = 'scream' | 'ringtone' | 'alarm' | 'stopScream' | 'stopRingtone' | 'stopAlarm' | null;
 
@@ -35,6 +35,9 @@ const sounds: Record<NonNullable<SoundEvent>, { src: string | string[]; volume: 
     cours: { src: '/cours.mp3', volume: 0.8, loop: false },
     soufle: { src: '/soufle.mp3', volume: 0.7, loop: false },
     multikill: { src: '/multikill.mp3', volume: 0.9, loop: false },
+    implosion: { src: '/kill.mp3', volume: 0.9 }, // Placeholder
+    'data-cascade': { src: '/tension.mp3', volume: 0.8, loop: true }, // Placeholder
+    'grid-fracture': { src: '/glitch-sound-scary-mp3.mp3', volume: 0.6 }, // Placeholder
 };
 
 const musicTracks: Record<Exclude<MusicEvent, 'none' | 'calm'>, { src: string; volume: number; loop?: boolean }> = {
