@@ -17,18 +17,33 @@ type Hex = {
   color?: string;
   isPath?: boolean;
   pathColor?: string;
+  isRotatable?: boolean;
+  rotation?: number; // 0-5
+  connections?: number[]; // [0, 1, 2, 3, 4, 5]
+  targetRotation?: number;
 };
 
-const puzzles: Record<string, { starts: any[], ends: any[] }> = {
+const puzzles: Record<string, { starts: any[], ends: any[], rotatables?: any[] }> = {
     DELTA7: {
-        starts: [{ q: -2, r: 0, color: 'blue' }, {q: 2, r: -2, color: 'green'}],
-        ends: [{ q: 2, r: 2, color: 'blue' }, {q: -1, r: 3, color: 'green'}],
+        starts: [{ q: -2, r: 0, color: '#3b82f6' }, {q: 2, r: -2, color: '#22c55e'}],
+        ends: [{ q: 2, r: 2, color: '#3b82f6' }, {q: -1, r: 3, color: '#22c55e'}],
     },
+    MEMO_BIN: {
+        starts: [{ q: -3, r: 0, color: '#eab308' }],
+        ends: [{ q: 3, r: 0, color: '#eab308' }],
+        rotatables: [
+            { q: -2, r: 0, connections: [0, 3], targetRotation: 0 },
+            { q: -1, r: 0, connections: [0, 3], targetRotation: 5 },
+            { q: 0, r: 0, connections: [1, 4], targetRotation: 0 },
+            { q: 1, r: 0, connections: [0, 3], targetRotation: 1 },
+            { q: 2, r: 0, connections: [0, 3], targetRotation: 0 },
+        ]
+    }
 };
 
 const HEX_SIZE = 40;
 
-const Hexagon = ({ hex, onClick }: { hex: Hex; onClick: () => void; }) => {
+const Hexagon = ({ hex, onClick, onRotate }: { hex: Hex; onClick?: () => void; onRotate?: () => void; }) => {
   const x = HEX_SIZE * (3 / 2 * hex.q);
   const y = HEX_SIZE * (Math.sqrt(3) / 2 * hex.q + Math.sqrt(3) * hex.r);
   
@@ -45,13 +60,28 @@ const Hexagon = ({ hex, onClick }: { hex: Hex; onClick: () => void; }) => {
   }
 
   const getStroke = () => {
-      if (hex.isPath) return 'hsl(var(--foreground))';
+      if (hex.isPath) return hex.pathColor;
       return 'hsl(var(--border))';
+  }
+  
+  const handleClick = () => {
+    if(hex.isRotatable) onRotate?.();
+    else onClick?.();
   }
 
   return (
-    <g transform={`translate(${x}, ${y})`} onClick={onClick} className="cursor-pointer transition-opacity duration-300 hover:opacity-80">
+    <g transform={`translate(${x}, ${y})`} onClick={handleClick} className="cursor-pointer transition-opacity duration-300 hover:opacity-80">
       <polygon points={points} fill={getFill()} stroke={getStroke()} strokeWidth="2" />
+      {hex.isRotatable && hex.connections && (
+          <g transform={`rotate(${hex.rotation! * 60})`}>
+              {hex.connections.map(conn => {
+                  const angle = Math.PI / 180 * (60 * conn);
+                  const endX = HEX_SIZE * 0.7 * Math.cos(angle);
+                  const endY = HEX_SIZE * 0.7 * Math.sin(angle);
+                  return <line key={conn} x1="0" y1="0" x2={endX} y2={endY} stroke={hex.isPath ? hex.pathColor : "hsl(var(--foreground))"} strokeWidth="4" />
+              })}
+          </g>
+      )}
     </g>
   );
 };
@@ -67,7 +97,30 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
     
     const size = 4; // Grid size
 
-    useEffect(() => {
+    const isPathComplete = (path: Hex[]) => {
+        if (!puzzle.rotatables) return true;
+        const pathSet = new Set(path.map(h => `${h.q},${h.r}`));
+        const allRotatablesInPath = grid.filter(h => h.isRotatable && pathSet.has(`${h.q},${h.r}`));
+        return allRotatablesInPath.every(h => h.rotation === h.targetRotation);
+    }
+    
+    const checkWinCondition = useCallback((currentCompleted: string[], currentGrid: Hex[]) => {
+        const allPathsDone = currentCompleted.length === puzzle.starts.length;
+        
+        let allRotatablesCorrect = true;
+        if(puzzle.rotatables) {
+            allRotatablesCorrect = currentGrid
+                .filter(h => h.isRotatable)
+                .every(h => h.rotation === h.targetRotation);
+        }
+
+        if (allPathsDone && allRotatablesCorrect) {
+            setNeoMessages(prev => [...prev, `NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Données restaurées.`]);
+            setTimeout(() => onAnalysisComplete(puzzleId), 1000);
+        }
+    }, [puzzle.starts, puzzle.rotatables, puzzleId, onAnalysisComplete]);
+
+    const buildGrid = useCallback(() => {
         const newGrid: Hex[] = [];
         for (let q = -size; q <= size; q++) {
             for (let r = -size; r <= size; r++) {
@@ -75,11 +128,17 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
                 if (s >= -size && s <= size) {
                     const start = puzzle.starts.find(p => p.q === q && p.r === r);
                     const end = puzzle.ends.find(p => p.q === q && p.r === r);
+                    const rotatable = puzzle.rotatables?.find(p => p.q === q && p.r === r);
+
                     newGrid.push({
                         q, r, s,
                         isStart: !!start,
                         isEnd: !!end,
                         color: start?.color || end?.color,
+                        isRotatable: !!rotatable,
+                        connections: rotatable?.connections,
+                        rotation: rotatable ? 0 : undefined,
+                        targetRotation: rotatable?.targetRotation,
                     });
                 }
             }
@@ -89,13 +148,10 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
         setCurrentPath([]);
         setActiveColor(null);
     }, [puzzle]);
-    
-    const checkWinCondition = useCallback((currentCompletedPaths: string[]) => {
-        if (currentCompletedPaths.length === puzzle.starts.length) {
-            setNeoMessages(prev => [...prev, "NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Un rapport a été généré dans vos documents."]);
-            onAnalysisComplete(puzzleId);
-        }
-    }, [puzzle.starts, puzzleId, onAnalysisComplete]);
+
+    useEffect(() => {
+        buildGrid();
+    }, [buildGrid]);
 
     const handleHexClick = (hex: Hex) => {
         if (hex.isStart && !completedPaths.includes(hex.color!) && !activeColor) {
@@ -115,31 +171,53 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
                  setCurrentPath(newPath);
 
                  if (hex.isEnd && hex.color === activeColor) {
+                    if (puzzleId === 'MEMO_BIN' && !isPathComplete(newPath)) {
+                        setNeoMessages(prev => [...prev, `NÉO: Erreur. Le chemin est connecté mais les relais ne sont pas correctement alignés.`]);
+                        setCurrentPath([]);
+                        setActiveColor(null);
+                        return;
+                    }
+
                     setNeoMessages(prev => [...prev, `NÉO: Chemin '${activeColor}' complété.`]);
                     
                     const newCompletedPaths = [...completedPaths, activeColor];
                     setCompletedPaths(newCompletedPaths);
                     
-                    setGrid(g => g.map(h => {
+                    const finalGrid = grid.map(h => {
                         const pathNode = newPath.find(p => p.q === h.q && p.r === h.r);
                         return pathNode ? { ...h, isPath: true, pathColor: activeColor } : h;
-                    }));
-
+                    });
+                    setGrid(finalGrid);
+                    
                     setActiveColor(null);
                     setCurrentPath([]);
-                    
-                    checkWinCondition(newCompletedPaths);
+                    checkWinCondition(newCompletedPaths, finalGrid);
                  }
             } else {
-                 if (!isAdjacent) {
-                    setNeoMessages(prev => [...prev, `NÉO: Erreur. Le noeud n'est pas adjacent.`]);
-                 }
-                 if (isAlreadyInPath) {
-                     setNeoMessages(prev => [...prev, `NÉO: Erreur. Boucle détectée. Réinitialisation du chemin.`]);
-                 }
+                 if (!isAdjacent) setNeoMessages(prev => [...prev, `NÉO: Erreur. Le noeud n'est pas adjacent.`]);
+                 if (isAlreadyInPath) setNeoMessages(prev => [...prev, `NÉO: Erreur. Boucle détectée. Réinitialisation du chemin.`]);
                  setCurrentPath([]);
                  setActiveColor(null);
             }
+        }
+    };
+    
+    const handleRotate = (q: number, r: number) => {
+        let newGrid: Hex[] = [];
+        setGrid(g => {
+            newGrid = g.map(h => {
+                if (h.q === q && h.r === r && h.isRotatable) {
+                    const newRotation = ((h.rotation ?? 0) + 1) % 6;
+                    return { ...h, rotation: newRotation };
+                }
+                return h;
+            });
+            return newGrid;
+        });
+
+        // Check for win condition on rotation, only if all paths are complete
+        if (completedPaths.length === puzzle.starts.length) {
+            checkWinCondition(completedPaths, newGrid);
         }
     };
 
@@ -154,6 +232,11 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
         });
     }, [grid, currentPath, activeColor]);
     
+    const resetPuzzle = () => {
+        setNeoMessages(["NÉO: Réinitialisation du puzzle."]);
+        buildGrid();
+    }
+    
     return (
         <div className="w-full h-full bg-card font-code text-sm flex">
             <div className="w-64 border-r bg-secondary/30 p-2 flex flex-col">
@@ -163,15 +246,22 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
                         {neoMessages.map((msg, i) => <p key={i} className="animate-in fade-in">{msg}</p>)}
                     </div>
                 </ScrollArea>
+                <div className='p-2 mt-2'>
+                    <Button variant="outline" size="sm" onClick={resetPuzzle} className="w-full">
+                        <RotateCcw className="mr-2"/>
+                        Réinitialiser
+                    </Button>
+                </div>
             </div>
             <div className="flex-1 flex flex-col">
                 <div className="flex-1 relative">
                      <svg width="100%" height="100%" viewBox="-400 -300 800 600">
                         {gridWithCurrentPath.map((hex, i) => (
                           <Hexagon 
-                            key={i} 
+                            key={`${hex.q}-${hex.r}`}
                             hex={hex} 
                             onClick={() => handleHexClick(hex)}
+                            onRotate={() => handleRotate(hex.q, hex.r)}
                           />
                         ))}
                     </svg>
@@ -188,3 +278,4 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
         </div>
     );
 }
+
