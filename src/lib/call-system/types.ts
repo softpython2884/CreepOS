@@ -13,7 +13,7 @@ type ConsequenceTrigger =
     | { type: 'email'; email: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> }
     | { type: 'trace'; duration: number }
     | { type: 'alarm', duration: number, nextCall?: CallScriptType, alertEmail?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> }
-    | { type: 'endgame' };
+    | { type: 'endgame', endType: 'credits' | 'wait_for_death' };
 
 
 export interface CallChoice {

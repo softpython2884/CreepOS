@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -365,6 +366,7 @@ export default function Home() {
     const [aspectRatio, setAspectRatio] = useState(16/9);
     const [scale, setScale] = useState(1);
     const [isNeoFreestyle, setIsNeoFreestyle] = useState(false);
+    const [fadeOut, setFadeOut] = useState(false);
 
 
     const handleUserInteraction = () => {
@@ -461,10 +463,21 @@ export default function Home() {
         setMachineState('login');
     }
 
-    const handleEndGame = () => {
-        setMusicEvent('credits');
-        setMachineState('credits');
-    }
+    const handleEndGame = useCallback((endType: 'credits' | 'wait_for_death' = 'credits') => {
+        if (endType === 'wait_for_death') {
+            setFadeOut(true);
+            setTimeout(() => {
+                onSoundEvent('kill');
+                setTimeout(() => {
+                    setMusicEvent('credits');
+                    setMachineState('credits');
+                }, 3000);
+            }, 2000);
+        } else {
+            setMusicEvent('credits');
+            setMachineState('credits');
+        }
+    }, [onSoundEvent]);
 
     const renderState = () => {
         switch (machineState) {
@@ -531,7 +544,7 @@ export default function Home() {
         <main className="h-screen w-screen flex justify-center items-center bg-black overflow-hidden">
             <div 
                 id="viewport" 
-                className="absolute bg-background origin-top-left"
+                className={cn("absolute bg-background origin-top-left transition-opacity duration-1000", fadeOut && "opacity-0")}
             >
                 {renderState()}
                 <AudioManager soundEvent={soundEvent} musicEvent={musicEvent} alertEvent={alertEvent} onSoundEnd={() => setSoundEvent(null)} />

@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-export type SoundEvent = 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | 'meme' | 'lag' | null;
+export type SoundEvent = 'glitch' | 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | 'meme' | 'lag' | 'kill' | null;
 export type MusicEvent = 'calm' | 'epic' | 'cinematic' | 'credits' | 'none';
 export type AlertEvent = 'scream' | 'ringtone' | 'alarm' | 'stopScream' | 'stopRingtone' | 'stopAlarm' | null;
 
@@ -30,6 +30,7 @@ const sounds: Record<NonNullable<SoundEvent>, { src: string | string[]; volume: 
     endCall: { src: '/callend.mp3', volume: 0.7, loop: false },
     meme: { src: '/meme.mp3', volume: 0.6, loop: true },
     lag: { src: ['/glitch-sound-scary-mp3.mp3', '/error-glitch.mp3'], volume: 0.2 },
+    kill: { src: '/kill.mp3', volume: 0.8, loop: false },
 };
 
 const musicTracks: Record<Exclude<MusicEvent, 'none' | 'calm'>, { src: string; volume: number; loop?: boolean }> = {

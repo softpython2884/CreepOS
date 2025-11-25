@@ -41,11 +41,12 @@ export const finalCallScript: CallScript = {
       choices: [
         {
           id: 'end-1',
-          text: 'Choix 1',
+          text: 'Attendre que la sécurité arrive.',
           nextNode: 'end-call',
            consequences: {
             endCallAndTrigger: {
-                type: 'endgame'
+                type: 'endgame',
+                endType: 'wait_for_death',
             }
            }
         },

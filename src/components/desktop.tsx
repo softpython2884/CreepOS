@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useCallback, createRef, useEffect } from 'react';
@@ -79,14 +80,14 @@ type EditingFile = {
 type CallState = 'idle' | 'incoming' | 'active';
 
 interface DesktopProps {
-  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | 'meme' | 'glitch' | 'lag' | null) => void;
+  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | 'meme' | 'glitch' | 'lag' | 'kill' | null) => void;
   onMusicEvent: (event: MusicEvent) => void;
   onAlertEvent: (event: AlertEvent) => void;
   username: string;
   onReboot: () => void;
   setMachineState: (state: string) => void;
   scale: number;
-  onEndGame: () => void;
+  onEndGame: (endType?: 'credits' | 'wait_for_death') => void;
   isNeoFreestyle?: boolean;
 }
 
@@ -288,7 +289,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     const endTrigger = consequences.endCallAndTrigger;
     if (endTrigger) {
         if (endTrigger.type === 'endgame') {
-            onEndGame();
+            onEndGame(endTrigger.endType);
         } else if (endTrigger.type === 'call') {
             callQueueRef.current.push(() => triggerCall(endTrigger.script));
         } else if (endTrigger.type === 'email') {
