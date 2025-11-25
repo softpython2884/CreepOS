@@ -1,3 +1,4 @@
+
 import type { CallScript } from '../types';
 
 export const finalCallScript: CallScript = {
@@ -42,6 +43,11 @@ export const finalCallScript: CallScript = {
           id: 'end-1',
           text: 'Choix 1',
           nextNode: 'end-call',
+           consequences: {
+            endCallAndTrigger: {
+                type: 'endgame'
+            }
+           }
         },
         {
           id: 'end-2',

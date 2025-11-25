@@ -15,8 +15,9 @@ import { network as initialNetworkData } from '@/lib/network';
 import SurvivalMode from '@/components/survival-mode';
 import CinematicScreen from '@/components/cinematic-screen';
 import Terminal from '@/components/apps/terminal';
+import CreditsScreen from '@/components/credits-screen';
 
-type MachineState = 'standby' | 'cinematic' | 'off' | 'bios' | 'booting' | 'login' | 'recovery' | 'bsod' | 'survival' | 'desktop';
+type MachineState = 'standby' | 'cinematic' | 'off' | 'bios' | 'booting' | 'login' | 'recovery' | 'bsod' | 'survival' | 'desktop' | 'credits';
 
 const biosLines = [
     'NEO-SYSTEM BIOS v1.0.3',
@@ -460,6 +461,11 @@ export default function Home() {
         setMachineState('login');
     }
 
+    const handleEndGame = () => {
+        setMusicEvent('credits');
+        setMachineState('credits');
+    }
+
     const renderState = () => {
         switch (machineState) {
             case 'standby':
@@ -512,8 +518,10 @@ export default function Home() {
                     }} 
                     onSoundEvent={setSoundEvent}
                 />;
+            case 'credits':
+                return <CreditsScreen onComplete={() => setMachineState('off')} />;
             case 'desktop':
-                return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} onAlertEvent={setAlertEvent} username={username} onReboot={handleReboot} setMachineState={setMachineState} scale={scale}/>;
+                return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} onAlertEvent={setAlertEvent} username={username} onReboot={handleReboot} setMachineState={setMachineState} scale={scale} onEndGame={handleEndGame} isNeoFreestyle={isNeoFreestyle} />;
             default:
                 return null;
         }

@@ -86,6 +86,7 @@ interface DesktopProps {
   onReboot: () => void;
   setMachineState: (state: string) => void;
   scale: number;
+  onEndGame: () => void;
   isNeoFreestyle?: boolean;
 }
 
@@ -123,7 +124,7 @@ const updateNodeByPath = (
 };
 
 
-export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, username, onReboot, setMachineState, scale, isNeoFreestyle }: DesktopProps) {
+export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, username, onReboot, setMachineState, scale, onEndGame, isNeoFreestyle }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [nextZIndex, setNextZIndex] = useState(10);
@@ -286,27 +287,29 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     // Handle consequences that end the call
     const endTrigger = consequences.endCallAndTrigger;
     if (endTrigger) {
-      if (endTrigger.type === 'call') {
-        callQueueRef.current.push(() => triggerCall(endTrigger.script));
-      } else if (endTrigger.type === 'email') {
-        callQueueRef.current.push(() => receiveEmail(endTrigger.email));
-      } else if (endTrigger.type === 'trace') {
-        handleStartTrace("CONTACT EXTERNE", endTrigger.duration, activeInstanceId || 0);
-      } else if (endTrigger.type === 'alarm') {
-        addLog(`ALARM: Intrusion réseau détectée sur le réseau Nexus.`);
-        onAlertEvent('alarm');
-        setTimeout(() => onAlertEvent('stopAlarm'), endTrigger.duration);
-        if (endTrigger.alertEmail) {
-          receiveEmail(endTrigger.alertEmail);
+        if (endTrigger.type === 'endgame') {
+            onEndGame();
+        } else if (endTrigger.type === 'call') {
+            callQueueRef.current.push(() => triggerCall(endTrigger.script));
+        } else if (endTrigger.type === 'email') {
+            callQueueRef.current.push(() => receiveEmail(endTrigger.email));
+        } else if (endTrigger.type === 'trace') {
+            handleStartTrace("CONTACT EXTERNE", endTrigger.duration, activeInstanceId || 0);
+        } else if (endTrigger.type === 'alarm') {
+            addLog(`ALARM: Intrusion réseau détectée sur le réseau Nexus.`);
+            onAlertEvent('alarm');
+            setTimeout(() => onAlertEvent('stopAlarm'), endTrigger.duration);
+            if (endTrigger.alertEmail) {
+                receiveEmail(endTrigger.alertEmail);
+            }
+            if (endTrigger.nextCall) {
+                callQueueRef.current.push(() => triggerCall(endTrigger.nextCall!));
+            }
         }
-        if (endTrigger.nextCall) {
-          callQueueRef.current.push(() => triggerCall(endTrigger.nextCall!));
-        }
-      }
     }
   
     callConsequencesTriggeredRef.current.add(triggerKey);
-  }, [receiveEmail, triggerCall, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability]);
+  }, [receiveEmail, triggerCall, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability, onEndGame]);
 
   const endCall = useCallback((isManualClose: boolean = false) => {
     onAlertEvent('stopRingtone');
@@ -1304,8 +1307,8 @@ Si vous voyez ce message, elle vous surveille déjà.
           
            if (app.appId === 'email') {
               props.emails = emails.map(email => 
-                email.id === 'blackwire-chapter7-revelations-email' || (email.sender === 'directeur@nexus-research.net' && email.subject === 'Vous.')
-                ? { ...email, onClose: (email.onClose as Function) } 
+                (email.id === 'blackwire-chapter7-revelations-email' || (email.sender === 'directeur@nexus-research.net' && email.subject === 'Vous.'))
+                ? { ...email, onClose: (email as any).onClose } 
                 : email
               );
             }

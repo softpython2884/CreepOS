@@ -1,4 +1,5 @@
 
+
 import type { Email, Attachment } from '@/components/apps/email-client';
 import type { CallScript as CallScriptType } from './types'; // Self-reference for recursive types
 
@@ -11,7 +12,8 @@ type ConsequenceTrigger =
     | { type: 'call'; script: CallScriptType }
     | { type: 'email'; email: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> }
     | { type: 'trace'; duration: number }
-    | { type: 'alarm', duration: number, nextCall?: CallScriptType, alertEmail?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> };
+    | { type: 'alarm', duration: number, nextCall?: CallScriptType, alertEmail?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> }
+    | { type: 'endgame' };
 
 
 export interface CallChoice {
