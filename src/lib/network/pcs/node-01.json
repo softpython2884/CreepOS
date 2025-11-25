@@ -1,0 +1,16 @@
+{
+    "id": "neo-node-01",
+    "name": "NEO-NODE-01",
+    "ip": "10.10.1.1",
+    "type": "Server",
+    "links": ["neo-node-02"],
+    "auth": { "user": "node_admin", "pass": "neo_node_pass_1" },
+    "firewall": { "enabled": true, "complexity": 1, "solution": "ALPHA" },
+    "proxy": { "enabled": false, "level": 0 },
+    "traceTime": 10,
+    "requiredPorts": 0,
+    "isDangerous": true,
+    "traceability": 10,
+    "ports": [],
+    "fileSystem": []
+}

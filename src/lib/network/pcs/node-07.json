@@ -1,0 +1,21 @@
+{
+    "id": "neo-node-07",
+    "name": "NEO-NODE-07",
+    "ip": "10.10.1.7",
+    "type": "Server",
+    "links": ["neo-core-a"],
+    "auth": { "user": "node_admin", "pass": "neo_node_pass_7" },
+    "firewall": { "enabled": true, "complexity": 7, "solution": "ETA" },
+    "proxy": { "enabled": true, "level": 5 },
+    "traceTime": 40,
+    "requiredPorts": 4,
+    "isDangerous": true,
+    "traceability": 40,
+    "ports": [
+        { "port": 21, "service": "FTP", "isOpen": false },
+        { "port": 22, "service": "SSH", "isOpen": false },
+        { "port": 25, "service": "SMTP", "isOpen": false },
+        { "port": 80, "service": "HTTP", "isOpen": false }
+    ],
+    "fileSystem": []
+}

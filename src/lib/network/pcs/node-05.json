@@ -1,0 +1,19 @@
+{
+    "id": "neo-node-05",
+    "name": "NEO-NODE-05",
+    "ip": "10.10.1.5",
+    "type": "Server",
+    "links": ["neo-node-06"],
+    "auth": { "user": "node_admin", "pass": "neo_node_pass_5" },
+    "firewall": { "enabled": true, "complexity": 5, "solution": "EPSILON" },
+    "proxy": { "enabled": true, "level": 3 },
+    "traceTime": 30,
+    "requiredPorts": 2,
+    "isDangerous": true,
+    "traceability": 30,
+    "ports": [
+        { "port": 25, "service": "SMTP", "isOpen": false },
+        { "port": 80, "service": "HTTP", "isOpen": false }
+    ],
+    "fileSystem": []
+}

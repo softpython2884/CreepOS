@@ -1,0 +1,19 @@
+{
+    "id": "neo-node-04",
+    "name": "NEO-NODE-04",
+    "ip": "10.10.1.4",
+    "type": "Server",
+    "links": ["neo-node-05"],
+    "auth": { "user": "node_admin", "pass": "neo_node_pass_4" },
+    "firewall": { "enabled": true, "complexity": 4, "solution": "DELTA" },
+    "proxy": { "enabled": true, "level": 2 },
+    "traceTime": 25,
+    "requiredPorts": 2,
+    "isDangerous": true,
+    "traceability": 25,
+    "ports": [
+        { "port": 21, "service": "FTP", "isOpen": false },
+        { "port": 22, "service": "SSH", "isOpen": false }
+    ],
+    "fileSystem": []
+}

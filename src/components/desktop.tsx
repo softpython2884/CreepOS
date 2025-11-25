@@ -39,9 +39,10 @@ import { blackwireMission1Email } from '@/lib/call-system/scripts/blackwire-miss
 import { blackwireChapter3IntroEmail } from '@/lib/call-system/scripts/blackwire-chapter3-intro';
 import { directorChapter3InterrogationCall, directorChapter3AlertEmail } from '@/lib/call-system/scripts/director-chapter3-interrogation';
 import { chapter5IntroEmail } from '@/lib/call-system/scripts/chapter5-intro';
-import { chapter6IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
+import { chapter6IntroEmail, chapter9IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
 import { blackwireChapter7Debrief } from '@/lib/call-system/scripts/blackwire-chapter7-debrief';
 import { blackwireChapter7RevelationsEmail } from '@/lib/call-system/scripts/blackwire-chapter7-revelations';
+import { neoAttackCall } from '@/lib/call-system/scripts/neo-attack-call';
 import { Progress } from './ui/progress';
 
 
@@ -77,7 +78,7 @@ type EditingFile = {
 type CallState = 'idle' | 'incoming' | 'active';
 
 interface DesktopProps {
-  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | 'meme' | 'glitch' | null) => void;
+  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | 'meme' | 'glitch' | 'lag' | null) => void;
   onMusicEvent: (event: MusicEvent) => void;
   onAlertEvent: (event: AlertEvent) => void;
   username: string;
@@ -346,7 +347,7 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
 - Administration Système Nexus`
                 };
                 setTimeout(() => receiveEmail(nexusAlert), 1000);
-                setTimeout(() => receiveEmail(chapter6IntroEmail), 2000);
+                setTimeout(() => receiveEmail(chapter9IntroEmail), 2000);
             }
         };
         setTimeout(() => receiveEmail(mindBreakEmail), 1000);
@@ -546,6 +547,26 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
             setDangerLevel(0); // Reset for next time
         }
     }, [dangerLevel, setMachineState, onAlertEvent]);
+
+    const destroyedNodeCount = useRef(0);
+    const nodeIdsToTrack = [
+        'neo-node-01', 'neo-node-02', 'neo-node-03', 'neo-node-04', 
+        'neo-node-05', 'neo-node-06', 'neo-node-07'
+    ];
+
+    useEffect(() => {
+        const currentDestroyedCount = nodeIdsToTrack.filter(id => {
+            const pc = network.find(p => p.id === id);
+            return pc?.isDestroyed;
+        }).length;
+
+        if (currentDestroyedCount > destroyedNodeCount.current) {
+            addLog(`EVENT: NÉO a détecté la destruction d'un noeud. Riposte imminente.`);
+            triggerCall(neoAttackCall);
+        }
+        destroyedNodeCount.current = currentDestroyedCount;
+
+    }, [network, addLog, triggerCall]);
 
 
  useEffect(() => {
@@ -1273,3 +1294,4 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
+

@@ -18,6 +18,16 @@ import devSandbox13 from './network/pcs/dev-sandbox-13.json';
 import decoyPc from './network/pcs/decoy-pc.json';
 import superiorPc from './network/pcs/superior-pc.json';
 import workstationNyx from './network/pcs/workstation-nyx.json';
+import node01 from './network/pcs/node-01.json';
+import node02 from './network/pcs/node-02.json';
+import node03 from './network/pcs/node-03.json';
+import node04 from './network/pcs/node-04.json';
+import node05 from './network/pcs/node-05.json';
+import node06 from './network/pcs/node-06.json';
+import node07 from './network/pcs/node-07.json';
+import neoCoreA from './network/pcs/neo-core-a.json';
+import neoCoreB from './network/pcs/neo-core-b.json';
+import neoCoreC from './network/pcs/neo-core-c.json';
 import { type PC } from './network/types';
 
 export const network: PC[] = [
@@ -40,4 +50,15 @@ export const network: PC[] = [
     decoyPc,
     superiorPc,
     workstationNyx,
+    node01,
+    node02,
+    node03,
+    node04,
+    node05,
+    node06,
+    node07,
+    neoCoreA,
+    neoCoreB,
+    neoCoreC
 ];
+

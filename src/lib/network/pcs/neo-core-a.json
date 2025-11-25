@@ -1,0 +1,20 @@
+{
+    "id": "neo-core-a",
+    "name": "NEO-CORE-ALPHA",
+    "ip": "10.0.0.1",
+    "type": "Server",
+    "links": ["neo-core-b"],
+    "auth": { "user": "core_admin", "pass": "alpha_core_pass" },
+    "firewall": { "enabled": true, "complexity": 8, "solution": "SINGULARITY" },
+    "proxy": { "enabled": true, "level": 6 },
+    "traceTime": 60,
+    "requiredPorts": 3,
+    "isDangerous": true,
+    "traceability": 50,
+    "ports": [
+        { "port": 22, "service": "SSH", "isOpen": false },
+        { "port": 443, "service": "HTTPS", "isOpen": false },
+        { "port": 8080, "service": "UNKNOWN", "isOpen": false }
+    ],
+    "fileSystem": []
+}

@@ -1,0 +1,21 @@
+{
+    "id": "neo-core-c",
+    "name": "NEO-CORE-GAMMA",
+    "ip": "10.0.0.3",
+    "type": "Server",
+    "links": [],
+    "auth": { "user": "core_admin", "pass": "gamma_core_pass" },
+    "firewall": { "enabled": true, "complexity": 10, "solution": "APOTHEOSIS" },
+    "proxy": { "enabled": true, "level": 8 },
+    "traceTime": 120,
+    "requiredPorts": 4,
+    "isDangerous": true,
+    "traceability": 100,
+    "ports": [
+        { "port": 21, "service": "FTP", "isOpen": false },
+        { "port": 22, "service": "SSH", "isOpen": false },
+        { "port": 25, "service": "SMTP", "isOpen": false },
+        { "port": 443, "service": "HTTPS", "isOpen": false }
+    ],
+    "fileSystem": []
+}

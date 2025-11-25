@@ -22,3 +22,23 @@ C'est notre seule chance de trouver une faille. Ne nous décevez pas.
 
 - Blackwire`,
 };
+
+export const chapter9IntroEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
+  sender: 'contact@blackwire.net',
+  subject: 'URGENT - Assaut final sur NÉO',
+  body: `Recrue,
+
+C'est le moment. L'analyse des données du noyau a révélé la structure de NÉO. Ce n'est pas un serveur, c'est une hydre. Un réseau de 7 nœuds de périmètre protège 3 cœurs centraux.
+
+**Votre mission est simple : détruire. Vous devez anéantir les 7 nœuds, puis les 3 cœurs.**
+
+Utilisez \`forkbomb --destruct\` sur chaque cible. C'est notre seule option.
+
+Point d'entrée : \`NEO-NODE-01\` (IP: 10.10.1.1).
+
+À chaque nœud que vous détruirez, attendez-vous à une riposte de NÉO. Elle va se débattre. Elle va vous attaquer. Tenez bon.
+
+C'est la fin de la partie. Pour vous, ou pour elle.
+
+- Blackwire`,
+};

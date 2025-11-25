@@ -1,0 +1,16 @@
+{
+    "id": "neo-node-03",
+    "name": "NEO-NODE-03",
+    "ip": "10.10.1.3",
+    "type": "Server",
+    "links": ["neo-node-04"],
+    "auth": { "user": "node_admin", "pass": "neo_node_pass_3" },
+    "firewall": { "enabled": true, "complexity": 3, "solution": "GAMMA" },
+    "proxy": { "enabled": true, "level": 1 },
+    "traceTime": 20,
+    "requiredPorts": 1,
+    "isDangerous": true,
+    "traceability": 20,
+    "ports": [{ "port": 80, "service": "HTTP", "isOpen": false }],
+    "fileSystem": []
+}
