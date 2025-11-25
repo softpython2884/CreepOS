@@ -43,6 +43,7 @@ import { chapter6IntroEmail, chapter9IntroEmail } from '@/lib/call-system/script
 import { blackwireChapter7Debrief } from '@/lib/call-system/scripts/blackwire-chapter7-debrief';
 import { blackwireChapter7RevelationsEmail } from '@/lib/call-system/scripts/blackwire-chapter7-revelations';
 import { neoAttackCall } from '@/lib/call-system/scripts/neo-attack-call';
+import { finalCallScript } from '@/lib/call-system/scripts/final-call';
 import { Progress } from './ui/progress';
 
 
@@ -579,24 +580,28 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
                 setIsNexusLockdown(true);
                 onAlertEvent('alarm');
                 
-                // Send final emails
+                const directorAccusationEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> & { onClose: () => void } = {
+                    sender: 'directeur@nexus-research.net',
+                    subject: 'Vous.',
+                    body: 'Omen. L\'attaque a commencé au moment précis où un employé européen s\'est connecté. Quelle coïncidence. Ne bougez pas de votre poste. La sécurité vient vous "escorter" pour un débriefing. C\'est terminé pour vous.',
+                    onClose: () => {
+                        addLog('EVENT: Final sequence triggered.');
+                        triggerCall(finalCallScript);
+                    }
+                };
+                
                 const alertEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
                     sender: 'system-alert@nexus-research.net',
                     subject: 'ALERTE ROUGE - CONFINEMENT TOTAL',
                     body: 'Attaque externe massive détectée. L\'intégrité du réseau est compromise. Tous les systèmes passent en confinement total. Le protocole de sécurité de niveau 7 est en vigueur. Toute communication externe est coupée. Les équipes d\'intervention sont en route.'
                 };
-                const directorEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
-                    sender: 'directeur@nexus-research.net',
-                    subject: 'Vous.',
-                    body: 'Omen. L\'attaque a commencé au moment précis où un employé européen s\'est connecté. Quelle coïncidence. Ne bougez pas de votre poste. La sécurité vient vous "escorter" pour un débriefing. C\'est terminé pour vous.'
-                };
 
                 setTimeout(() => receiveEmail(alertEmail), 1000);
-                setTimeout(() => receiveEmail(directorEmail), 2500);
+                setTimeout(() => receiveEmail(directorAccusationEmail), 2500);
             }
         };
         checkNeoDefeat();
-    }, [network, addLog, onAlertEvent, receiveEmail]);
+    }, [network, addLog, onAlertEvent, receiveEmail, triggerCall]);
 
     useEffect(() => {
         if (!isNexusLockdown) return;
@@ -1299,8 +1304,8 @@ Si vous voyez ce message, elle vous surveille déjà.
           
            if (app.appId === 'email') {
               props.emails = emails.map(email => 
-                email.id === 'blackwire-chapter7-revelations-email' 
-                ? { ...email, onClose: props.onClose } 
+                email.id === 'blackwire-chapter7-revelations-email' || (email.sender === 'directeur@nexus-research.net' && email.subject === 'Vous.')
+                ? { ...email, onClose: (email.onClose as Function) } 
                 : email
               );
             }
