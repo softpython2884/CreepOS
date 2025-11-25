@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Server, Laptop, Smartphone, ShieldCheck, ShieldAlert, KeyRound } from 'lucide-react';
+import { Server, Laptop, Smartphone, ShieldCheck, ShieldAlert, KeyRound, Skull } from 'lucide-react';
 import { PC } from '@/lib/network/types';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -22,7 +23,9 @@ const iconMap: Record<PC['type'], React.ReactNode> = {
 };
 
 const Node = ({ pc, x, y, isHacked }: { pc: PC; x: number; y: number; isHacked: boolean }) => {
-    const statusColor = isHacked 
+    const statusColor = pc.isDestroyed
+        ? "bg-destructive/50 border-destructive text-destructive"
+        : isHacked 
         ? "bg-accent/20 border-accent text-accent" 
         : pc.isDangerous
         ? "bg-destructive/20 border-destructive text-destructive"
@@ -45,15 +48,16 @@ const Node = ({ pc, x, y, isHacked }: { pc: PC; x: number; y: number; isHacked: 
                             "w-24 h-24 rounded-full flex flex-col items-center justify-center gap-1 border-2 transition-colors",
                             statusColor
                         )}>
-                            {iconMap[pc.type]}
+                            {pc.isDestroyed ? <Skull className="w-8 h-8"/> : iconMap[pc.type]}
                             <p className="text-xs font-bold truncate w-20 text-center">{pc.name}</p>
                         </div>
                     </TooltipTrigger>
                     <TooltipContent side={tooltipSide}>
                         <p className="font-code">{pc.ip}</p>
-                        {pc.isDangerous && <p className="text-destructive flex items-center gap-1"><ShieldAlert size={14}/> DANGEROUS</p>}
-                        {isHacked && <p className="text-green-400 flex items-center gap-1"><ShieldCheck size={14}/> Access Granted</p>}
-                        {isHacked && <p className="text-accent flex items-center gap-1"><KeyRound size={14}/> {pc.auth.pass}</p>}
+                        {pc.isDestroyed && <p className="text-destructive flex items-center gap-1"><Skull size={14}/> DESTROYED</p>}
+                        {!pc.isDestroyed && pc.isDangerous && <p className="text-destructive flex items-center gap-1"><ShieldAlert size={14}/> DANGEROUS</p>}
+                        {!pc.isDestroyed && isHacked && <p className="text-green-400 flex items-center gap-1"><ShieldCheck size={14}/> Access Granted</p>}
+                        {!pc.isDestroyed && isHacked && <p className="text-accent flex items-center gap-1"><KeyRound size={14}/> {pc.auth.pass}</p>}
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>

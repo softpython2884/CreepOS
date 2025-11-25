@@ -44,6 +44,7 @@ interface TerminalProps {
     onNeoExecute: (isInitialInstall: boolean) => void;
     triggerCall: (script: CallScript) => void;
     onNeoWakeup: () => void;
+    onOpenFileEditor: (path: string[], content: string) => void;
 }
 
 const PLAYER_PUBLIC_IP = '184.72.238.110';
@@ -688,6 +689,7 @@ export default function Terminal({
             case 'smtpoverflow': await handlePortHack(25, 'SMTPOverflow'); break;
             case 'webserverworm': await handlePortHack(80, 'WebServerWorm'); break;
             case 'forkbomb':
+                const isDestruct = args.includes('--destruct');
                 if (connectedIp === '127.0.0.1') {
                     handleOutput('ERREUR SYSTÈME CRITIQUE : Forkbomb détecté. Auto-traçage initié.');
                     addLog(`CRITIQUE: Forkbomb exécuté sur la machine locale. Chaos système initié.`);
@@ -715,27 +717,36 @@ export default function Terminal({
                         
                         setNetwork(currentNetwork => currentNetwork.map(pc => {
                             if (pc.id === targetPC!.id) {
-                                return { ...pc, fileSystem: newFs, isDangerous: true };
+                                let updatedPc = { ...pc, fileSystem: newFs, isDangerous: true };
+                                if (isDestruct) {
+                                    updatedPc.isDestroyed = true;
+                                }
+                                return updatedPc;
                             }
                             return pc;
                         }));
 
                         addLog(`EVENT: Forkbomb a effacé les logs sur ${targetPC.name}.`);
+                        if (isDestruct) {
+                            addLog(`CRITICAL: ${targetPC.name} a été définitivement détruit.`);
+                        }
                         
                         // Disconnect after 4 seconds
                         setTimeout(() => {
                             disconnect();
                         }, 4000);
 
-                        // Make PC normal again after 8 seconds
-                        setTimeout(() => {
-                           setNetwork(currentNetwork => currentNetwork.map(pc => {
-                                if (pc.id === targetPC!.id) {
-                                    return { ...pc, isDangerous: false };
-                                }
-                                return pc;
-                            }));
-                        }, 8000);
+                        // Make PC normal again after 8 seconds, unless it's destroyed
+                        if (!isDestruct) {
+                            setTimeout(() => {
+                               setNetwork(currentNetwork => currentNetwork.map(pc => {
+                                    if (pc.id === targetPC!.id) {
+                                        return { ...pc, isDangerous: false };
+                                    }
+                                    return pc;
+                                }));
+                            }, 8000);
+                        }
                     }
                 }
                 break;
@@ -1302,6 +1313,10 @@ export default function Terminal({
             }
              if (targetPC.ip === connectedIp) {
                 handleOutput(`connect: déjà connecté à ${targetIp}`);
+                break;
+            }
+            if (targetPC.isDestroyed) {
+                handleOutput(`connect: CRITICAL ERROR: HOST UNREACHABLE`);
                 break;
             }
             

@@ -48,4 +48,5 @@ export interface PC {
     domain?: string;
     websiteContent?: string;
     isDangerous?: boolean;
+    isDestroyed?: boolean;
 }
