@@ -24,7 +24,7 @@ interface HistoryItem {
 interface TerminalProps {
     username: string;
     instanceId: number;
-    onSoundEvent?: (event: 'click' | 'error') => void;
+    onSoundEvent?: (event: 'click' | 'error' | 'glitch') => void;
     onOpenFileEditor: (path: string[], content: string) => void;
     network: PC[];
     setNetwork: React.Dispatch<React.SetStateAction<PC[]>>;
@@ -689,22 +689,53 @@ export default function Terminal({
             case 'webserverworm': await handlePortHack(80, 'WebServerWorm'); break;
             case 'forkbomb':
                 if (connectedIp === '127.0.0.1') {
-                    handleOutput('CRASH SYSTÈME IMMINENT. REDÉMARRAGE...');
-                    addLog(`CRITIQUE: Forkbomb exécuté sur la machine locale. Redémarrage du système.`);
-                    setTimeout(onReboot, 1000);
+                    handleOutput('ERREUR SYSTÈME CRITIQUE : Forkbomb détecté. Auto-traçage initié.');
+                    addLog(`CRITIQUE: Forkbomb exécuté sur la machine locale. Chaos système initié.`);
+                    onNeoWakeup(); // Simulates chaos
+                    onStartTrace("SYSTEM_KERNEL", 6, instanceId);
                 } else {
                     if (targetPC) {
-                        addRemoteLog(`CRITIQUE: Forkbomb exécuté. Crash du système.`);
+                        handleOutput('Forkbomb déployé. Suppression des logs distants et instabilité système locale...');
+                        onSoundEvent?.('glitch');
+                        onStartTrace(targetPC.name, 15, instanceId);
+
+                        // Clear all logs on the target PC
+                        let newFs = targetPC.fileSystem;
+                        const logsFolderNode = findNodeByPath(['logs'], newFs);
+                        if (logsFolderNode && logsFolderNode.children) {
+                            const clearedChildren = logsFolderNode.children.map(logFile => ({
+                                ...logFile,
+                                content: ''
+                            }));
+                            newFs = updateNodeByPath(newFs, ['logs'], (node) => ({
+                                ...node,
+                                children: clearedChildren
+                            }));
+                        }
                         
                         setNetwork(currentNetwork => currentNetwork.map(pc => {
                             if (pc.id === targetPC!.id) {
-                                const newFileSystem = updateNodeByPath(pc.fileSystem, ['sys', 'XserverOS.sys'], () => null);
-                                return { ...pc, fileSystem: newFileSystem };
+                                return { ...pc, fileSystem: newFs, isDangerous: true };
                             }
                             return pc;
                         }));
 
-                        disconnect(true);
+                        addLog(`EVENT: Forkbomb a effacé les logs sur ${targetPC.name}.`);
+                        
+                        // Disconnect after 4 seconds
+                        setTimeout(() => {
+                            disconnect();
+                        }, 4000);
+
+                        // Make PC normal again after 8 seconds
+                        setTimeout(() => {
+                           setNetwork(currentNetwork => currentNetwork.map(pc => {
+                                if (pc.id === targetPC!.id) {
+                                    return { ...pc, isDangerous: false };
+                                }
+                                return pc;
+                            }));
+                        }, 8000);
                     }
                 }
                 break;
@@ -1545,3 +1576,5 @@ export default function Terminal({
     </div>
   );
 }
+
+    
