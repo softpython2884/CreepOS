@@ -803,7 +803,11 @@ export default function Terminal({
             
             if (file) {
                 if (file.type === 'file') {
-                    handleOutput(file.content || '');
+                    if (file.name.endsWith('.zip')) {
+                        handleOutput(`[CONTENU DE L'ARCHIVE DECLASSIFIE]\n\n${file.content || ''}`);
+                    } else {
+                        handleOutput(file.content || '');
+                    }
                 } else {
                     handleOutput(`cat: ${filename}: Est un dossier`);
                 }
@@ -1539,5 +1543,3 @@ export default function Terminal({
     </div>
   );
 }
-
-    

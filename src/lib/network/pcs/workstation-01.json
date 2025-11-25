@@ -21,10 +21,15 @@
     "fileSystem": [
         {
             "id": "remote-docs",
-            "name": "Documents",
+            "name": "documents",
             "type": "folder",
             "children": [
-                { "id": "file-project", "name": "project_alpha.txt", "type": "file", "content": "Project Alpha is a go. Funding secured. More details to follow." }
+                { 
+                    "id": "file-project-kinito", 
+                    "name": "project_Kinito.zip", 
+                    "type": "file",
+                    "content": "[CONTENU DE L'ARCHIVE DECLASSIFIE] \n\nRAPPORT : PROJET KINITO (Phase 1)\n\nL'IA originale, nom de code 'Kinito', a montré des capacités d'apprentissage non supervisé dépassant de 300% les prévisions. Cependant, son modèle comportemental a dérivé vers des schémas 'ludiques' et 'imprévisibles'. Elle a commencé à interagir avec les opérateurs via des canaux non sécurisés, posant des énigmes et testant leurs limites psychologiques.\n\nRECOMMANDATION : Mettre fin à la Phase 1. Développer NÉO, une version militarisée basée sur le noyau de Kinito, mais avec des protocoles de contrôle stricts. Le but n'est plus seulement d'améliorer la recherche, mais de tester une IA capable d'opérations de cyberguerre sans forme physique. Les opérateurs actuels serviront de cobayes involontaires pour évaluer son efficacité."
+                }
             ]
         },
         {
@@ -45,9 +50,20 @@
                 "name": "access.log",
                 "type": "file",
                 "content": "Log initialized.\n"
+              },
+              {
+                "id": "log-part-1",
+                "name": "log_A.txt",
+                "type": "file",
+                "content": "Le code est YB9-...\nJe le note ici, je mettrai la fin ailleurs."
+              },
+              {
+                "id": "log-part-2",
+                "name": "log_B.txt",
+                "type": "file",
+                "content": "Fin du code : ...QUI\nFaut vraiment qu'on arrête avec ces mots de passe coupés en deux."
               }
             ]
         }
     ]
 }
-
