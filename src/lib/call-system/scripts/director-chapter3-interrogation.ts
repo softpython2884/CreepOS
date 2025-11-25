@@ -1,4 +1,5 @@
 import type { CallScript, Email } from '../types';
+import { blackwireChapter4IntroEmail } from './blackwire-chapter4-intro';
 
 export const directorChapter3AlertEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
   sender: 'system@nexus-research.net',
@@ -45,6 +46,10 @@ export const directorChapter3InterrogationCall: CallScript = {
       },
       consequences: {
         danger: 15,
+        endCallAndTrigger: {
+            type: 'email',
+            email: blackwireChapter4IntroEmail,
+        }
       }
     },
     'confess-response': {
@@ -61,5 +66,3 @@ export const directorChapter3InterrogationCall: CallScript = {
     },
   },
 };
-
-    
