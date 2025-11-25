@@ -21,7 +21,8 @@ export interface CallChoice {
     consequences?: {
         danger?: number;
         triggerEmail?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>;
-        triggerSound?: 'tension';
+        triggerSound?: 'tension' | 'glitch' | 'lag';
+        startInstability?: boolean;
         endCallAndTrigger?: ConsequenceTrigger;
     };
 }
@@ -31,7 +32,8 @@ export interface CallNode {
     choices?: CallChoice[];
     consequences?: {
         triggerEmail?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>;
-        triggerSound?: 'tension';
+        triggerSound?: 'tension' | 'glitch' | 'lag';
+        startInstability?: boolean;
         endCallAndTrigger?: ConsequenceTrigger;
     }
 }

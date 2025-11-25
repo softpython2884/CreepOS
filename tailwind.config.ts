@@ -211,7 +211,7 @@ export default {
         'ping-freeze': 'ping-freeze 2s ease-in-out forwards',
         'super-glitch': 'super-glitch 1.5s linear infinite',
         'vibration': 'vibration 0.1s linear infinite',
-        'system-collapse': 'system-collapse 1s linear infinite, super-glitch 2s linear infinite',
+        'system-collapse': 'system-collapse 1.5s linear infinite alternate, super-glitch 2s linear infinite',
         'pulse-slow': 'pulse-slow 3s ease-in-out infinite',
         'shatter': 'shatter 1.5s ease-out forwards',
       },

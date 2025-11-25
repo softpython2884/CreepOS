@@ -41,6 +41,8 @@ import { blackwireChapter3IntroEmail } from '@/lib/call-system/scripts/blackwire
 import { directorChapter3InterrogationCall, directorChapter3AlertEmail } from '@/lib/call-system/scripts/director-chapter3-interrogation';
 import { chapter5IntroEmail } from '@/lib/call-system/scripts/chapter5-intro';
 import { chapter6IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
+import { blackwireChapter7Debrief } from '@/lib/call-system/scripts/blackwire-chapter7-debrief';
+import { blackwireChapter7RevelationsEmail } from '@/lib/call-system/scripts/blackwire-chapter7-revelations';
 import { Progress } from './ui/progress';
 
 
@@ -150,6 +152,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [isNeoInstalled, setIsNeoInstalled] = useState(false);
   const [showModuleInit, setShowModuleInit] = useState(false);
   const [moduleProgress, setModuleProgress] = useState(0);
+  const [isSystemUnstable, setIsSystemUnstable] = useState(false);
   
   const [emails, setEmails] = useState<Email[]>(() => {
     const savedState = loadGameState(username);
@@ -252,35 +255,56 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
   }, [callState, onAlertEvent, addLog, onMusicEvent]);
 
+  const handleStartSystemInstability = useCallback(() => {
+    setIsSystemUnstable(true);
+    onSoundEvent('glitch');
+    addLog('CRITICAL: System instability detected.');
+  }, [onSoundEvent, addLog]);
+  
   const handleCallConsequences = useCallback((consequences: any) => {
     if (!consequences) return;
-    
-    const trigger = consequences.endCallAndTrigger;
-    if (!trigger) return;
-
-    const triggerKey = `${callScriptRef.current?.id}-${currentNodeIdRef.current}-end`;
+  
+    const triggerKey = `${callScriptRef.current?.id}-${currentNodeIdRef.current}`;
     if (callConsequencesTriggeredRef.current.has(triggerKey)) return;
-
-    if (trigger.type === 'call') {
-        callQueueRef.current.push(() => triggerCall(trigger.script));
-    } else if (trigger.type === 'email') {
-        receiveEmail(trigger.email);
-    } else if (trigger.type === 'trace') {
-        handleStartTrace("CONTACT EXTERNE", trigger.duration, activeInstanceId || 0);
-    } else if (trigger.type === 'alarm') {
+  
+    // Handle immediate consequences first
+    if (consequences.triggerSound) {
+      onSoundEvent(consequences.triggerSound as any);
+    }
+    if (consequences.triggerEmail) {
+      receiveEmail(consequences.triggerEmail);
+    }
+    if (consequences.danger) {
+      handleIncreaseDanger(consequences.danger);
+    }
+    if (consequences.startInstability) {
+      handleStartSystemInstability();
+    }
+  
+    // Handle consequences that end the call
+    const endTrigger = consequences.endCallAndTrigger;
+    if (endTrigger) {
+      if (endTrigger.type === 'call') {
+        callQueueRef.current.push(() => triggerCall(endTrigger.script));
+      } else if (endTrigger.type === 'email') {
+        callQueueRef.current.push(() => receiveEmail(endTrigger.email));
+      } else if (endTrigger.type === 'trace') {
+        handleStartTrace("CONTACT EXTERNE", endTrigger.duration, activeInstanceId || 0);
+      } else if (endTrigger.type === 'alarm') {
         addLog(`ALARM: Intrusion réseau détectée sur le réseau Nexus.`);
         onAlertEvent('alarm');
-        setTimeout(() => onAlertEvent('stopAlarm'), trigger.duration);
-        if(trigger.alertEmail) {
-            receiveEmail(trigger.alertEmail);
+        setTimeout(() => onAlertEvent('stopAlarm'), endTrigger.duration);
+        if (endTrigger.alertEmail) {
+          receiveEmail(endTrigger.alertEmail);
         }
-        if(trigger.nextCall) {
-            callQueueRef.current.push(() => triggerCall(trigger.nextCall!));
+        if (endTrigger.nextCall) {
+          callQueueRef.current.push(() => triggerCall(endTrigger.nextCall!));
         }
+      }
     }
+  
     callConsequencesTriggeredRef.current.add(triggerKey);
-
-  }, [receiveEmail, triggerCall, handleStartTrace, activeInstanceId, onAlertEvent, addLog]);
+  }, [receiveEmail, triggerCall, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability]);
 
   const endCall = useCallback((isManualClose: boolean = false) => {
     onAlertEvent('stopRingtone');
@@ -300,6 +324,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       }
     }
 
+    // Chapter triggers
+    if(callScriptRef.current?.id === 'supervisor-chapter2-call') {
+        setTimeout(() => triggerCall(blackwireChapter7Debrief), 2000);
+    }
+    if(callScriptRef.current?.id === 'blackwire-chapter7-debrief') {
+        setTimeout(() => receiveEmail(blackwireChapter7RevelationsEmail), 1000);
+    }
+
     setCallState('idle');
     setActiveCall(null);
     callScriptRef.current = null;
@@ -315,7 +347,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if(nextCall) {
         setTimeout(nextCall, 2000); 
     }
-  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, activeCall, handleCallConsequences]);
+  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, activeCall, handleCallConsequences, triggerCall, receiveEmail]);
 
   const advanceCall = useCallback((choiceId: string) => {
     const script = callScriptRef.current;
@@ -333,18 +365,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         text: chosenChoice.text
     };
 
-    if (chosenChoice.consequences?.triggerSound) {
-        onSoundEvent(chosenChoice.consequences.triggerSound as any);
-    }
-    if (chosenChoice.consequences?.triggerEmail) {
-        receiveEmail(chosenChoice.consequences.triggerEmail);
-    }
+    // Handle immediate consequences of making a choice
+    handleCallConsequences(chosenChoice.consequences);
 
     setActiveCall(prev => prev ? ({ ...prev, messages: [...prev.messages, playerMessage], choices: [] }) : null);
-
-    if (chosenChoice.consequences?.danger) {
-        handleIncreaseDanger(chosenChoice.consequences.danger);
-    }
     
     const nextNodeId = chosenChoice.nextNode;
     
@@ -364,6 +388,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       
       const newMessages = [...(activeCall?.messages || []), playerMessage, nextNode.message];
 
+      // Handle consequences of arriving at the next node
       handleCallConsequences(nextNode.consequences);
 
       setActiveCall(prev => prev ? ({
@@ -377,12 +402,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         onSoundEvent('endCall');
       }
 
-      if (nextNode.consequences?.triggerSound) {
-        onSoundEvent(nextNode.consequences.triggerSound as any);
-      }
-
     }, chosenChoice.consequences?.triggerSound ? 1800 : 1000);
-  }, [activeCall, onSoundEvent, receiveEmail, handleIncreaseDanger, handleCallConsequences]);
+  }, [activeCall, onSoundEvent, handleCallConsequences]);
 
   const answerCall = useCallback(() => {
     const script = callScriptRef.current;
@@ -395,13 +416,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     // Add a delay to sync with audio
     setTimeout(() => {
         const startNode = script.nodes[script.startNode];
+        handleCallConsequences(startNode.consequences);
         setActiveCall(prev => prev ? ({
           ...prev,
           messages: [startNode.message],
           choices: startNode.choices || [],
         }) : null);
     }, 800);
-  }, [callState, onAlertEvent, onSoundEvent]);
+  }, [callState, onAlertEvent, onSoundEvent, handleCallConsequences]);
 
   const declineCall = useCallback(() => {
     endCall(true);
@@ -1110,7 +1132,8 @@ Si vous voyez ce message, elle vous surveille déjà.
     <main 
       className={cn(
         "h-full w-full font-code relative overflow-hidden flex flex-col justify-center items-center p-4 transition-colors duration-500",
-        isTraced && "traced"
+        isTraced && "traced",
+        isSystemUnstable && 'animate-system-collapse'
       )}
       style={{ backgroundImage: `linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)`, backgroundSize: `2rem 2rem` }}
     >

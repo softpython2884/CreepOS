@@ -1,4 +1,5 @@
 import type { CallScript } from '../types';
+import { blackwireChapter7Debrief } from './blackwire-chapter7-debrief';
 
 export const supervisorChapter2Call: CallScript = {
   id: 'supervisor-chapter2-call',
@@ -15,12 +16,12 @@ export const supervisorChapter2Call: CallScript = {
         {
           id: 'lie',
           text: 'Oui, tout va bien. Rien à signaler.',
-          nextNode: 'lie-response',
+          nextNode: 'end-call',
         },
         {
           id: 'truth',
           text: 'Non, pas vraiment. Je crois que le système a des ratés.',
-          nextNode: 'truth-response',
+          nextNode: 'end-call',
         },
         {
             id: 'insult',
@@ -29,22 +30,28 @@ export const supervisorChapter2Call: CallScript = {
         }
       ],
     },
-    'lie-response': {
-      message: {
-        speaker: 'Superviseur',
-        text: 'Parfait. Si vous voyez quoi que ce soit de suspect, prévenez-moi par e-mail. Terminé.',
-      },
-    },
-    'truth-response': {
-      message: {
-        speaker: 'Superviseur',
-        text: '...Compris. Terminé.',
-      },
-    },
     'insult-response': {
         message: {
             speaker: 'Superviseur',
             text: 'Révisez votre contrat, Omen. Vous n\'avez aucun droit de contestation. Continuez votre travail. Terminé.',
+        },
+        consequences: {
+          endCallAndTrigger: {
+            type: 'call',
+            script: blackwireChapter7Debrief,
+          }
+        }
+    },
+    'end-call': {
+        message: {
+            speaker: 'Superviseur',
+            text: '...Compris. Terminé.'
+        },
+        consequences: {
+          endCallAndTrigger: {
+            type: 'call',
+            script: blackwireChapter7Debrief,
+          }
         }
     }
   },
