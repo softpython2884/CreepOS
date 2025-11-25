@@ -14,8 +14,9 @@ import { loadGameState, deleteGameState } from '@/lib/save-manager';
 import { network as initialNetworkData } from '@/lib/network';
 import SurvivalMode from '@/components/survival-mode';
 import CinematicScreen from '@/components/cinematic-screen';
+import Terminal from '@/components/apps/terminal';
 
-type MachineState = 'standby' | 'cinematic' | 'off' | 'bios' | 'booting' | 'login' | 'desktop' | 'recovery' | 'bsod' | 'survival';
+type MachineState = 'standby' | 'cinematic' | 'off' | 'bios' | 'booting' | 'login' | 'recovery' | 'bsod' | 'survival' | 'desktop';
 
 const biosLines = [
     'NEO-SYSTEM BIOS v1.0.3',
@@ -162,7 +163,7 @@ const BiosScreen = ({ onComplete }: { onComplete: () => void }) => {
 };
 
 
-const BootScreen = ({ onBootComplete, onRecovery, username }: { onBootComplete: () => void; onRecovery: () => void; username: string; }) => {
+const BootScreen = ({ onBootComplete, onRecovery, username }: { onBootComplete: (isNeoFreestyle: boolean) => void; onRecovery: () => void; username: string; }) => {
     const [lines, setLines] = useState<string[]>([]);
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState('');
@@ -172,9 +173,9 @@ const BootScreen = ({ onBootComplete, onRecovery, username }: { onBootComplete: 
         const intervalId = setInterval(() => {
             if (i < bootLines.length) {
                 setLines(prev => [...prev, bootLines[i]]);
-                setProgress(p => p + (100 / (bootLines.length + 1) ));
+                setProgress(p => p + (100 / (bootLines.length + 2) ));
             } else {
-                // Final check: XserverOS
+                // Check for XserverOS.sys
                 const savedState = loadGameState(username);
                 const playerPc = savedState.network.find(p => p.id === 'player-pc');
                 const sysFolder = playerPc?.fileSystem.find(f => f.name === 'sys');
@@ -188,9 +189,11 @@ const BootScreen = ({ onBootComplete, onRecovery, username }: { onBootComplete: 
                         setTimeout(onRecovery, 2000);
                     }, 1000);
                 } else {
-                    setLines(prev => [...prev, 'Welcome, Operator.']);
+                    const isNeoWakeup = localStorage.getItem(`gameState_${username}`)?.includes('"neowakeup":true');
+                    const welcomeMessage = isNeoWakeup ? 'Welcome back... Operator.' : 'Welcome, Operator.';
+                    setLines(prev => [...prev, welcomeMessage]);
                     setProgress(100);
-                    setTimeout(onBootComplete, 1200);
+                    setTimeout(() => onBootComplete(!!isNeoWakeup), 1200);
                 }
                 clearInterval(intervalId);
             }
@@ -273,71 +276,65 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
     );
 };
 
-const RecoveryScreen = ({ onReboot }: { onReboot: () => void }) => {
-    const [input, setInput] = useState('');
-    const [history, setHistory] = useState<string[]>([
-        'SubSystem Recovery Mode',
-        'Kernel not found or unable to mount.',
-        'Type "help" for a list of commands.'
-    ]);
+const RecoveryTerminal = ({ onReboot }: { onReboot: () => void }) => {
+    const [network, setNetwork] = useState(() => loadGameState('Operator').network);
+    const [hackedPcs, setHackedPcs] = useState(() => loadGameState('Operator').hackedPcs);
+    const [discoveredPcs, setDiscoveredPcs] = useState(() => loadGameState('Operator').discoveredPcs);
+    const [emails, setEmails] = useState(() => loadGameState('Operator').emails);
 
-    const handleCommand = () => {
-        const newHistory = [...history, `> ${input}`];
-        if (input.trim().toLowerCase() === 'restore_kernel') {
+    const onSaveFile = (path: string[], content: string) => {
+        // This is a simplified save for recovery.
+        // The main goal is to get XserverOS.sys back.
+        if (path.join('/') === 'sys/XserverOS.sys') {
             const playerPcTemplate = initialNetworkData.find(p => p.id === 'player-pc');
             const xserverFileTemplate = playerPcTemplate?.fileSystem.find(f => f.name === 'sys')?.children?.find(f => f.name === 'XserverOS.sys');
             
             if(xserverFileTemplate) {
-                // This is a bit of a hack. We modify localStorage directly.
-                const gameState = JSON.parse(localStorage.getItem('gameState_Operator') || '{}');
-                const playerPc = gameState.network.find((p:any) => p.id === 'player-pc');
-                const sysFolder = playerPc.fileSystem.find((f:any) => f.name === 'sys');
-                if (sysFolder && !sysFolder.children.some((f:any) => f.name === 'XserverOS.sys')) {
-                    sysFolder.children.push(xserverFileTemplate);
+                 const gameState = JSON.parse(localStorage.getItem('gameState_Operator') || '{}');
+                 const playerPc = gameState.network.find((p:any) => p.id === 'player-pc');
+                 const sysFolder = playerPc.fileSystem.find((f:any) => f.name === 'sys');
+                 if (sysFolder && !sysFolder.children.some((f:any) => f.name === 'XserverOS.sys')) {
+                    sysFolder.children.push({ ...xserverFileTemplate, content: content });
                     localStorage.setItem('gameState_Operator', JSON.stringify(gameState));
-                }
+                    onReboot();
+                 }
             }
-            
-            newHistory.push('Restoring kernel from backup...');
-            newHistory.push('Restore complete. System will now reboot.');
-            setHistory(newHistory);
-            setTimeout(onReboot, 2000);
-
-        } else if (input.trim().toLowerCase() === 'help') {
-            newHistory.push('Available commands:');
-            newHistory.push('  restore_kernel   - Restores the system kernel from the recovery partition.');
-            newHistory.push('  reset_game       - Deletes all save data and reboots.');
-        } else if (input.trim().toLowerCase() === 'reset_game') {
-            deleteGameState('Operator');
-            newHistory.push('All save data deleted. System will now reboot.');
-            setHistory(newHistory);
-            setTimeout(onReboot, 2000);
         }
-        else {
-            newHistory.push(`Command not found: ${input}`);
-        }
-        setHistory(newHistory);
-        setInput('');
     }
 
     return (
-        <div className="w-full h-full p-8 bg-black text-red-500 font-code flex flex-col">
-            <div className="flex-grow overflow-y-auto">
-                {history.map((line, i) => <p key={i}>{line}</p>)}
-            </div>
-            <div className="flex items-center">
-                <span>&gt;&nbsp;</span>
-                <Input
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleCommand()}
-                    className="bg-transparent border-none text-red-500 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 h-6 p-0 ml-1"
-                    autoFocus
-                />
+        <div className="w-full h-full p-2 bg-black font-code">
+            <div className="border-2 border-red-500/50 p-2 h-full flex flex-col">
+                <div className="text-center text-red-500 animate-pulse p-1">RECOVERY MODE</div>
+                <div className="flex-grow">
+                     <Terminal
+                        username="recovery"
+                        instanceId={999}
+                        onReboot={onReboot}
+                        network={network}
+                        setNetwork={setNetwork}
+                        hackedPcs={hackedPcs}
+                        onHack={(pcId) => setHackedPcs(prev => new Set(prev).add(pcId))}
+                        onDiscovered={(pcId) => setDiscoveredPcs(prev => new Set(prev).add(pcId))}
+                        addLog={() => {}} // No logging in recovery
+                        handleIncreaseDanger={() => {}} // No danger in recovery
+                        onStartTrace={() => {}} // No trace in recovery
+                        onStopTrace={() => {}}
+                        saveGameState={() => {}}
+                        resetGame={() => { deleteGameState('Operator'); onReboot(); }}
+                        dangerLevel={0}
+                        machineState="recovery"
+                        receiveEmail={() => {}}
+                        onNeoExecute={() => {}}
+                        triggerCall={() => {}}
+                        onNeoWakeup={() => {}}
+                        onOpenFileEditor={onSaveFile}
+                    />
+                </div>
             </div>
         </div>
-    );
-};
+    )
+}
 
 const BsodScreen = ({ onReboot }: { onReboot: () => void }) => {
 
@@ -366,6 +363,7 @@ export default function Home() {
     const [alertEvent, setAlertEvent] = useState<AlertEvent | null>(null);
     const [aspectRatio, setAspectRatio] = useState(16/9);
     const [scale, setScale] = useState(1);
+    const [isNeoFreestyle, setIsNeoFreestyle] = useState(false);
 
 
     const handleUserInteraction = () => {
@@ -457,6 +455,11 @@ export default function Home() {
         setMachineState('bios');
     }
 
+    const handleBootComplete = (isNeoFreestyle: boolean) => {
+        setIsNeoFreestyle(isNeoFreestyle);
+        setMachineState('login');
+    }
+
     const renderState = () => {
         switch (machineState) {
             case 'standby':
@@ -476,7 +479,7 @@ export default function Home() {
             case 'booting':
                 return (
                     <div className="w-full h-full bg-black">
-                        <BootScreen onBootComplete={() => setMachineState('login')} onRecovery={() => setMachineState('recovery')} username={username}/>
+                        <BootScreen onBootComplete={handleBootComplete} onRecovery={() => setMachineState('recovery')} username={username}/>
                     </div>
                 );
             case 'login':
@@ -488,7 +491,7 @@ export default function Home() {
             case 'recovery':
                 return (
                     <div className="w-full h-full bg-black">
-                        <RecoveryScreen onReboot={handleReboot} />
+                        <RecoveryTerminal onReboot={handleReboot} />
                     </div>
                 );
             case 'bsod':

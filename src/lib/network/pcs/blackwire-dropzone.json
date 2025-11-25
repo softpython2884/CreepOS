@@ -28,6 +28,12 @@
                     "name": "backdoor.sys", 
                     "type": "file", 
                     "content": "BSYS_FRAG_LOADER // DO NOT DISTRIBUTE // SIG:BLKWR"
+                },
+                { 
+                    "id": "bw-dist-kernel-backup", 
+                    "name": "XserverOS.bkp", 
+                    "type": "file", 
+                    "content": "SYSTEM KERNEL [ENCRYPTED]"
                 }
             ]
         },
