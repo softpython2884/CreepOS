@@ -1,0 +1,44 @@
+{
+    "id": "neo-update-server",
+    "name": "NEO-UPDATE-SRV",
+    "ip": "10.0.0.4",
+    "type": "Server",
+    "links": ["neo-core-a"],
+    "auth": { "user": "update_daemon", "pass": "cyclical_rebirth" },
+    "firewall": { "enabled": true, "complexity": 10, "solution": "SYSTEM_SCHISM" },
+    "proxy": { "enabled": true, "level": 8 },
+    "traceTime": 120,
+    "requiredPorts": 4,
+    "isDangerous": true,
+    "traceability": 100,
+    "ports": [
+        { "port": 21, "service": "FTP", "isOpen": false },
+        { "port": 22, "service": "SSH", "isOpen": false },
+        { "port": 25, "service": "SMTP", "isOpen": false },
+        { "port": 443, "service": "HTTPS", "isOpen": false }
+    ],
+    "fileSystem": [
+        {
+            "id": "update-uploads",
+            "name": "uploads",
+            "type": "folder",
+            "children": []
+        },
+        {
+            "id": "update-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "update-access-log", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
+            ]
+        },
+        {
+            "id": "update-sys",
+            "name": "sys",
+            "type": "folder",
+            "children": [
+                { "id": "file-xserver-update", "name": "XserverOS.sys", "type": "file", "content": "SYSTEM KERNEL", "isSystemFile": true }
+            ]
+        }
+    ]
+}

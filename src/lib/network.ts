@@ -28,6 +28,7 @@ import node07 from './network/pcs/node-07.json';
 import neoCoreA from './network/pcs/neo-core-a.json';
 import neoCoreB from './network/pcs/neo-core-b.json';
 import neoCoreC from './network/pcs/neo-core-c.json';
+import neoUpdateServer from './network/pcs/neo-update-server.json';
 import { type PC } from './network/types';
 
 export const network: PC[] = [
@@ -59,6 +60,6 @@ export const network: PC[] = [
     node07,
     neoCoreA,
     neoCoreB,
-    neoCoreC
+    neoCoreC,
+    neoUpdateServer
 ];
-

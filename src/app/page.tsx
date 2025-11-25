@@ -332,6 +332,7 @@ const RecoveryTerminal = ({ onReboot }: { onReboot: () => void }) => {
                         triggerCall={() => {}}
                         onNeoWakeup={() => {}}
                         onOpenFileEditor={onSaveFile}
+                        onEndGame={() => {}}
                     />
                 </div>
             </div>
@@ -465,11 +466,11 @@ export default function Home() {
         setMachineState('login');
     }
 
-    const handleEndGame = useCallback((endType: 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' = 'credits', lines: string[] = []) => {
+    const handleEndGame = useCallback((endType: 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' | 'true_ending' = 'credits', lines: string[] = []) => {
         if (endType === 'wait_for_death') {
             setFadeOut(true);
             setTimeout(() => {
-                onSoundEvent('kill');
+                setSoundEvent('kill');
                 setTimeout(() => {
                     setMusicEvent('credits');
                     setMachineState('credits');
@@ -481,22 +482,29 @@ export default function Home() {
             setEndgameData({ lines });
         } else if (endType === 'flee') {
             setFadeOut(true);
-            setTimeout(() => onSoundEvent('off'), 1000);
-            setTimeout(() => onSoundEvent('cours'), 2000);
-            setTimeout(() => onSoundEvent('soufle'), 2500);
-            setTimeout(() => onSoundEvent('multikill'), 3700);
+            setTimeout(() => setSoundEvent('off'), 1000);
+            setTimeout(() => setSoundEvent('cours'), 2000);
+            setTimeout(() => setSoundEvent('soufle'), 2500);
+            setTimeout(() => setSoundEvent('multikill'), 3700);
             setTimeout(() => {
                 setMusicEvent('credits');
                 setMachineState('credits');
             }, 5700);
+        } else if (endType === 'true_ending') {
+            setFadeOut(true);
+            // This is a placeholder for the final animation
+            setTimeout(() => {
+                setMachineState('endgame');
+                setEndgameData({ lines: ['[PLACEHOLDER: Fin Ultime]'] });
+            }, 2000);
         } else {
             setMusicEvent('credits');
             setMachineState('credits');
         }
-    }, [onSoundEvent]);
+    }, []);
 
     const handleEndgameScreenComplete = () => {
-        onSoundEvent('kill');
+        setSoundEvent('kill');
         setTimeout(() => {
             setMusicEvent('credits');
             setMachineState('credits');

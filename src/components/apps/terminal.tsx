@@ -44,7 +44,7 @@ interface TerminalProps {
     onNeoExecute: (isInitialInstall: boolean) => void;
     triggerCall: (script: CallScript) => void;
     onNeoWakeup: () => void;
-    onOpenFileEditor: (path: string[], content: string) => void;
+    onEndGame: (endType?: 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' | 'true_ending', lines?: string[]) => void;
 }
 
 const PLAYER_PUBLIC_IP = '184.72.238.110';
@@ -171,6 +171,7 @@ export default function Terminal({
     onNeoExecute,
     triggerCall,
     onNeoWakeup,
+    onEndGame,
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved.", onConfirm: () => {} },
@@ -1430,6 +1431,19 @@ export default function Terminal({
                 handleOutput('call: IP de destination manquante. Utilisation : call <ip> [--secure|--notsecure]');
                 break;
             }
+
+             if (ipArg === '10.0.0.4' && isSecure) {
+                const updateServer = network.find(pc => pc.ip === '10.0.0.4');
+                const payload = findNodeByPath(['schism.payload'], updateServer?.fileSystem || []);
+                if (payload) {
+                    handleOutput('Payload de schisme activé... Déclenchement de la séquence finale...');
+                    addLog('EVENT: La VRAIE FIN est déclenchée.');
+                    onEndGame('true_ending');
+                } else {
+                    handleOutput(`call: Erreur - 'schism.payload' introuvable sur la cible.`);
+                }
+                break;
+            }
             
             if (ipArg === '198.51.100.17' && isNotSecure) {
                 const backdoorPC = network.find(pc => pc.ip === '198.51.100.17');
@@ -1591,5 +1605,3 @@ export default function Terminal({
     </div>
   );
 }
-
-    

@@ -1,5 +1,6 @@
 
 import type { CallScript } from '../types';
+import { blackwireFinalStandCall } from './blackwire-final-stand';
 
 export const finalCallScript: CallScript = {
   id: 'final-call',
@@ -58,7 +59,7 @@ export const finalCallScript: CallScript = {
               endCallAndTrigger: {
                   type: 'endgame',
                   endType: 'self_destruct',
-                  lines: ['Tu le savais', 'On te l\'a dit', 'Même mort, tu es sur sa liste']
+                  lines: ['Tu le savais', 'On te la dit', 'Même mort, tu et sur sa liste']
               }
           }
         },
@@ -75,8 +76,14 @@ export const finalCallScript: CallScript = {
         },
         {
             id: 'end-4',
-            text: 'Choix 4',
+            text: 'Contacter Blackwire. Tenter une dernière fois.',
             nextNode: 'end-call',
+            consequences: {
+                endCallAndTrigger: {
+                    type: 'call',
+                    script: blackwireFinalStandCall,
+                }
+            }
         }
       ],
     },

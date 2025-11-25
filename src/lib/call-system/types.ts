@@ -8,14 +8,15 @@ export interface CallMessage {
     text: string;
 }
 
-type EndgameType = 'credits' | 'wait_for_death' | 'self_destruct' | 'flee';
+type EndgameType = 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' | 'true_ending';
 
 type ConsequenceTrigger = 
     | { type: 'call'; script: CallScriptType }
     | { type: 'email'; email: Omit<Email, 'id', 'timestamp', 'folder', 'recipient'> }
     | { type: 'trace'; duration: number }
     | { type: 'alarm', duration: number, nextCall?: CallScriptType, alertEmail?: Omit<Email, 'id', 'timestamp', 'folder', 'recipient'> }
-    | { type: 'endgame', endType: EndgameType, lines?: string[] };
+    | { type: 'endgame', endType: EndgameType, lines?: string[] }
+    | { type: 'machine_state', state: string, email?: Omit<Email, 'id', 'timestamp', 'folder', 'recipient'> };
 
 
 export interface CallChoice {

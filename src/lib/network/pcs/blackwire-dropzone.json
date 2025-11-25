@@ -35,6 +35,12 @@
                     "name": "XserverOS.bkp", 
                     "type": "file", 
                     "content": "SYSTEM KERNEL [ENCRYPTED]"
+                },
+                {
+                    "id": "bw-dist-schism",
+                    "name": "schism.payload",
+                    "type": "file",
+                    "content": "PAYLOAD DE SCHISME // SIG:BLKWR // OVERRIDE PROTOCOL"
                 }
             ]
         },

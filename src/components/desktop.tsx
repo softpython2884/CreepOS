@@ -45,6 +45,7 @@ import { blackwireChapter7Debrief } from '@/lib/call-system/scripts/blackwire-ch
 import { blackwireChapter7RevelationsEmail } from '@/lib/call-system/scripts/blackwire-chapter7-revelations';
 import { neoAttackCall } from '@/lib/call-system/scripts/neo-attack-call';
 import { finalCallScript } from '@/lib/call-system/scripts/final-call';
+import { blackwireFinalStandCall } from '@/lib/call-system/scripts/blackwire-final-stand';
 import { Progress } from './ui/progress';
 
 
@@ -87,7 +88,7 @@ interface DesktopProps {
   onReboot: () => void;
   setMachineState: (state: string, data?: any) => void;
   scale: number;
-  onEndGame: (endType?: 'credits' | 'wait_for_death' | 'self_destruct' | 'flee', lines?: string[]) => void;
+  onEndGame: (endType?: 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' | 'true_ending', lines?: string[]) => void;
   isNeoFreestyle?: boolean;
 }
 
@@ -306,11 +307,16 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
             if (endTrigger.nextCall) {
                 callQueueRef.current.push(() => triggerCall(endTrigger.nextCall!));
             }
+        } else if (endTrigger.type === 'machine_state') {
+            setMachineState(endTrigger.state);
+            if (endTrigger.email) {
+                receiveEmail(endTrigger.email);
+            }
         }
     }
   
     callConsequencesTriggeredRef.current.add(triggerKey);
-  }, [receiveEmail, triggerCall, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability, onEndGame]);
+  }, [receiveEmail, triggerCall, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability, onEndGame, setMachineState]);
 
   const endCall = useCallback((isManualClose: boolean = false) => {
     onAlertEvent('stopRingtone');
@@ -632,7 +638,6 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
         return () => clearInterval(chaosInterval);
 
     }, [isNexusLockdown, handleStartTrace, setMachineState, addLog, receiveEmail, onSoundEvent]);
-
 
  useEffect(() => {
     if (!isTraced) {
@@ -1095,6 +1100,7 @@ Si vous voyez ce message, elle vous surveille déjà.
             onNeoExecute: handleNeoExecute,
             triggerCall,
             onNeoWakeup: handleNeoWakeup,
+            onEndGame,
         } 
     },
     documents: { 
