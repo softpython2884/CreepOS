@@ -40,6 +40,7 @@ import { blackwireMission1Email } from '@/lib/call-system/scripts/blackwire-miss
 import { blackwireChapter3IntroEmail } from '@/lib/call-system/scripts/blackwire-chapter3-intro';
 import { directorChapter3InterrogationCall, directorChapter3AlertEmail } from '@/lib/call-system/scripts/director-chapter3-interrogation';
 import { chapter5IntroEmail } from '@/lib/call-system/scripts/chapter5-intro';
+import { chapter6IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
 import { Progress } from './ui/progress';
 
 
@@ -458,6 +459,25 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     }
 }, [triggerCall]);
 
+  const handleNeoWakeup = useCallback(() => {
+      addLog("CRITICAL: NÉO has taken control.");
+      try {
+          const currentState = JSON.parse(localStorage.getItem(`gameState_${username}`) || '{}');
+          currentState.neowakeup = true;
+          localStorage.setItem(`gameState_${username}`, JSON.stringify(currentState));
+          addLog("INFO: Wakeup state saved.");
+      } catch (e) {
+          addLog("ERROR: Could not save wakeup state.");
+      }
+
+      handleStartTrace("NÉO CORE", 13, activeInstanceId || 0);
+      
+      // Open apps to create chaos
+      setTimeout(() => openApp('terminal'), 500);
+      setTimeout(() => openApp('documents'), 1000);
+      setTimeout(() => openApp('network-map'), 1500);
+  }, [username, handleStartTrace, activeInstanceId, addLog, openApp]);
+
 
   useEffect(() => {
     const saveInterval = setInterval(() => {
@@ -798,7 +818,7 @@ Si vous voyez ce message, elle vous surveille déjà.
     }
     if (email.recipient === 'recruit@blackwire.net' && email.body.includes('CODE_NEO_V4')) {
         addLog("Fin du jeu... pour l'instant.");
-        // End of game logic here
+        setTimeout(() => receiveEmail(chapter6IntroEmail), 2000);
     }
   };
 
@@ -932,6 +952,7 @@ Si vous voyez ce message, elle vous surveille déjà.
             receiveEmail,
             onNeoExecute: handleNeoExecute,
             triggerCall,
+            onNeoWakeup: handleNeoWakeup,
         } 
     },
     documents: { 

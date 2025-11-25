@@ -43,6 +43,7 @@ interface TerminalProps {
     receiveEmail: (email: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => void;
     onNeoExecute: (isInitialInstall: boolean) => void;
     triggerCall: (script: CallScript) => void;
+    onNeoWakeup: () => void;
 }
 
 const PLAYER_PUBLIC_IP = '184.72.238.110';
@@ -168,6 +169,7 @@ export default function Terminal({
     receiveEmail,
     onNeoExecute,
     triggerCall,
+    onNeoWakeup,
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved.", onConfirm: () => {} },
@@ -1388,9 +1390,9 @@ export default function Terminal({
                 const backdoorFile = findNodeByPath(['backdoor.sys'], backdoorPC?.fileSystem || []);
 
                 if(backdoorFile) {
-                    handleOutput('Séquence de la porte dérobée activée... Début du chapitre 3.');
-                    addLog('EVENT: Chapitre 3 initié via la porte dérobée.');
-                    triggerCall(blackwireChapter3Mission);
+                    handleOutput('Séquence de la porte dérobée activée... Le système est compromis.');
+                    addLog('EVENT: Chapitre 6 initié via la porte dérobée. NÉO se réveille.');
+                    onNeoWakeup();
                 } else {
                     handleOutput(`call: Le script requis 'backdoor.sys' est introuvable sur la cible.`);
                 }

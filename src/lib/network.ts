@@ -16,6 +16,7 @@ import workstationHelios from './network/pcs/workstation-helios.json';
 import devSandbox13 from './network/pcs/dev-sandbox-13.json';
 import decoyPc from './network/pcs/decoy-pc.json';
 import superiorPc from './network/pcs/superior-pc.json';
+import workstationNyx from './network/pcs/workstation-nyx.json';
 import { type PC } from './network/types';
 
 export const network: PC[] = [
@@ -37,4 +38,5 @@ export const network: PC[] = [
     devSandbox13,
     decoyPc,
     superiorPc,
+    workstationNyx,
 ];

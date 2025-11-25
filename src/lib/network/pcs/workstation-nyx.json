@@ -1,0 +1,37 @@
+{
+    "id": "workstation-nyx",
+    "name": "WK-NYX-02",
+    "ip": "10.0.1.16",
+    "type": "Desktop",
+    "links": ["nexus-hr-db"],
+    "auth": { "user": "nyx", "pass": "darkness_falls" },
+    "firewall": { "enabled": true, "complexity": 7, "solution": "ECHO_CHAMBER" },
+    "proxy": { "enabled": true, "level": 4 },
+    "traceTime": 15,
+    "requiredPorts": 3,
+    "isDangerous": true,
+    "traceability": 50,
+    "ports": [
+        { "port": 21, "service": "FTP", "isOpen": false },
+        { "port": 22, "service": "SSH", "isOpen": false },
+        { "port": 80, "service": "HTTP", "isOpen": false }
+    ],
+    "fileSystem": [
+        {
+            "id": "nyx-sys",
+            "name": "sys",
+            "type": "folder",
+            "children": [
+                { "id": "nyx-kernel-data", "name": "kernel_data.pak", "type": "file", "content": "CORE KERNEL DATA - DO NOT DELETE" }
+            ]
+        },
+        {
+            "id": "nyx-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "nyx-access-log", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
+            ]
+        }
+    ]
+}
