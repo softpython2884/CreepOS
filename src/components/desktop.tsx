@@ -80,14 +80,14 @@ type EditingFile = {
 type CallState = 'idle' | 'incoming' | 'active';
 
 interface DesktopProps {
-  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | 'meme' | 'glitch' | 'lag' | 'kill' | null) => void;
+  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | 'meme' | 'glitch' | 'lag' | 'kill' | 'off' | 'cours' | 'soufle' | 'multikill' | null) => void;
   onMusicEvent: (event: MusicEvent) => void;
   onAlertEvent: (event: AlertEvent) => void;
   username: string;
   onReboot: () => void;
   setMachineState: (state: string, data?: any) => void;
   scale: number;
-  onEndGame: (endType?: 'credits' | 'wait_for_death' | 'self_destruct', lines?: string[]) => void;
+  onEndGame: (endType?: 'credits' | 'wait_for_death' | 'self_destruct' | 'flee', lines?: string[]) => void;
   isNeoFreestyle?: boolean;
 }
 

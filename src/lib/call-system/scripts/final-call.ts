@@ -64,8 +64,14 @@ export const finalCallScript: CallScript = {
         },
         {
             id: 'end-3',
-            text: 'Choix 3',
+            text: 'S\'enfuir.',
             nextNode: 'end-call',
+            consequences: {
+                endCallAndTrigger: {
+                    type: 'endgame',
+                    endType: 'flee',
+                }
+            }
         },
         {
             id: 'end-4',

@@ -465,7 +465,7 @@ export default function Home() {
         setMachineState('login');
     }
 
-    const handleEndGame = useCallback((endType: 'credits' | 'wait_for_death' | 'self_destruct' = 'credits', lines: string[] = []) => {
+    const handleEndGame = useCallback((endType: 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' = 'credits', lines: string[] = []) => {
         if (endType === 'wait_for_death') {
             setFadeOut(true);
             setTimeout(() => {
@@ -479,6 +479,16 @@ export default function Home() {
             setMusicEvent('none');
             setMachineState('endgame');
             setEndgameData({ lines });
+        } else if (endType === 'flee') {
+            setFadeOut(true);
+            setTimeout(() => onSoundEvent('off'), 1000);
+            setTimeout(() => onSoundEvent('cours'), 2000);
+            setTimeout(() => onSoundEvent('soufle'), 2500);
+            setTimeout(() => onSoundEvent('multikill'), 3700);
+            setTimeout(() => {
+                setMusicEvent('credits');
+                setMachineState('credits');
+            }, 5700);
         } else {
             setMusicEvent('credits');
             setMachineState('credits');
