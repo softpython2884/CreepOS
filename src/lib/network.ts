@@ -14,6 +14,8 @@ import nexusLogs01 from './network/pcs/nexus-logs-01.json';
 import nexusHrDb from './network/pcs/nexus-hr-db.json';
 import workstationHelios from './network/pcs/workstation-helios.json';
 import devSandbox13 from './network/pcs/dev-sandbox-13.json';
+import decoyPc from './network/pcs/decoy-pc.json';
+import superiorPc from './network/pcs/superior-pc.json';
 import { type PC } from './network/types';
 
 export const network: PC[] = [
@@ -33,4 +35,6 @@ export const network: PC[] = [
     nexusHrDb,
     workstationHelios,
     devSandbox13,
+    decoyPc,
+    superiorPc,
 ];

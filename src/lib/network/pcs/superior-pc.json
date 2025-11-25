@@ -1,0 +1,55 @@
+{
+    "id": "superior-pc",
+    "name": "Sup-WKST-03",
+    "ip": "10.1.1.5",
+    "type": "Desktop",
+    "links": [],
+    "auth": { "user": "sup_admin", "pass": "TopS3cr3t!" },
+    "firewall": { "enabled": true, "complexity": 4, "solution": "NEXUS_CORE" },
+    "proxy": { "enabled": true, "level": 2 },
+    "traceTime": 45,
+    "requiredPorts": 2,
+    "isDangerous": true,
+    "traceability": 35,
+    "ports": [
+        { "port": 21, "service": "FTP", "isOpen": false },
+        { "port": 80, "service": "HTTP", "isOpen": false }
+    ],
+    "fileSystem": [
+        {
+            "id": "sup-reports",
+            "name": "reports",
+            "type": "folder",
+            "children": [
+                { 
+                    "id": "sup-v3-report", 
+                    "name": "rapport_neo_v3.txt", 
+                    "type": "file",
+                    "content": "RAPPORT CONFIDENTIEL - NÉO V3\nLe modèle est prêt pour des tests en conditions réelles.\nSujets de la prison de haute sécurité de Blackgate sélectionnés.\nConfirmation : Tous les opérateurs des versions précédentes (Kinito, NÉO v1, NÉO v2) sont répertoriés comme 'pertes acceptables'. Leurs contrats incluaient une clause de terminaison en cas de 'compromission psychologique'. Aucun survivant connu."
+                },
+                { 
+                    "id": "sup-v4-report", 
+                    "name": "rapport_neo_v4.txt", 
+                    "type": "file",
+                    "content": "PROPOSITION - NÉO V4\nDéploiement en zone de conflit (Russie) pour test d'efficacité en cyberguerre offensive. Le modèle doit être capable de déstabiliser une infrastructure nationale sans intervention humaine directe. Risques politiques élevés mais potentiel stratégique sans précédent."
+                }
+            ]
+        },
+        {
+            "id": "sup-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "sup-access-log", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
+            ]
+        },
+        {
+            "id": "sup-sys",
+            "name": "sys",
+            "type": "folder",
+            "children": [
+                { "id": "file-xserver-sup", "name": "XserverOS.sys", "type": "file", "content": "SYSTEM KERNEL", "isSystemFile": true }
+            ]
+        }
+    ]
+}

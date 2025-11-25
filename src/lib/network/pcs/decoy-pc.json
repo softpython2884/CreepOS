@@ -1,0 +1,32 @@
+{
+    "id": "decoy-pc",
+    "name": "Service-Node-4B",
+    "ip": "172.16.4.2",
+    "type": "Server",
+    "links": ["superior-pc"],
+    "auth": { "user": "service", "pass": "service123" },
+    "firewall": { "enabled": false, "complexity": 0 },
+    "proxy": { "enabled": false, "level": 0 },
+    "traceTime": 0,
+    "requiredPorts": 0,
+    "ports": [],
+    "traceability": 5,
+    "fileSystem": [
+        {
+            "id": "decoy-bin",
+            "name": "bin",
+            "type": "folder",
+            "children": [
+                { "id": "file-overdue", "name": "overdue.bin", "type": "file", "content": "Rappelle au superviseur de mettre à jour les mots de passe. C'est une passoire.", "isSystemFile": true }
+            ]
+        },
+        {
+            "id": "decoy-logs",
+            "name": "logs",
+            "type": "folder",
+            "children": [
+                { "id": "file-decoy-access", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
+            ]
+        }
+    ]
+}

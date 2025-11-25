@@ -19,7 +19,7 @@ import EmailClient, { type Email } from './apps/email-client';
 import WebBrowser from './apps/web-browser';
 import MediaPlayer from './apps/media-player';
 import SequenceAnalyzer from './apps/sequence-analyzer';
-import { AlertTriangle, Skull } from 'lucide-react';
+import { AlertTriangle, Cpu, Skull } from 'lucide-react';
 import { saveGameState, loadGameState, deleteGameState } from '@/lib/save-manager';
 import SurvivalMode from './survival-mode';
 import CallView from './call-view';
@@ -39,6 +39,8 @@ import TextEditor from './apps/text-editor';
 import { blackwireMission1Email } from '@/lib/call-system/scripts/blackwire-mission-1';
 import { blackwireChapter3IntroEmail } from '@/lib/call-system/scripts/blackwire-chapter3-intro';
 import { directorChapter3InterrogationCall, directorChapter3AlertEmail } from '@/lib/call-system/scripts/director-chapter3-interrogation';
+import { chapter5IntroEmail } from '@/lib/call-system/scripts/chapter5-intro';
+import { Progress } from './ui/progress';
 
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player' | 'contract-viewer' | 'sequence-analyzer';
@@ -73,7 +75,7 @@ type EditingFile = {
 type CallState = 'idle' | 'incoming' | 'active';
 
 interface DesktopProps {
-  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | 'meme' | null) => void;
+  onSoundEvent: (event: 'click' | 'close' | 'bsod' | 'fan' | 'email' | 'error' | 'tension' | 'startCall' | 'endCall' | 'meme' | 'glitch' | null) => void;
   onMusicEvent: (event: MusicEvent) => void;
   onAlertEvent: (event: AlertEvent) => void;
   username: string;
@@ -144,6 +146,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [traceTarget, setTraceTarget] = useState({ name: '', time: 0 });
   const [emailNotification, setEmailNotification] = useState(false);
   const [isNeoInstalled, setIsNeoInstalled] = useState(false);
+  const [showModuleInit, setShowModuleInit] = useState(false);
+  const [moduleProgress, setModuleProgress] = useState(0);
   
   const [emails, setEmails] = useState<Email[]>(() => {
     const savedState = loadGameState(username);
@@ -586,10 +590,49 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     });
   };
 
+  const handleAnalysisComplete = () => {
+    addLog(`EVENT: Module NÉO mis à jour.`);
+    
+    // Trigger visual/audio feedback
+    setShowModuleInit(true);
+    onSoundEvent('glitch');
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += 10;
+        setModuleProgress(progress);
+        if (progress >= 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+                setShowModuleInit(false);
+                setModuleProgress(0);
+                // Send email from Blackwire
+                setTimeout(() => receiveEmail(chapter5IntroEmail), 1000);
+            }, 500);
+        }
+    }, 400);
+
+    // Give player new tool
+    setPlayerFileSystem(prevFs => {
+        const newTool: FileSystemNode = {
+            id: `file-ftp-bounce-${Date.now()}`,
+            name: 'FTPBounce.bin',
+            type: 'file',
+            content: 'Exploit pour le port 21 (FTP).',
+            isSystemFile: true,
+        };
+        return updateNodeByPath(prevFs, ['bin'], (binFolder) => {
+            if (binFolder && binFolder.type === 'folder' && binFolder.children) {
+                return { ...binFolder, children: [...binFolder.children, newTool] };
+            }
+            return binFolder;
+        });
+    });
+};
+
   const handleSequenceAnalysisComplete = (puzzleId: string) => {
-    addLog(`EVENT: Analyse de séquence (${puzzleId}) terminée. Rapport généré.`);
     
     if (puzzleId === 'DELTA7') {
+      addLog(`EVENT: Analyse de séquence (${puzzleId}) terminée. Rapport généré.`);
       setPlayerFileSystem(prevFs => {
           const newFile: FileSystemNode = {
               id: `file-report-delta7-${Date.now()}`,
@@ -622,6 +665,7 @@ Opérateur: Dr. Omen
           });
       });
     } else if (puzzleId === 'MEMO_BIN') {
+        addLog(`EVENT: Analyse de séquence (${puzzleId}) terminée. Données restaurées.`);
         setPlayerFileSystem(prevFs => {
             const newFile: FileSystemNode = {
                 id: `file-memo-restored-${Date.now()}`,
@@ -638,11 +682,15 @@ Si vous voyez ce message, elle vous surveille déjà.
             const memOpsPath = ['documents', 'mem-ops'];
             return updateNodeByPath(prevFs, memOpsPath, (memOpsFolder) => {
                 if (memOpsFolder && memOpsFolder.type === 'folder' && memOpsFolder.children) {
-                    return { ...memOpsFolder, children: [...memOpsFolder.children, newFile] };
+                    // Remove memo.bin, add memo_restored.txt
+                    const filteredChildren = memOpsFolder.children.filter(f => f.name !== 'memo.bin');
+                    return { ...memOpsFolder, children: [...filteredChildren, newFile] };
                 }
                 return memOpsFolder;
             });
         });
+        // Trigger Chapter 5 sequence
+        handleAnalysisComplete();
     }
   };
 
@@ -747,6 +795,10 @@ Si vous voyez ce message, elle vous surveille déjà.
             receiveEmail(newEmail);
             addLog("EVENT: Chapitre 3 initié.");
         }, 5000);
+    }
+    if (email.recipient === 'recruit@blackwire.net' && email.body.includes('CODE_NEO_V4')) {
+        addLog("Fin du jeu... pour l'instant.");
+        // End of game logic here
     }
   };
 
@@ -1046,6 +1098,16 @@ Si vous voyez ce message, elle vous surveille déjà.
                   </div>
               </div>
           </div>
+      )}
+
+      {showModuleInit && (
+        <div className="absolute inset-0 bg-black/80 flex justify-center items-center z-[10000]">
+          <div className="w-[400px] text-center p-8 bg-card border border-accent rounded-lg flex flex-col items-center gap-4">
+            <Cpu size={48} className="text-accent animate-pulse"/>
+            <h2 className="text-xl font-bold text-accent">Initialisation du Module</h2>
+            <Progress value={moduleProgress} className="w-full" />
+          </div>
+        </div>
       )}
 
       {callState === 'incoming' && activeCall && (
