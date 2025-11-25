@@ -83,6 +83,7 @@ interface DesktopProps {
   onReboot: () => void;
   setMachineState: (state: string) => void;
   scale: number;
+  isNeoFreestyle?: boolean;
 }
 
 const updateNodeByPath = (
@@ -119,7 +120,7 @@ const updateNodeByPath = (
 };
 
 
-export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, username, onReboot, setMachineState, scale }: DesktopProps) {
+export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, username, onReboot, setMachineState, scale, isNeoFreestyle }: DesktopProps) {
   const [openApps, setOpenApps] = useState<OpenApp[]>([]);
   const [activeInstanceId, setActiveInstanceId] = useState<number | null>(null);
   const [nextZIndex, setNextZIndex] = useState(10);
@@ -477,6 +478,15 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       setTimeout(() => openApp('documents'), 1000);
       setTimeout(() => openApp('network-map'), 1500);
   }, [username, handleStartTrace, activeInstanceId, addLog, openApp]);
+
+  useEffect(() => {
+    if (isNeoFreestyle) {
+      const timer = setTimeout(() => {
+        triggerCall(supervisorChapter2Call);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isNeoFreestyle, triggerCall]);
 
 
   useEffect(() => {
