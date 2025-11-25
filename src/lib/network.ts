@@ -29,6 +29,7 @@ import neoCoreA from './network/pcs/neo-core-a.json';
 import neoCoreB from './network/pcs/neo-core-b.json';
 import neoCoreC from './network/pcs/neo-core-c.json';
 import neoUpdateServer from './network/pcs/neo-update-server.json';
+import absurdShop from './network/pcs/absurd-shop.json';
 import { type PC } from './network/types';
 
 export const network: PC[] = [
@@ -61,5 +62,6 @@ export const network: PC[] = [
     neoCoreA,
     neoCoreB,
     neoCoreC,
-    neoUpdateServer
+    neoUpdateServer,
+    absurdShop
 ];
