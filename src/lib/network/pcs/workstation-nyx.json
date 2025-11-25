@@ -1,9 +1,10 @@
+
 {
     "id": "workstation-nyx",
     "name": "WK-NYX-02",
     "ip": "10.0.1.16",
     "type": "Desktop",
-    "links": ["nexus-hr-db"],
+    "links": ["nexus-logs-01"],
     "auth": { "user": "nyx", "pass": "darkness_falls" },
     "firewall": { "enabled": true, "complexity": 7, "solution": "ECHO_CHAMBER" },
     "proxy": { "enabled": true, "level": 4 },

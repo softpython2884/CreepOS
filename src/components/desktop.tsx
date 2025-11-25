@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useRef, useCallback, createRef, useEffect } from 'react';
@@ -217,7 +216,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     });
   }, []);
 
-  const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => {
+  const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> & { onClose?: () => void }) => {
     onSoundEvent('email');
     const newEmail: Email = {
       id: `email-${Date.now()}`,
@@ -329,7 +328,28 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         setTimeout(() => triggerCall(blackwireChapter7Debrief), 2000);
     }
     if(callScriptRef.current?.id === 'blackwire-chapter7-debrief') {
-        setTimeout(() => receiveEmail(blackwireChapter7RevelationsEmail), 1000);
+        const mindBreakEmail = {
+            ...blackwireChapter7RevelationsEmail,
+            onClose: () => {
+                handleIncreaseDanger(82);
+                addLog('DANGER: Exposition à des données critiques. Niveau de danger augmenté à 82%.');
+
+                const nexusAlert: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
+                    sender: 'system@nexus-research.net',
+                    subject: 'ALERTE GLOBALE - ENQUÊTE EN COURS',
+                    body: `À tout le personnel,
+
+Les responsables de l'intrusion n'ont pas encore été identifiés. Leurs traces ont été effacées, mais nos contre-mesures sont actives.
+De nouvelles techniques de traçage non conventionnelles sont en cours de déploiement.
+Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera utilisée pour obtenir les noms des collaborateurs externes.
+
+- Administration Système Nexus`
+                };
+                setTimeout(() => receiveEmail(nexusAlert), 1000);
+                setTimeout(() => receiveEmail(chapter6IntroEmail), 2000);
+            }
+        };
+        setTimeout(() => receiveEmail(mindBreakEmail), 1000);
     }
 
     setCallState('idle');
@@ -347,7 +367,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if(nextCall) {
         setTimeout(nextCall, 2000); 
     }
-  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, activeCall, handleCallConsequences, triggerCall, receiveEmail]);
+  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, activeCall, handleCallConsequences, triggerCall, receiveEmail, addLog, handleIncreaseDanger]);
 
   const advanceCall = useCallback((choiceId: string) => {
     const script = callScriptRef.current;
@@ -852,6 +872,10 @@ Si vous voyez ce message, elle vous surveille déjà.
         addLog("Fin du jeu... pour l'instant.");
         setTimeout(() => receiveEmail(chapter6IntroEmail), 2000);
     }
+     if (email.recipient === 'recruit@blackwire.net' && email.body.includes('NIHIL_EST_VERUM')) {
+        addLog("Fin du jeu... pour l'instant.");
+        // This is where the final cutscene/ending would be triggered.
+    }
   };
 
   const getPlayerFileSystem = useCallback(() => {
@@ -1083,6 +1107,14 @@ Si vous voyez ce message, elle vous surveille déjà.
     onSoundEvent('close');
     setOpenApps(prev => {
         const appToClose = prev.find(app => app.instanceId === instanceId);
+        
+        if (appToClose?.appId === 'email') {
+            const email = (appToClose.props as any)?.emails?.find((e: Email) => e.onClose);
+            if (email?.onClose) {
+                email.onClose();
+            }
+        }
+        
         if (appToClose?.isSourceOfTrace) {
             handleStopTrace();
         }
@@ -1186,6 +1218,14 @@ Si vous voyez ce message, elle vous surveille déjà.
           const AppComponent = currentAppConfig.component;
           
           let props = { ...currentAppConfig.props, ...app.props };
+          
+           if (app.appId === 'email') {
+              props.emails = emails.map(email => 
+                email.id === 'blackwire-chapter7-revelations-email' 
+                ? { ...email, onClose: props.onClose } 
+                : email
+              );
+            }
           
           if (app.appId === 'terminal') {
             props.instanceId = app.instanceId;

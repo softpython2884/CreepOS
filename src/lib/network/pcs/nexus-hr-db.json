@@ -1,3 +1,4 @@
+
 {
     "id": "nexus-hr-db",
     "name": "NXS-HR-DB",
@@ -24,7 +25,7 @@
                     "id": "hr-employee-records", 
                     "name": "employee_records.db", 
                     "type": "file",
-                    "content": "DATA_CORRUPTED: Use db_viewer to read.\n---\nBEGIN RECORD\nID: 7701\nName: Classified\nCodename: Helios\nStatus: Active\nLast Assigned Workstation: 10.0.1.15\n---\nBEGIN RECORD\nID: 7702\nName: Classified\nCodename: Nyx\nStatus: Active\nLast Assigned Workstation: 10.0.1.16\n---"
+                    "content": "DATA_CORRUPTED: Use db_viewer to read.\n---\nBEGIN RECORD\nID: 7701\nName: Classified\nCodename: Helios\nStatus: Active\nLast Assigned Workstation: 10.0.1.15\n---\nBEGIN RECORD\nID: 7702\nName: Classified\nCodename: Nyx\nStatus: Active\nLast Assigned Workstation: 10.0.1.16\n---\nBEGIN RECORD\nID: 0000\nName: Nyx_ADMIN\nCodename: Nyx\nStatus: Active\nLast Assigned Workstation: 10.0.1.16\nPASS: darkness_falls\n---"
                 }
             ]
         },

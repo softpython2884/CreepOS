@@ -1,3 +1,4 @@
+
 {
     "id": "blackwire-dropzone",
     "name": "BW-Dropzone",
@@ -51,7 +52,8 @@
                 { "id": "file-ftpbounce-bw", "name": "FTPBounce.bin", "type": "file", "content": "Port 21 (FTP) cracker.", "isSystemFile": true },
                 { "id": "file-sshbounce-bw", "name": "SSHBounce.bin", "type": "file", "content": "Port 22 (SSH) cracker.", "isSystemFile": true },
                 { "id": "file-smtpoverflow-bw", "name": "SMTPOverflow.bin", "type": "file", "content": "Port 25 (SMTP) cracker.", "isSystemFile": true },
-                { "id": "file-webserverworm-bw", "name": "WebServerWorm.bin", "type": "file", "content": "Port 80 (HTTP) cracker.", "isSystemFile": true }
+                { "id": "file-webserverworm-bw", "name": "WebServerWorm.bin", "type": "file", "content": "Port 80 (HTTP) cracker.", "isSystemFile": true },
+                { "id": "file-forkbomb-bw", "name": "forkbomb.bin", "type": "file", "content": "System crash utility.", "isSystemFile": true }
             ]
         },
         {

@@ -24,6 +24,7 @@ export interface Email {
   timestamp: string;
   folder: 'inbox' | 'sent';
   attachments?: Attachment[];
+  onClose?: () => void;
 }
 
 interface EmailClientProps {
@@ -50,6 +51,15 @@ export default function EmailClient({ emails, onSend, currentUser, onOpenLink }:
   const selectedEmail = useMemo(() => {
     return emails.find(email => email.id === selectedEmailId) || null;
   }, [emails, selectedEmailId]);
+
+  useEffect(() => {
+    return () => {
+      // When the component unmounts (window is closed)
+      if (selectedEmail && selectedEmail.onClose) {
+        selectedEmail.onClose();
+      }
+    };
+  }, [selectedEmail]);
 
   useEffect(() => {
     if (currentView === 'read' && emailBodyRef.current) {

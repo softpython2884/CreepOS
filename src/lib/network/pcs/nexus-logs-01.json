@@ -1,9 +1,10 @@
+
 {
     "id": "nexus-logs-01",
     "name": "NXS-LOGS-01",
     "ip": "10.255.255.1",
     "type": "Server",
-    "links": ["nexus-hr-db"],
+    "links": ["nexus-hr-db", "workstation-nyx"],
     "auth": { "user": "log_admin", "pass": "nexus_logs" },
     "firewall": { "enabled": true, "complexity": 3, "solution": "ARCHIVE_2025" },
     "proxy": { "enabled": false, "level": 0 },
