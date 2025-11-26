@@ -23,7 +23,7 @@
             "id": "bw-drop-dist",
             "name": "dist",
             "type": "folder",
-            "isHidden": true,
+            "isHidden": false,
             "children": [
                 { 
                     "id": "bw-dist-backdoor", 
@@ -34,9 +34,9 @@
                 },
                 { 
                     "id": "bw-dist-kernel-backup", 
-                    "name": "XserverOS.bkp", 
+                    "name": "XserverOS.sys", 
                     "type": "file",
-                    "isHidden": true,
+                    "isHidden": false,
                     "content": "SYSTEM KERNEL [ENCRYPTED]"
                 },
                 {
@@ -52,7 +52,7 @@
             "id": "bw-drop-tools",
             "name": "tools",
             "type": "folder",
-            "isHidden": true,
+            "isHidden": false,
             "children": [
                 { "id": "file-scan-bw", "name": "scan.bin", "type": "file", "content": "Network scanning utility", "isSystemFile": true, "isHidden": true },
                 { "id": "file-probe-bw", "name": "probe.bin", "type": "file", "content": "System security probe utility", "isSystemFile": true, "isHidden": true },
