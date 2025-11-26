@@ -216,6 +216,27 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     });
   }, []);
 
+  const handleStartSystemInstability = useCallback(() => {
+    setIsSystemUnstable(true);
+    onSoundEvent('glitch');
+    addLog('CRITICAL: System instability detected.');
+  }, [onSoundEvent, addLog]);
+
+  const handleIncreaseDanger = (amount: number) => {
+    setDangerLevel(prev => Math.min(prev + amount, 100));
+  };
+  
+  const handleStopTrace = useCallback(() => {
+    if (!isTraced) return;
+    
+    addLog(`INFO: Trace évitée. Déconnecté de ${traceTarget.name}.`);
+    onAlertEvent('stopScream');
+    onMusicEvent('calm');
+    setIsTraced(false);
+    setTraceTimeLeft(0);
+    setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
+  }, [addLog, onAlertEvent, onMusicEvent, isTraced, traceTarget]);
+
   const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
     if (isTraced) return;
     
@@ -229,17 +250,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
     ));
   }, [addLog, onAlertEvent, isTraced]);
-
-  const handleStopTrace = useCallback(() => {
-    if (!isTraced) return;
-    
-    addLog(`INFO: Trace évitée. Déconnecté de ${traceTarget.name}.`);
-    onAlertEvent('stopScream');
-    onMusicEvent('calm');
-    setIsTraced(false);
-    setTraceTimeLeft(0);
-    setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
-  }, [addLog, onAlertEvent, onMusicEvent, isTraced, traceTarget]);
 
   const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> & { onClose?: () => void }) => {
     onSoundEvent('email');
@@ -255,74 +265,30 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     setEmailNotification(true);
     addLog(`EMAIL: Email reçu de ${emailDetails.sender} avec le sujet "${emailDetails.subject}"`);
   }, [onSoundEvent, addLog]);
-
-  const handleIncreaseDanger = (amount: number) => {
-    setDangerLevel(prev => Math.min(prev + amount, 100));
-  };
   
-  const handleStartSystemInstability = useCallback(() => {
-    setIsSystemUnstable(true);
-    onSoundEvent('glitch');
-    addLog('CRITICAL: System instability detected.');
-  }, [onSoundEvent, addLog]);
+  const triggerCall = useCallback((script: CallScript) => {
+    if (callState !== 'idle') {
+        callQueueRef.current.push(() => triggerCall(script));
+        return;
+    };
 
-  const bringToFront = (instanceId: number) => {
-    if (instanceId === activeInstanceId) return;
+    if (script.id === 'neo-intro-call') {
+        onMusicEvent('none');
+    }
 
-    setOpenApps(prevApps => {
-        const app = prevApps.find(a => a.instanceId === instanceId);
-        if (!app) return prevApps;
-
-        if (app.appId === 'email') {
-            setEmailNotification(false);
-        }
-        
-        return prevApps.map(app => 
-            app.instanceId === instanceId 
-                ? { ...app, zIndex: nextZIndex } 
-                : app
-        );
+    callScriptRef.current = script;
+    currentNodeIdRef.current = script.startNode;
+    setActiveCall({
+      interlocutor: script.interlocutor,
+      isSecure: script.isSecure,
+      messages: [], 
+      choices: [],
+      isFinished: false,
     });
-    
-    setActiveInstanceId(instanceId);
-    setNextZIndex(prev => prev + 1);
-  };
-
-  const openApp = useCallback((appId: AppId, appProps?: any) => {
-    const config = appConfig[appId];
-
-    if (appId === 'email') {
-        setEmailNotification(false);
-    }
-    
-    if (config.isSingular) {
-        const existingApp = openApps.find(app => app.appId === appId);
-        if (existingApp) {
-            bringToFront(existingApp.instanceId);
-            return;
-        }
-    }
-    
-    const instanceId = nextInstanceIdRef.current++;
-    
-    const viewport = document.getElementById('viewport');
-    if (!viewport) return;
-
-    const viewportWidth = viewport.offsetWidth;
-    const viewportHeight = viewport.offsetHeight;
-
-    const randomXOffset = (Math.random() - 0.5) * 200;
-    const randomYOffset = (Math.random() - 0.5) * 200;
-    const x = (viewportWidth / 2) - (config.width / 2) + randomXOffset;
-    const y = (viewportHeight / 2) - (config.height / 2) + randomYOffset;
-    
-    const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, x, y, nodeRef: createRef<HTMLDivElement>(), props: appProps };
-
-    setOpenApps(prev => [...prev, newApp]);
-    setActiveInstanceId(instanceId);
-    setNextZIndex(prev => prev + 1);
-    onSoundEvent('click');
-  }, [nextZIndex, onSoundEvent, openApps]);
+    setCallState('incoming');
+    onAlertEvent('ringtone');
+    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
+  }, [callState, onAlertEvent, addLog, onMusicEvent]);
 
   const handleCallConsequences = useCallback((consequences: any) => {
     if (!consequences) return;
@@ -375,38 +341,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   
     callConsequencesTriggeredRef.current.add(triggerKey);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [receiveEmail, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability, onEndGame, setMachineState]);
+  }, [receiveEmail, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability, onEndGame, setMachineState, triggerCall]);
   
-  const triggerCall = useCallback((script: CallScript) => {
-    if (callState !== 'idle') {
-        callQueueRef.current.push(() => triggerCall(script));
-        return;
-    };
-
-    if (script.id === 'neo-intro-call') {
-        onMusicEvent('none');
-    }
-
-    callScriptRef.current = script;
-    currentNodeIdRef.current = script.startNode;
-    setActiveCall({
-      interlocutor: script.interlocutor,
-      isSecure: script.isSecure,
-      messages: [], 
-      choices: [],
-      isFinished: false,
-    });
-    setCallState('incoming');
-    onAlertEvent('ringtone');
-    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
-  }, [callState, onAlertEvent, addLog, onMusicEvent]);
-
   const endCall = useCallback((isManualClose: boolean = false) => {
     onAlertEvent('stopRingtone');
     onAlertEvent('stopAlarm');
     
-    if (isManualClose) {
-        onSoundEvent('startCall');
+    if (isManualClose && activeCall && !activeCall.isFinished) {
+        onSoundEvent('endCall');
     }
     
     if (activeCall && !activeCall.isFinished) {
@@ -559,6 +501,42 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
         triggerCall(neoPhase1Call);
     }
 }, [triggerCall]);
+
+  const openApp = useCallback((appId: AppId, appProps?: any) => {
+    const config = appConfig[appId];
+
+    if (appId === 'email') {
+        setEmailNotification(false);
+    }
+    
+    if (config.isSingular) {
+        const existingApp = openApps.find(app => app.appId === appId);
+        if (existingApp) {
+            bringToFront(existingApp.instanceId);
+            return;
+        }
+    }
+    
+    const instanceId = nextInstanceIdRef.current++;
+    
+    const viewport = document.getElementById('viewport');
+    if (!viewport) return;
+
+    const viewportWidth = viewport.offsetWidth;
+    const viewportHeight = viewport.offsetHeight;
+
+    const randomXOffset = (Math.random() - 0.5) * 200;
+    const randomYOffset = (Math.random() - 0.5) * 200;
+    const x = (viewportWidth / 2) - (config.width / 2) + randomXOffset;
+    const y = (viewportHeight / 2) - (config.height / 2) + randomYOffset;
+    
+    const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, x, y, nodeRef: createRef<HTMLDivElement>(), props: appProps };
+
+    setOpenApps(prev => [...prev, newApp]);
+    setActiveInstanceId(instanceId);
+    setNextZIndex(prev => prev + 1);
+    onSoundEvent('click');
+  }, [nextZIndex, onSoundEvent, openApps]);
 
   const handleNeoWakeup = useCallback(() => {
       addLog("CRITICAL: NÉO has taken control.");
@@ -1087,6 +1065,28 @@ Si vous voyez ce message, elle vous surveille déjà.
         }
   };
 
+  const bringToFront = (instanceId: number) => {
+    if (instanceId === activeInstanceId) return;
+
+    setOpenApps(prevApps => {
+        const app = prevApps.find(a => a.instanceId === instanceId);
+        if (!app) return prevApps;
+
+        if (app.appId === 'email') {
+            setEmailNotification(false);
+        }
+        
+        return prevApps.map(app => 
+            app.instanceId === instanceId 
+                ? { ...app, zIndex: nextZIndex } 
+                : app
+        );
+    });
+    
+    setActiveInstanceId(instanceId);
+    setNextZIndex(prev => prev + 1);
+  };
+  
   const closeApp = useCallback((instanceId: number) => {
     onSoundEvent('close');
     setOpenApps(prev => {
@@ -1361,3 +1361,4 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
+

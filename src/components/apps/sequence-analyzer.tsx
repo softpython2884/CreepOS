@@ -115,7 +115,11 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
         }
 
         if (allPathsDone && allRotatablesCorrect) {
-            setNeoMessages(prev => [...prev, `NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Données restaurées.`]);
+            const winMessages = [`NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Données restaurées.`];
+            if (puzzleId === 'DELTA7') {
+                winMessages.push(`NÉO: Fichier 'rapport_sequences_delta7.txt' généré dans /documents.`);
+            }
+            setNeoMessages(prev => [...prev, ...winMessages]);
             setTimeout(() => onAnalysisComplete(puzzleId), 1000);
         }
     }, [puzzle.starts, puzzle.rotatables, puzzleId, onAnalysisComplete]);
