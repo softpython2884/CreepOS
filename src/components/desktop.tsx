@@ -332,7 +332,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
                 callQueueRef.current.push(() => receiveEmail(endTrigger.alertEmail!));
             }
             if (endTrigger.nextCall) {
-                callQueueRef.current.push(() => triggerCall(endTrigger.nextCall!));
+                callQueueRef.current.push(() => setTimeout(() => triggerCall(endTrigger.nextCall!), 1200));
             }
         } else if (endTrigger.type === 'machine_state') {
             setMachineState(endTrigger.state);
@@ -1398,6 +1398,7 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
+
 
 
 
