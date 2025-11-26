@@ -75,7 +75,7 @@ Je dois m'assurer que votre ligne est sécurisée avant de continuer.
 
 Utilisez la console et exécutez la commande suivante pour rétablir une liaison sécurisée avec moi :
 
-call --203.0.113.1 --secure
+call 203.0.113.1 --secure
 
 Faites-le immédiatement.
 
