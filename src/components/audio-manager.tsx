@@ -143,6 +143,12 @@ export default function AudioManager({ soundEvent, musicEvent, alertEvent, onSou
         return;
     }
 
+    if (soundEvent === 'bsod') {
+        if (musicPlayerRef.current && !musicPlayerRef.current.paused) musicPlayerRef.current.pause();
+        if (screamPlayerRef.current && !screamPlayerRef.current.paused) screamPlayerRef.current.pause();
+        if (alertPlayerRef.current && !alertPlayerRef.current.paused) alertPlayerRef.current.pause();
+    }
+    
     const sfxPlayer = sfxPlayersRef.current.find(p => p.paused);
 
     if (sfxPlayer) {
