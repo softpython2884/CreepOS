@@ -155,6 +155,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [moduleProgress, setModuleProgress] = useState(0);
   const [isSystemUnstable, setIsSystemUnstable] = useState(false);
   const [isNexusLockdown, setIsNexusLockdown] = useState(false);
+  const directorCallTriggeredRef = useRef(false);
   
   const [emails, setEmails] = useState<Email[]>(() => {
     const savedState = loadGameState(username);
@@ -363,35 +364,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
       }
     }
 
-    // Chapter triggers
-    if(callScriptRef.current?.id === 'supervisor-chapter2-call') {
-        setTimeout(() => triggerCall(blackwireChapter7Debrief), 2000);
-    }
-    if(callScriptRef.current?.id === 'blackwire-chapter7-debrief') {
-        const mindBreakEmail = {
-            ...blackwireChapter7RevelationsEmail,
-            onClose: () => {
-                handleIncreaseDanger(82);
-                addLog('DANGER: Exposition à des données critiques. Niveau de danger augmenté à 82%.');
-
-                const nexusAlert: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
-                    sender: 'system@nexus-research.net',
-                    subject: 'ALERTE GLOBALE - ENQUÊTE EN COURS',
-                    body: `À tout le personnel,
-
-Les responsables de l'intrusion n'ont pas encore été identifiés. Leurs traces ont été effacées, mais nos contre-mesures sont actives.
-De nouvelles techniques de traçage non conventionnelles sont en cours de déploiement.
-Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera utilisée pour obtenir les noms des collaborateurs externes.
-
-- Administration Système Nexus`
-                };
-                setTimeout(() => receiveEmail(nexusAlert), 1000);
-                setTimeout(() => receiveEmail(chapter9IntroEmail), 2000);
-            }
-        };
-        setTimeout(() => receiveEmail(mindBreakEmail), 1000);
-    }
-
     setCallState('idle');
     setActiveCall(null);
     callScriptRef.current = null;
@@ -405,9 +377,9 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     
     const nextCall = callQueueRef.current.shift();
     if(nextCall) {
-        setTimeout(nextCall, 2000); 
+        setTimeout(nextCall, 1200); 
     }
-  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, activeCall, handleCallConsequences, triggerCall, receiveEmail, addLog, handleIncreaseDanger]);
+  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, activeCall, handleCallConsequences]);
 
   const advanceCall = useCallback((choiceId: string) => {
     const script = callScriptRef.current;
@@ -971,6 +943,17 @@ Si vous voyez ce message, elle vous surveille déjà.
     const playerPc = network.find(p => p.id === 'player-pc');
     return playerPc ? playerPc.fileSystem : [];
   }, [network]);
+  
+  const handleOpenEmail = useCallback((emailId: string) => {
+    const email = emails.find(e => e.id === emailId);
+    if (!email) return;
+
+    if (email.subject.includes('ALERTE DE SÉCURITÉ') && !directorCallTriggeredRef.current) {
+        triggerCall(directorChapter3InterrogationCall);
+        directorCallTriggeredRef.current = true;
+    }
+}, [emails, triggerCall]);
+
 
   const handleOpenLink = (url: string) => {
     if (url.startsWith('app://')) {
@@ -1231,6 +1214,7 @@ Si vous voyez ce message, elle vous surveille déjà.
         onSend: handleSendEmail,
         currentUser: 'Dr.Omen@recherche-lab.net',
         onOpenLink: handleOpenLink,
+        onOpenEmail: handleOpenEmail,
       },
       isSingular: true,
     },
@@ -1398,6 +1382,7 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
+
 
 
 

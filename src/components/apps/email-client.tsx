@@ -32,11 +32,12 @@ interface EmailClientProps {
   onSend: (email: Omit<Email, 'id' | 'timestamp' | 'folder'>) => void;
   currentUser: string;
   onOpenLink: (url: string) => void;
+  onOpenEmail: (emailId: string) => void;
 }
 
 type View = 'list' | 'read' | 'compose';
 
-export default function EmailClient({ emails, onSend, currentUser, onOpenLink }: EmailClientProps) {
+export default function EmailClient({ emails, onSend, currentUser, onOpenLink, onOpenEmail }: EmailClientProps) {
   const [currentView, setCurrentView] = useState<View>('list');
   const [currentFolder, setCurrentFolder] = useState<'inbox' | 'sent'>('inbox');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
@@ -86,6 +87,7 @@ export default function EmailClient({ emails, onSend, currentUser, onOpenLink }:
   const handleSelectEmail = (emailId: string) => {
     setSelectedEmailId(emailId);
     setCurrentView('read');
+    onOpenEmail(emailId);
   };
   
   const handleCompose = () => {
