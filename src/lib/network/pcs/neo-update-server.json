@@ -4,7 +4,7 @@
     "ip": "10.0.0.4",
     "type": "Server",
     "links": ["neo-core-a"],
-    "auth": { "user": "update_daemon", "pass": "cyclical_rebirth" },
+    "auth": { "user": "admin", "pass": "cyclical_rebirth" },
     "firewall": { "enabled": true, "complexity": 10, "solution": "SYSTEM_SCHISM" },
     "proxy": { "enabled": true, "level": 8 },
     "traceTime": 120,

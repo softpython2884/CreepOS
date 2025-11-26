@@ -4,7 +4,7 @@
     "ip": "10.0.0.13",
     "type": "Server",
     "links": ["workstation-helios"],
-    "auth": { "user": "helios", "pass": "IcarusFell" },
+    "auth": { "user": "admin", "pass": "IcarusFell" },
     "firewall": { "enabled": true, "complexity": 10, "solution": "REDACTED" },
     "proxy": { "enabled": true, "level": 5 },
     "traceTime": 20,

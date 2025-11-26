@@ -5,7 +5,7 @@
     "ip": "10.255.255.2",
     "type": "Server",
     "links": ["nexus-logs-01"],
-    "auth": { "user": "db_admin", "pass": "HR_SecurePass_2025" },
+    "auth": { "user": "admin", "pass": "HR_SecurePass_2025" },
     "firewall": { "enabled": true, "complexity": 4, "solution": "EMP_RECORD" },
     "proxy": { "enabled": true, "level": 2 },
     "traceTime": 40,

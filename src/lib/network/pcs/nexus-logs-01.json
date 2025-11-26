@@ -5,7 +5,7 @@
     "ip": "10.255.255.1",
     "type": "Server",
     "links": ["nexus-hr-db", "workstation-nyx"],
-    "auth": { "user": "log_admin", "pass": "nexus_logs" },
+    "auth": { "user": "admin", "pass": "nexus_logs" },
     "firewall": { "enabled": true, "complexity": 3, "solution": "ARCHIVE_2025" },
     "proxy": { "enabled": false, "level": 0 },
     "traceTime": 30,
