@@ -222,6 +222,31 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     });
   }, []);
 
+  const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
+    if (isTraced) return;
+    
+    addLog(`DANGER: Trace initiée depuis ${targetName}. Vous avez ${time} secondes pour vous déconnecter.`);
+    onAlertEvent('scream');
+    setIsTraced(true);
+    setTraceTimeLeft(time);
+    setTraceTarget({ name: targetName, time: time });
+
+    setOpenApps(prev => prev.map(app => 
+        app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
+    ));
+  }, [addLog, onAlertEvent, isTraced]);
+
+  const handleStopTrace = useCallback(() => {
+    if (!isTraced) return;
+    
+    addLog(`INFO: Trace évitée. Déconnecté de ${traceTarget.name}.`);
+    onAlertEvent('stopScream');
+    onMusicEvent('calm');
+    setIsTraced(false);
+    setTraceTimeLeft(0);
+    setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
+  }, [addLog, onAlertEvent, onMusicEvent, isTraced, traceTarget]);
+
   const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> & { onClose?: () => void }) => {
     onSoundEvent('email');
     const newEmail: Email = {
@@ -237,35 +262,71 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     addLog(`EMAIL: Email reçu de ${emailDetails.sender} avec le sujet "${emailDetails.subject}"`);
   }, [onSoundEvent, addLog]);
 
-  const triggerCall = useCallback((script: CallScript) => {
-    if (callState !== 'idle') {
-        callQueueRef.current.push(() => triggerCall(script));
-        return;
-    };
+  const handleIncreaseDanger = (amount: number) => {
+    setDangerLevel(prev => Math.min(prev + amount, 100));
+  };
+  
+  const openApp = useCallback((appId: AppId, appProps?: any) => {
+    const config = appConfig[appId];
 
-    if (script.id === 'neo-intro-call') {
-        onMusicEvent('none');
+    if (appId === 'email') {
+        setEmailNotification(false);
     }
+    
+    if (config.isSingular) {
+        const existingApp = openApps.find(app => app.appId === appId);
+        if (existingApp) {
+            bringToFront(existingApp.instanceId);
+            return;
+        }
+    }
+    
+    const instanceId = nextInstanceIdRef.current++;
+    
+    const viewport = document.getElementById('viewport');
+    if (!viewport) return;
 
-    callScriptRef.current = script;
-    currentNodeIdRef.current = script.startNode;
-    setActiveCall({
-      interlocutor: script.interlocutor,
-      isSecure: script.isSecure,
-      messages: [], 
-      choices: [],
-    });
-    setCallState('incoming');
-    onAlertEvent('ringtone');
-    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
-  }, [callState, onAlertEvent, addLog, onMusicEvent]);
+    const viewportWidth = viewport.offsetWidth;
+    const viewportHeight = viewport.offsetHeight;
+
+    const randomXOffset = (Math.random() - 0.5) * 200;
+    const randomYOffset = (Math.random() - 0.5) * 200;
+    const x = (viewportWidth / 2) - (config.width / 2) + randomXOffset;
+    const y = (viewportHeight / 2) - (config.height / 2) + randomYOffset;
+    
+    const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, x, y, nodeRef: createRef<HTMLDivElement>(), props: appProps };
+
+    setOpenApps(prev => [...prev, newApp]);
+    setActiveInstanceId(instanceId);
+    setNextZIndex(prev => prev + 1);
+    onSoundEvent('click');
+  }, [nextZIndex, onSoundEvent, openApps]);
+
+  const handleNeoWakeup = useCallback(() => {
+      addLog("CRITICAL: NÉO has taken control.");
+      try {
+          const currentState = JSON.parse(localStorage.getItem(`gameState_${username}`) || '{}');
+          currentState.neowakeup = true;
+          localStorage.setItem(`gameState_${username}`, JSON.stringify(currentState));
+          addLog("INFO: Wakeup state saved.");
+      } catch (e) {
+          addLog("ERROR: Could not save wakeup state.");
+      }
+
+      handleStartTrace("NÉO CORE", 13, activeInstanceId || 0);
+      
+      // Open apps to create chaos
+      setTimeout(() => openApp('terminal'), 500);
+      setTimeout(() => openApp('documents'), 1000);
+      setTimeout(() => openApp('network-map'), 1500);
+  }, [username, handleStartTrace, activeInstanceId, addLog, openApp]);
 
   const handleStartSystemInstability = useCallback(() => {
     setIsSystemUnstable(true);
     onSoundEvent('glitch');
     addLog('CRITICAL: System instability detected.');
   }, [onSoundEvent, addLog]);
-  
+
   const handleCallConsequences = useCallback((consequences: any) => {
     if (!consequences) return;
   
@@ -316,7 +377,30 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     }
   
     callConsequencesTriggeredRef.current.add(triggerKey);
-  }, [receiveEmail, triggerCall, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability, onEndGame, setMachineState]);
+  }, [receiveEmail, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability, onEndGame, setMachineState, triggerCall]);
+
+  const triggerCall = useCallback((script: CallScript) => {
+    if (callState !== 'idle') {
+        callQueueRef.current.push(() => triggerCall(script));
+        return;
+    };
+
+    if (script.id === 'neo-intro-call') {
+        onMusicEvent('none');
+    }
+
+    callScriptRef.current = script;
+    currentNodeIdRef.current = script.startNode;
+    setActiveCall({
+      interlocutor: script.interlocutor,
+      isSecure: script.isSecure,
+      messages: [], 
+      choices: [],
+    });
+    setCallState('incoming');
+    onAlertEvent('ringtone');
+    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
+  }, [callState, onAlertEvent, addLog, onMusicEvent]);
 
   const endCall = useCallback((isManualClose: boolean = false) => {
     onAlertEvent('stopRingtone');
@@ -465,31 +549,6 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
   const handlePlayerChoice = (choiceId: string) => {
     advanceCall(choiceId);
   }
-  
-  const handleStopTrace = useCallback(() => {
-    if (!isTraced) return;
-    
-    addLog(`INFO: Trace évitée. Déconnecté de ${traceTarget.name}.`);
-    onAlertEvent('stopScream');
-    onMusicEvent('calm');
-    setIsTraced(false);
-    setTraceTimeLeft(0);
-    setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
-  }, [addLog, onAlertEvent, onMusicEvent, isTraced, traceTarget]);
-
-  const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
-    if (isTraced) return;
-    
-    addLog(`DANGER: Trace initiée depuis ${targetName}. Vous avez ${time} secondes pour vous déconnecter.`);
-    onAlertEvent('scream');
-    setIsTraced(true);
-    setTraceTimeLeft(time);
-    setTraceTarget({ name: targetName, time: time });
-
-    setOpenApps(prev => prev.map(app => 
-        app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
-    ));
-  }, [addLog, onAlertEvent, isTraced]);
 
   // Initial supervisor call
   useEffect(() => {
@@ -514,25 +573,6 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
         triggerCall(neoPhase1Call);
     }
 }, [triggerCall]);
-
-  const handleNeoWakeup = useCallback(() => {
-      addLog("CRITICAL: NÉO has taken control.");
-      try {
-          const currentState = JSON.parse(localStorage.getItem(`gameState_${username}`) || '{}');
-          currentState.neowakeup = true;
-          localStorage.setItem(`gameState_${username}`, JSON.stringify(currentState));
-          addLog("INFO: Wakeup state saved.");
-      } catch (e) {
-          addLog("ERROR: Could not save wakeup state.");
-      }
-
-      handleStartTrace("NÉO CORE", 13, activeInstanceId || 0);
-      
-      // Open apps to create chaos
-      setTimeout(() => openApp('terminal'), 500);
-      setTimeout(() => openApp('documents'), 1000);
-      setTimeout(() => openApp('network-map'), 1500);
-  }, [username, handleStartTrace, activeInstanceId, addLog, openApp]);
 
   useEffect(() => {
     if (isNeoFreestyle) {
@@ -694,50 +734,10 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     });
   }
 
-  const handleIncreaseDanger = (amount: number) => {
-    setDangerLevel(prev => Math.min(prev + amount, 100));
-  }
-
   const handleOpenFileEditor = (path: string[], content: string) => {
     setEditingFile({ path, content });
   };
   
-  const openApp = useCallback((appId: AppId, appProps?: any) => {
-    const config = appConfig[appId];
-
-    if (appId === 'email') {
-        setEmailNotification(false);
-    }
-    
-    if (config.isSingular) {
-        const existingApp = openApps.find(app => app.appId === appId);
-        if (existingApp) {
-            bringToFront(existingApp.instanceId);
-            return;
-        }
-    }
-    
-    const instanceId = nextInstanceIdRef.current++;
-    
-    const viewport = document.getElementById('viewport');
-    if (!viewport) return;
-
-    const viewportWidth = viewport.offsetWidth;
-    const viewportHeight = viewport.offsetHeight;
-
-    const randomXOffset = (Math.random() - 0.5) * 200;
-    const randomYOffset = (Math.random() - 0.5) * 200;
-    const x = (viewportWidth / 2) - (config.width / 2) + randomXOffset;
-    const y = (viewportHeight / 2) - (config.height / 2) + randomYOffset;
-    
-    const newApp: OpenApp = { instanceId, appId, zIndex: nextZIndex, x, y, nodeRef: createRef<HTMLDivElement>(), props: appProps };
-
-    setOpenApps(prev => [...prev, newApp]);
-    setActiveInstanceId(instanceId);
-    setNextZIndex(prev => prev + 1);
-    onSoundEvent('click');
-  }, [nextZIndex, onSoundEvent, openApps]);
-
   const setPlayerFileSystem = (newFileSystem: FileSystemNode[] | ((fs: FileSystemNode[]) => FileSystemNode[])) => {
     setNetwork(prevNetwork => {
         const playerPcIndex = prevNetwork.findIndex(p => p.id === 'player-pc');
@@ -1194,7 +1194,6 @@ Si vous voyez ce message, elle vous surveille déjà.
     }
   };
   
-
   const closeApp = useCallback((instanceId: number) => {
     onSoundEvent('close');
     setOpenApps(prev => {
