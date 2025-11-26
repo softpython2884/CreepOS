@@ -1,7 +1,8 @@
 import type { CallScript, Email } from '../types';
 import { blackwireChapter4IntroEmail } from './blackwire-chapter4-intro';
 
-export const directorChapter3AlertEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
+export const directorChapter3AlertEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> & {id: string} = {
+  id: 'director-alert-email',
   sender: 'system@nexus-research.net',
   subject: 'ALERTE DE SÉCURITÉ - INTRUSION RÉSEAU DÉTECTÉE',
   body: `ALERTE SYSTÈME AUTOMATIQUE
@@ -46,10 +47,6 @@ export const directorChapter3InterrogationCall: CallScript = {
       },
       consequences: {
         danger: 15,
-        endCallAndTrigger: {
-            type: 'email',
-            email: blackwireChapter4IntroEmail,
-        }
       }
     },
     'confess-response': {

@@ -330,7 +330,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
             onAlertEvent('alarm');
             setTimeout(() => onAlertEvent('stopAlarm'), endTrigger.duration);
             if (endTrigger.alertEmail) {
-                callQueueRef.current.push(() => receiveEmail(endTrigger.alertEmail!));
+                receiveEmail(endTrigger.alertEmail);
             }
             if (endTrigger.nextCall) {
                 callQueueRef.current.push(() => setTimeout(() => triggerCall(endTrigger.nextCall!), 1200));
@@ -354,14 +354,46 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         onSoundEvent('endCall');
     }
     
+    const lastScript = callScriptRef.current;
     if (activeCall && !activeCall.isFinished) {
-      const lastScript = callScriptRef.current;
       const lastNodeId = currentNodeIdRef.current;
 
       if (lastScript && lastNodeId) {
           const lastNode = lastScript.nodes[lastNodeId];
           handleCallConsequences(lastNode?.consequences);
       }
+    }
+
+    // Explicit chapter progression logic
+    if (lastScript?.id === 'director-chapter3-interrogation') {
+        setTimeout(() => receiveEmail(blackwireChapter4IntroEmail), 1200);
+    }
+    if(lastScript?.id === 'supervisor-chapter2-call') {
+        setTimeout(() => triggerCall(blackwireChapter7Debrief), 2000);
+    }
+    if(lastScript?.id === 'blackwire-chapter7-debrief') {
+        const mindBreakEmail = {
+            ...blackwireChapter7RevelationsEmail,
+            onClose: () => {
+                handleIncreaseDanger(82);
+                addLog('DANGER: Exposition à des données critiques. Niveau de danger augmenté à 82%.');
+
+                const nexusAlert: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
+                    sender: 'system@nexus-research.net',
+                    subject: 'ALERTE GLOBALE - ENQUÊTE EN COURS',
+                    body: `À tout le personnel,
+
+Les responsables de l'intrusion n'ont pas encore été identifiés. Leurs traces ont été effacées, mais nos contre-mesures sont actives.
+De nouvelles techniques de traçage non conventionnelles sont en cours de déploiement.
+Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera utilisée pour obtenir les noms des collaborateurs externes.
+
+- Administration Système Nexus`
+                };
+                setTimeout(() => receiveEmail(nexusAlert), 1000);
+                setTimeout(() => receiveEmail(chapter9IntroEmail), 2000);
+            }
+        };
+        setTimeout(() => receiveEmail(mindBreakEmail), 1000);
     }
 
     setCallState('idle');
@@ -379,7 +411,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if(nextCall) {
         setTimeout(nextCall, 1200); 
     }
-  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, activeCall, handleCallConsequences]);
+  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, activeCall, handleCallConsequences, receiveEmail, triggerCall, handleIncreaseDanger, addLog]);
 
   const advanceCall = useCallback((choiceId: string) => {
     const script = callScriptRef.current;
@@ -948,7 +980,7 @@ Si vous voyez ce message, elle vous surveille déjà.
     const email = emails.find(e => e.id === emailId);
     if (!email) return;
 
-    if (email.subject.includes('ALERTE DE SÉCURITÉ') && !directorCallTriggeredRef.current) {
+    if (email.id === 'director-alert-email' && !directorCallTriggeredRef.current) {
         triggerCall(directorChapter3InterrogationCall);
         directorCallTriggeredRef.current = true;
     }
@@ -1382,6 +1414,7 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
+
 
 
 
