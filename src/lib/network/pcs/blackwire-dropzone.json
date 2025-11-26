@@ -23,6 +23,7 @@
             "id": "bw-drop-dist",
             "name": "dist",
             "type": "folder",
+            "isHidden": true,
             "children": [
                 { 
                     "id": "bw-dist-backdoor", 
@@ -48,6 +49,7 @@
             "id": "bw-drop-tools",
             "name": "tools",
             "type": "folder",
+            "isHidden": true,
             "children": [
                 { "id": "file-scan-bw", "name": "scan.bin", "type": "file", "content": "Network scanning utility", "isSystemFile": true },
                 { "id": "file-probe-bw", "name": "probe.bin", "type": "file", "content": "System security probe utility", "isSystemFile": true },

@@ -61,7 +61,7 @@ const findNodeByPath = (path: string[], nodes: FileSystemNode[]): FileSystemNode
         if (!currentLevel) return null;
 
         const node = currentLevel.find(n => n.name === part);
-        if (!node || node.isHidden) return null;
+        if (!node || (node.isHidden && i < path.length - 1)) return null; // Can't traverse hidden folders
 
         if (i === path.length - 1) {
             foundNode = node;
@@ -771,6 +771,7 @@ export default function Terminal({
                 '  cp <src> <dest> - Copie un fichier ou un dossier (auth requise)',
                 '  scp <src> <dest> - Copie un fichier du local vers le distant (auth requise)',
                 '  mv <src> <dest> - Déplace ou renomme un fichier (auth requise)',
+                '  unhide <dir>   - Révèle un répertoire caché (systèmes spéciaux uniquement)',
                 '  reboot         - Redémarre le système actuel',
                 '  save           - Sauvegarde l\'état actuel du jeu (local uniquement)',
                 '  reset-game --confirm - Supprime les données de sauvegarde et redémarre (local uniquement)',
@@ -830,7 +831,11 @@ export default function Terminal({
             const targetNode = findNodeByPath(newPath, fileSystem);
             
             if (targetNode && targetNode.type === 'folder') {
-                setCurrentDirectory(newPath);
+                if (targetNode.isHidden) {
+                     handleOutput(`cd: pas de tel fichier ou dossier: ${pathArg}`);
+                } else {
+                    setCurrentDirectory(newPath);
+                }
             } else {
                 handleOutput(`cd: pas de tel fichier ou dossier: ${pathArg}`);
             }
@@ -847,6 +852,10 @@ export default function Terminal({
             const file = findNodeByPath(path, fileSystem);
             
             if (file) {
+                 if (file.isHidden) {
+                    handleOutput(`cat: ${filename}: Aucun fichier ou dossier de ce type`);
+                    break;
+                }
                 if (file.type === 'file') {
                     if (file.name.endsWith('.zip')) {
                         handleOutput(`[CONTENU DE L'ARCHIVE DECLASSIFIE]\n\n${file.content || ''}`);
@@ -962,7 +971,7 @@ export default function Terminal({
             const filePath = resolvePath(fileArg);
             const fileNode = findNodeByPath(filePath, fileSystem);
 
-            if (!fileNode) {
+            if (!fileNode || fileNode.isHidden) {
                 handleOutput(`rm: impossible de supprimer '${fileArg}': Aucun fichier ou dossier de ce type`);
                 break;
             }
@@ -1075,7 +1084,7 @@ export default function Terminal({
                     break;
                 }
         
-                const filesToCopy = sourceDirNode.children.filter(f => f.type === 'file');
+                const filesToCopy = sourceDirNode.children.filter(f => f.type === 'file' && !f.isHidden);
                 if (filesToCopy.length === 0) {
                     handleOutput(`scp: aucun fichier à copier dans '${sourceArg}'`);
                     break;
@@ -1102,7 +1111,7 @@ export default function Terminal({
             const sourcePath = resolvePath(localPathArg);
             const sourceNode = findNodeByPath(sourcePath, localFS);
         
-            if (!sourceNode) {
+            if (!sourceNode || sourceNode.isHidden) {
                 handleOutput(`scp: impossible d'accéder à '${sourceArg}': Aucun fichier ou dossier de ce type`);
                 break;
             }
@@ -1179,7 +1188,7 @@ export default function Terminal({
                     handleOutput(`cp: impossible d'accéder à '${sourceArg}': Pas un répertoire valide`);
                     break;
                 }
-                const filesToCopy = sourceDirNode.children.filter(f => f.type === 'file');
+                const filesToCopy = sourceDirNode.children.filter(f => f.type === 'file' && !f.isHidden);
                 if (filesToCopy.length === 0) {
                     handleOutput(`cp: aucun fichier à copier dans '${sourceArg}'`);
                     break;
@@ -1200,7 +1209,7 @@ export default function Terminal({
                 handleOutput(`${filesToCopy.length} fichiers copiés vers ${destArg}`);
             } else {
                 const sourceNode = findNodeByPath(sourcePath, fileSystem);
-                if (!sourceNode) {
+                if (!sourceNode || sourceNode.isHidden) {
                     handleOutput(`cp: impossible d'accéder à '${sourceArg}': Aucun fichier ou dossier de ce type`);
                     break;
                 }
@@ -1256,7 +1265,7 @@ export default function Terminal({
             const sourcePath = resolvePath(sourceArg);
             const sourceNode = findNodeByPath(sourcePath, sourceFS);
         
-            if (!sourceNode) {
+            if (!sourceNode || sourceNode.isHidden) {
                 handleOutput(`${command}: impossible d'accéder à '${sourceArg}': Aucun fichier ou dossier de ce type`);
                 break;
             }
@@ -1295,6 +1304,34 @@ export default function Terminal({
             }));
             
             handleOutput(`'${sourceArg}' ${command === 'mv' ? 'déplacé' : 'copié'} vers '${destArg}'`);
+            break;
+        }
+        case 'unhide': {
+            if (!checkAuth()) break;
+            const dirArg = args[0];
+            if (!dirArg) {
+                handleOutput('unhide: opérande manquant. Utilisation: unhide <répertoire>');
+                break;
+            }
+
+            const currentPc = getCurrentPc();
+            if (!currentPc) break;
+
+            const dirNode = findNodeByPath([dirArg], currentPc.fileSystem);
+
+            if (dirNode && dirNode.isHidden) {
+                setNetwork(currentNetwork => currentNetwork.map(pc => {
+                    if (pc.id === currentPc.id) {
+                        const newFs = updateNodeByPath(pc.fileSystem, [dirArg], (node) => ({ ...node, isHidden: false }));
+                        return { ...pc, fileSystem: newFs };
+                    }
+                    return pc;
+                }));
+                handleOutput(`Répertoire '${dirArg}' révélé.`);
+                addLog(`EVENT: Répertoire '${dirArg}' révélé sur ${currentPc.ip}`);
+            } else {
+                handleOutput(`unhide: impossible de trouver le répertoire caché '${dirArg}'.`);
+            }
             break;
         }
         case 'connect': {
@@ -1498,7 +1535,7 @@ export default function Terminal({
     // Command completion
     if (parts.length === 1) {
         const executables = allExecutables.map(f => f.name.split('.')[0].toLowerCase());
-        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'rm', 'mv', 'cp', 'scp', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan', 'nano', 'neo', 'call'];
+        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'rm', 'mv', 'cp', 'scp', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan', 'nano', 'neo', 'call', 'unhide'];
         const allCommands = [...new Set([...mainCommands, ...executables])];
         const possibilities = allCommands.filter(cmd => cmd.startsWith(lastPart));
 

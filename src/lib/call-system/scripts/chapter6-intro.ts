@@ -12,7 +12,7 @@ Nous passons à l'offensive. Nous vous donnons accès à l'intégralité de notr
 
 **Votre mission :**
 
-1. Connectez-vous à notre serveur de dépôt (18.117.228.214) et téléchargez **tous** les outils du répertoire \`/tools/\`. Vous en aurez besoin.
+1. Connectez-vous à notre serveur de dépôt (18.117.228.214) et utilisez 'unhide tools' pour accéder au répertoire des outils avancés. Téléchargez **tous** les outils.
 
 2. Infiltrez le réseau de logs de Nexus via le serveur \`NXS-LOGS-01\` (IP: 10.255.255.1). Il est lié à deux machines critiques. L'une d'elles, la station de travail de l'agent "Nyx", doit contenir des données sur le noyau de NÉO.
 

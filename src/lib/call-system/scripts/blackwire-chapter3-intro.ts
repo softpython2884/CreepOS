@@ -10,20 +10,14 @@ Bon travail pour la mission d'initiation. Comme promis, voici un petit cadeau de
 Nous avons détecté une anomalie réseau. Un port non sécurisé sur un serveur interne de Nexus. C'est une porte dérobée.
 IP: 198.51.100.17
 
-Nous vous avons laissé un paquet dans le répertoire /dist/ sur notre serveur de dépôt (18.117.228.214).
+Nous vous avons laissé un paquet dans le répertoire /dist/ sur notre serveur de dépôt (18.117.228.214). Ce répertoire est actuellement caché. Utilisez la commande 'unhide dist' sur le serveur pour y accéder.
 Votre mission :
 1. Récupérez le fichier 'backdoor.sys'.
 2. Transférez-le à la racine du serveur 198.51.100.17.
 3. Une fois le fichier en place, exécutez la commande d'appel suivante depuis votre terminal local :
-   call --198.51.100.17 --notsecure
+   call 198.51.100.17 --notsecure
 
 Ne posez pas de questions. Agissez.
 
 - Blackwire`,
-  attachments: [
-    {
-      fileName: 'PasswordCracker.app',
-      link: 'app://password-cracker' // This will need a new app component
-    }
-  ]
 };
