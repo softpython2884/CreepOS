@@ -159,25 +159,25 @@ export const blackwireChapter3Mission: CallScript = {
         ]
     },
     'trigger-alarm': {
-        message: {
-            speaker: 'Blackwire Agent',
-            text: 'On l\'a. On a la preuve. Maintenant il faut... Attendez. Merde. Alerte intrusion sur tout le réseau Nexus. C\'est nous. Ils nous ont repérés !',
-        },
-        consequences: {
+      message: {
+        speaker: 'Blackwire Agent',
+        text: 'On l\'a. On a la preuve. Maintenant il faut... Attendez. Merde. Alerte intrusion sur tout le réseau Nexus. C\'est nous. Ils nous ont repérés !',
+      },
+      choices: [
+        {
+          id: 'what-to-do',
+          text: 'Qu\'est-ce que je fais ?!',
+          nextNode: 'final-orders',
+          consequences: {
             endCallAndTrigger: {
                 type: 'alarm',
                 duration: 2000,
                 nextCall: directorChapter3InterrogationCall,
                 alertEmail: directorChapter3AlertEmail,
             }
-        },
-        choices: [
-            {
-                id: 'what-to-do',
-                text: 'Qu\'est-ce que je fais ?!',
-                nextNode: 'final-orders',
-            }
-        ]
+          },
+        }
+      ]
     },
     'final-orders': {
         message: {
