@@ -1483,8 +1483,8 @@ export default function Terminal({
 
                 if(backdoorFile) {
                     handleOutput('Séquence de la porte dérobée activée... Le système est compromis.');
-                    addLog('EVENT: Chapitre 6 initié via la porte dérobée. NÉO se réveille.');
-                    onNeoWakeup();
+                    addLog('EVENT: Chapitre 3 initié via la porte dérobée.');
+                    triggerCall(blackwireChapter3Mission);
                 } else {
                     handleOutput(`call: Le script requis 'backdoor.sys' est introuvable sur la cible.`);
                 }
@@ -1672,3 +1672,4 @@ export default function Terminal({
     </div>
   );
 }
+

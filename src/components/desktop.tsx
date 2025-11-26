@@ -257,30 +257,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     addLog(`EMAIL: Email reçu de ${emailDetails.sender} avec le sujet "${emailDetails.subject}"`);
   }, [onSoundEvent, addLog]);
   
-  const triggerCall = useCallback((script: CallScript) => {
-    if (callState !== 'idle') {
-        callQueueRef.current.push(() => triggerCall(script));
-        return;
-    };
-
-    if (script.id === 'neo-intro-call') {
-        onMusicEvent('none');
-    }
-
-    callScriptRef.current = script;
-    currentNodeIdRef.current = script.startNode;
-    setActiveCall({
-      interlocutor: script.interlocutor,
-      isSecure: script.isSecure,
-      messages: [], 
-      choices: [],
-      isFinished: false,
-    });
-    setCallState('incoming');
-    onAlertEvent('ringtone');
-    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
-  }, [callState, onAlertEvent, addLog, onMusicEvent]);
-
   const handleIncreaseDanger = (amount: number) => {
     setDangerLevel(prev => Math.min(prev + amount, 100));
   };
@@ -290,7 +266,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     onSoundEvent('glitch');
     addLog('CRITICAL: System instability detected.');
   }, [onSoundEvent, addLog]);
-
+  
   const handleCallConsequences = useCallback((consequences: any) => {
     if (!consequences) return;
   
@@ -342,8 +318,32 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   
     callConsequencesTriggeredRef.current.add(triggerKey);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [receiveEmail, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability, onEndGame, setMachineState, triggerCall]);
+  }, [receiveEmail, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability, onEndGame, setMachineState]);
   
+  const triggerCall = useCallback((script: CallScript) => {
+    if (callState !== 'idle') {
+        callQueueRef.current.push(() => triggerCall(script));
+        return;
+    };
+
+    if (script.id === 'neo-intro-call') {
+        onMusicEvent('none');
+    }
+
+    callScriptRef.current = script;
+    currentNodeIdRef.current = script.startNode;
+    setActiveCall({
+      interlocutor: script.interlocutor,
+      isSecure: script.isSecure,
+      messages: [], 
+      choices: [],
+      isFinished: false,
+    });
+    setCallState('incoming');
+    onAlertEvent('ringtone');
+    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
+  }, [callState, onAlertEvent, addLog, onMusicEvent]);
+
   const endCall = useCallback((isManualClose: boolean = false) => {
     onAlertEvent('stopRingtone');
     onAlertEvent('stopAlarm');
@@ -1434,3 +1434,4 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
+
