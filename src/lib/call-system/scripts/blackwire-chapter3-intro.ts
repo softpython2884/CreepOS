@@ -5,12 +5,13 @@ export const blackwireChapter3IntroEmail: Omit<Email, 'id' | 'timestamp' | 'fold
   subject: '[ACTION REQUISE] Porte dérobée détectée',
   body: `Recrue,
 
-Bon travail pour la mission d'initiation. Comme promis, voici un petit cadeau de bienvenue pour faciliter ton intégration.
+Bon travail pour la mission d'initiation.
 
 Nous avons détecté une anomalie réseau. Un port non sécurisé sur un serveur interne de Nexus. C'est une porte dérobée.
 IP: 198.51.100.17
 
-Nous vous avons laissé un paquet dans le répertoire /dist/ sur notre serveur de dépôt (18.117.228.214). Ce répertoire est actuellement caché. Utilisez la commande 'unhide dist' sur le serveur pour y accéder.
+Nous vous avons laissé un paquet dans un répertoire caché sur notre serveur de dépôt (18.117.228.214). Utilisez le décrypteur ci-joint pour révéler le fichier nécessaire.
+
 Votre mission :
 1. Récupérez le fichier 'backdoor.sys'.
 2. Transférez-le à la racine du serveur 198.51.100.17.
@@ -20,4 +21,10 @@ Votre mission :
 Ne posez pas de questions. Agissez.
 
 - Blackwire`,
+  attachments: [
+    {
+      fileName: 'Directory_Decryptor.tool',
+      link: 'download://18.117.228.214/dist/backdoor.sys',
+    },
+  ],
 };

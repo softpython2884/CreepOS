@@ -979,33 +979,54 @@ Si vous voyez ce message, elle vous surveille déjà.
     }
 
     if (url.startsWith('download://')) {
-        const pathString = url.substring(11); // e.g., '/documents/mem-ops/'
-        const pathArray = pathString.split('/').filter(p => p); // e.g., ['documents', 'mem-ops']
-        
-        addLog(`EVENT: Téléchargement de ${pathArray[pathArray.length - 1]}...`);
-        
-        // Unhide target folder
-        setPlayerFileSystem(prevFs => 
-            updateNodeByPath(prevFs, pathArray, (node) => ({ ...node, isHidden: false }))
-        );
-
-        // Also unhide parent folders if they are hidden
-        if (pathArray.length > 1) {
-            for (let i = 1; i < pathArray.length; i++) {
-                const parentPath = pathArray.slice(0, i);
-                setPlayerFileSystem(prevFs => 
-                    updateNodeByPath(prevFs, parentPath, (node) => ({ ...node, isHidden: false }))
-                );
-            }
+        const urlParts = url.substring(11).split('/');
+        const targetIdentifier = urlParts[0]; // Can be IP or just path
+        let targetPath: string[];
+        let targetNetwork = network;
+        let targetPcId: string | null = null;
+    
+        if (/^\d{1,3}(\.\d{1,3}){3}$/.test(targetIdentifier)) {
+          // It's an IP address
+          const pc = network.find(p => p.ip === targetIdentifier);
+          if (pc) {
+            targetPcId = pc.id;
+            targetPath = urlParts.slice(1);
+          } else {
+            addLog(`ERREUR: Impossible de résoudre l'hôte de téléchargement ${targetIdentifier}`);
+            return;
+          }
+        } else {
+          // It's a path on the local machine
+          targetPcId = 'player-pc';
+          targetPath = urlParts;
         }
-        
-        // Unhide journal entry
-        const journalPath = ['journal', 'entry_01.txt'];
-        setPlayerFileSystem(prevFs => 
-            updateNodeByPath(prevFs, journalPath, (node) => ({ ...node, isHidden: false }))
-        );
-        addLog(`INFO: Nouvelle entrée de journal débloquée.`);
 
+        const fileName = targetPath[targetPath.length - 1];
+        addLog(`EVENT: Déchiffrement du lien... Accès à ${fileName}`);
+        
+        const revealNode = (nodes: FileSystemNode[], path: string[]): FileSystemNode[] => {
+            return updateNodeByPath(nodes, path, (node) => ({ ...node, isHidden: false }));
+        };
+        
+        setNetwork(prevNetwork => {
+            const newNetwork = prevNetwork.map(pc => {
+                if (pc.id === targetPcId) {
+                    let newFs = pc.fileSystem;
+                    // Reveal the target node
+                    newFs = revealNode(newFs, targetPath);
+                    // Also reveal parent directories if they are hidden
+                    for (let i = 1; i < targetPath.length; i++) {
+                        const parentPath = targetPath.slice(0, i);
+                        newFs = revealNode(newFs, parentPath);
+                    }
+                    return { ...pc, fileSystem: newFs };
+                }
+                return pc;
+            });
+            return newNetwork;
+        });
+
+        addLog(`INFO: ${fileName} est maintenant accessible.`);
         return;
     }
 
