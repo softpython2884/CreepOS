@@ -13,6 +13,7 @@ import { CallScript } from '@/lib/call-system/types';
 import { blackwireChapter3IntroEmail } from '@/lib/call-system/scripts/blackwire-chapter3-intro';
 import { blackwireMission1Email } from '@/lib/call-system/scripts/blackwire-mission-1';
 import { blackwireChapter3Mission } from '@/lib/call-system/scripts/blackwire-chapter3-mission';
+import { supervisorChapter2Email } from '@/lib/call-system/scripts/supervisor-chapter2';
 
 interface HistoryItem {
   type: 'command' | 'output' | 'confirmation';
@@ -1500,6 +1501,41 @@ export default function Terminal({
                 }
             } else {
                 handleOutput(`call: Impossible de joindre ${ipArg}. Vérifiez l'IP et les protocoles.`);
+            }
+            break;
+        }
+        case 'debug-skip': {
+             if (args[0] === 'mission1') {
+                handleOutput('DEBUG: Skipping to post-Mission 1...');
+                
+                // Simulate file upload
+                setNetwork(currentNetwork => currentNetwork.map(pc => {
+                    if (pc.id === 'blackwire-dropzone') {
+                        const newFs = addNodeByPath(pc.fileSystem, ['upload'], {
+                            id: 'mission-data-debug',
+                            name: 'mission_data.zip',
+                            type: 'file',
+                            content: 'DEBUGGED'
+                        });
+                        return { ...pc, fileSystem: newFs };
+                    }
+                    return pc;
+                }));
+                
+                // Send success emails
+                const successEmail = {
+                    sender: 'recruit@blackwire.net',
+                    subject: 'Re: Preuve de compétence (DEBUG)',
+                    body: "Bien joué. Le fichier est là où il doit être. Le code est correct.\n\nConsidérez ceci comme votre admission. Vous êtes une Recrue de Blackwire maintenant. Ne nous décevez pas.\n\n- Blackwire"
+                };
+                
+                setTimeout(() => {
+                    receiveEmail(successEmail);
+                    setTimeout(() => receiveEmail(supervisorChapter2Email), 1000);
+                }, 500);
+
+            } else {
+                handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1`');
             }
             break;
         }
