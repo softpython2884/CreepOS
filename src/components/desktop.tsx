@@ -33,6 +33,7 @@ import { supervisorChapter2Email } from '@/lib/call-system/scripts/supervisor-ch
 import { neoChapter2Call } from '@/lib/call-system/scripts/neo-chapter2';
 import { supervisorChapter2Call } from '@/lib/call-system/scripts/supervisor-chapter2-call';
 import TextEditor from './apps/text-editor';
+import { blackwireChapter3IntroEmail } from '@/lib/call-system/scripts/blackwire-chapter3-intro';
 import { chapter5IntroEmail } from '@/lib/call-system/scripts/chapter5-intro';
 import { chapter6IntroEmail, chapter9IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
 import { blackwireChapter7Debrief } from '@/lib/call-system/scripts/blackwire-chapter7-debrief';
@@ -216,27 +217,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     });
   }, []);
 
-  const handleStartSystemInstability = useCallback(() => {
-    setIsSystemUnstable(true);
-    onSoundEvent('glitch');
-    addLog('CRITICAL: System instability detected.');
-  }, [onSoundEvent, addLog]);
-
-  const handleIncreaseDanger = (amount: number) => {
-    setDangerLevel(prev => Math.min(prev + amount, 100));
-  };
-  
-  const handleStopTrace = useCallback(() => {
-    if (!isTraced) return;
-    
-    addLog(`INFO: Trace évitée. Déconnecté de ${traceTarget.name}.`);
-    onAlertEvent('stopScream');
-    onMusicEvent('calm');
-    setIsTraced(false);
-    setTraceTimeLeft(0);
-    setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
-  }, [addLog, onAlertEvent, onMusicEvent, isTraced, traceTarget]);
-
   const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
     if (isTraced) return;
     
@@ -250,6 +230,17 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
     ));
   }, [addLog, onAlertEvent, isTraced]);
+  
+  const handleStopTrace = useCallback(() => {
+    if (!isTraced) return;
+    
+    addLog(`INFO: Trace évitée. Déconnecté de ${traceTarget.name}.`);
+    onAlertEvent('stopScream');
+    onMusicEvent('calm');
+    setIsTraced(false);
+    setTraceTimeLeft(0);
+    setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
+  }, [addLog, onAlertEvent, onMusicEvent, isTraced, traceTarget]);
 
   const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> & { onClose?: () => void }) => {
     onSoundEvent('email');
@@ -289,6 +280,16 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     onAlertEvent('ringtone');
     addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
   }, [callState, onAlertEvent, addLog, onMusicEvent]);
+
+  const handleIncreaseDanger = (amount: number) => {
+    setDangerLevel(prev => Math.min(prev + amount, 100));
+  };
+
+  const handleStartSystemInstability = useCallback(() => {
+    setIsSystemUnstable(true);
+    onSoundEvent('glitch');
+    addLog('CRITICAL: System instability detected.');
+  }, [onSoundEvent, addLog]);
 
   const handleCallConsequences = useCallback((consequences: any) => {
     if (!consequences) return;
@@ -949,7 +950,7 @@ Si vous voyez ce message, elle vous surveille déjà.
         }
     }
      if (email.recipient === 'recruit@blackwire.net' && email.subject.includes('memo.bin')) {
-        const newEmail = chapter5IntroEmail;
+        const newEmail = blackwireChapter3IntroEmail;
         setTimeout(() => {
             receiveEmail(newEmail);
             addLog("EVENT: Chapitre 3 initié.");
@@ -1068,7 +1069,7 @@ Si vous voyez ce message, elle vous surveille déjà.
   const handleUnhide = (directory: string) => {
     addLog(`EVENT: Tentative de révéler le répertoire '${directory}' sur le serveur Blackwire.`);
 
-    const hasSeenEmail = (emailId: string) => emails.some(e => e.id === emailId || e.subject.includes(emailId));
+    const hasSeenEmail = (emailSubject: string) => emails.some(e => e.subject.includes(emailSubject));
 
     setNetwork(currentNetwork => {
         return currentNetwork.map(pc => {
@@ -1076,19 +1077,24 @@ Si vous voyez ce message, elle vous surveille déjà.
 
             let newFileSystem = pc.fileSystem;
 
-            if (directory === 'dist' && hasSeenEmail('Porte dérobée détectée')) {
-                addLog('INFO: Accès autorisé au répertoire /dist/.');
-                newFileSystem = updateNodeByPath(newFileSystem, ['dist'], node => ({...node, isHidden: false}));
-                newFileSystem = updateNodeByPath(newFileSystem, ['dist', 'backdoor.sys'], node => ({...node, isHidden: false}));
+            if (directory === 'dist') {
+                if (hasSeenEmail('Porte dérobée détectée')) {
+                    addLog('INFO: Accès autorisé au répertoire /dist/.');
+                    newFileSystem = updateNodeByPath(newFileSystem, ['dist'], node => ({...node, isHidden: false}));
+                    newFileSystem = updateNodeByPath(newFileSystem, ['dist', 'backdoor.sys'], node => ({...node, isHidden: false}));
+                } else if (hasSeenEmail('DERNIERE CHANCE')) {
+                    addLog('INFO: Payload de schisme disponible.');
+                    newFileSystem = updateNodeByPath(newFileSystem, ['dist', 'schism.payload'], node => ({...node, isHidden: false}));
+                }
             } else if (directory === 'tools') {
                 if (hasSeenEmail('Changement de plan & nouvelle cible')) {
                      addLog('INFO: Nouveaux outils d\'analyse débloqués.');
                      newFileSystem = updateNodeByPath(newFileSystem, ['tools'], node => ({...node, isHidden: false}));
-                     newFileSystem = updateNodeByPath(newFileSystem, ['tools', 'analyze.bin'], node => ({...node, isHidden: false}));
-                     newFileSystem = updateNodeByPath(newFileSystem, ['tools', 'solve.bin'], node => ({...node, isHidden: false}));
-                     newFileSystem = updateNodeByPath(newFileSystem, ['tools', 'SSHBounce.bin'], node => ({...node, isHidden: false}));
-                }
-                if (hasSeenEmail('Phase Finale - Contre-Attaque')) {
+                     const toolsToReveal = ['analyze.bin', 'solve.bin', 'SSHBounce.bin'];
+                     toolsToReveal.forEach(toolName => {
+                         newFileSystem = updateNodeByPath(newFileSystem, ['tools', toolName], node => ({...node, isHidden: false}));
+                     });
+                } else if (hasSeenEmail('Phase Finale - Contre-Attaque')) {
                     addLog('CRITICAL: Arsenal complet de Blackwire débloqué.');
                     newFileSystem = updateNodeByPath(newFileSystem, ['tools'], node => {
                         if (node.type === 'folder' && node.children) {
@@ -1101,9 +1107,6 @@ Si vous voyez ce message, elle vous surveille déjà.
                         return node;
                     });
                 }
-            } else if (directory === 'dist' && hasSeenEmail('DERNIERE CHANCE')) {
-                 addLog('INFO: Payload de schisme disponible.');
-                 newFileSystem = updateNodeByPath(newFileSystem, ['dist', 'schism.payload'], node => ({...node, isHidden: false}));
             } else {
                  addLog(`WARN: Accès non autorisé au répertoire '${directory}' ou pré-requis narratif non rempli.`);
             }
