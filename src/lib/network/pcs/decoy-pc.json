@@ -4,7 +4,7 @@
     "ip": "172.16.4.2",
     "type": "Server",
     "links": ["superior-pc"],
-    "auth": { "user": "service", "pass": "service123" },
+    "auth": { "user": "admin", "pass": "service123" },
     "firewall": { "enabled": false, "complexity": 0 },
     "proxy": { "enabled": false, "level": 0 },
     "traceTime": 0,
