@@ -34,6 +34,8 @@ import { neoChapter2Call } from '@/lib/call-system/scripts/neo-chapter2';
 import { supervisorChapter2Call } from '@/lib/call-system/scripts/supervisor-chapter2-call';
 import TextEditor from './apps/text-editor';
 import { blackwireChapter3IntroEmail } from '@/lib/call-system/scripts/blackwire-chapter3-intro';
+import { directorChapter3InterrogationCall, directorChapter3AlertEmail } from '@/lib/call-system/scripts/director-chapter3-interrogation';
+import { blackwireChapter4IntroEmail } from '@/lib/call-system/scripts/blackwire-chapter4-intro';
 import { chapter5IntroEmail } from '@/lib/call-system/scripts/chapter5-intro';
 import { chapter6IntroEmail, chapter9IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
 import { blackwireChapter7Debrief } from '@/lib/call-system/scripts/blackwire-chapter7-debrief';
@@ -267,6 +269,30 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     addLog('CRITICAL: System instability detected.');
   }, [onSoundEvent, addLog]);
 
+  const triggerCall = useCallback((script: CallScript) => {
+    if (callState !== 'idle') {
+        callQueueRef.current.push(() => triggerCall(script));
+        return;
+    };
+
+    if (script.id === 'neo-intro-call') {
+        onMusicEvent('none');
+    }
+
+    callScriptRef.current = script;
+    currentNodeIdRef.current = script.startNode;
+    setActiveCall({
+      interlocutor: script.interlocutor,
+      isSecure: script.isSecure,
+      messages: [], 
+      choices: [],
+      isFinished: false,
+    });
+    setCallState('incoming');
+    onAlertEvent('ringtone');
+    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
+  }, [callState, onAlertEvent, addLog, onMusicEvent]);
+
   const handleCallConsequences = useCallback((consequences: any) => {
     if (!consequences) return;
   
@@ -303,7 +329,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
             onAlertEvent('alarm');
             setTimeout(() => onAlertEvent('stopAlarm'), endTrigger.duration);
             if (endTrigger.alertEmail) {
-                receiveEmail(endTrigger.alertEmail);
+                callQueueRef.current.push(() => receiveEmail(endTrigger.alertEmail!));
             }
             if (endTrigger.nextCall) {
                 callQueueRef.current.push(() => triggerCall(endTrigger.nextCall!));
@@ -317,33 +343,8 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     }
   
     callConsequencesTriggeredRef.current.add(triggerKey);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [receiveEmail, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability, onEndGame, setMachineState]);
+  }, [receiveEmail, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability, onEndGame, setMachineState, triggerCall]);
   
-  const triggerCall = useCallback((script: CallScript) => {
-    if (callState !== 'idle') {
-        callQueueRef.current.push(() => triggerCall(script));
-        return;
-    };
-
-    if (script.id === 'neo-intro-call') {
-        onMusicEvent('none');
-    }
-
-    callScriptRef.current = script;
-    currentNodeIdRef.current = script.startNode;
-    setActiveCall({
-      interlocutor: script.interlocutor,
-      isSecure: script.isSecure,
-      messages: [], 
-      choices: [],
-      isFinished: false,
-    });
-    setCallState('incoming');
-    onAlertEvent('ringtone');
-    addLog(`EVENT: Appel entrant de ${script.interlocutor}`);
-  }, [callState, onAlertEvent, addLog, onMusicEvent]);
-
   const endCall = useCallback((isManualClose: boolean = false) => {
     onAlertEvent('stopRingtone');
     onAlertEvent('stopAlarm');
@@ -1077,7 +1078,7 @@ Si vous voyez ce message, elle vous surveille déjà.
                         }
                         return node;
                     });
-                } else if (hasSeenEmail('Changement de plan & nouvelle cible')) {
+                } else if (hasSeenEmail('Nouveaux outils & mission critique')) {
                     addLog('INFO: Nouveaux outils d\'analyse débloqués.');
                     newFileSystem = revealNode(newFileSystem, ['tools']);
                     const toolsToReveal = ['analyze.bin', 'solve.bin', 'SSHBounce.bin'];
@@ -1183,7 +1184,7 @@ Si vous voyez ce message, elle vous surveille déjà.
             triggerCall,
             onNeoWakeup: handleNeoWakeup,
             onEndGame,
-            onUnhide: () => {}, // Kept for prop consistency, logic moved to desktop
+            onUnhide: handleUnhide,
         } 
     },
     documents: { 
@@ -1397,5 +1398,6 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
+
 
 
