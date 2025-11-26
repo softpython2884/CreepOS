@@ -1534,8 +1534,11 @@ export default function Terminal({
                     setTimeout(() => receiveEmail(supervisorChapter2Email), 1000);
                 }, 500);
 
+            } else if (args[0] === 'backdoor') {
+                handleOutput('DEBUG: Skipping to backdoor mission call...');
+                triggerCall(blackwireChapter3Mission);
             } else {
-                handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1`');
+                handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1` or `debug-skip backdoor`');
             }
             break;
         }
@@ -1672,4 +1675,5 @@ export default function Terminal({
     </div>
   );
 }
+
 
