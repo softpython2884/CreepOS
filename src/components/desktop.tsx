@@ -1065,6 +1065,54 @@ Si vous voyez ce message, elle vous surveille déjà.
         }
   };
 
+  const handleUnhide = (directory: string) => {
+    addLog(`EVENT: Tentative de révéler le répertoire '${directory}' sur le serveur Blackwire.`);
+
+    const hasSeenEmail = (emailId: string) => emails.some(e => e.id === emailId || e.subject.includes(emailId));
+
+    setNetwork(currentNetwork => {
+        return currentNetwork.map(pc => {
+            if (pc.id !== 'blackwire-dropzone') return pc;
+
+            let newFileSystem = pc.fileSystem;
+
+            if (directory === 'dist' && hasSeenEmail('Porte dérobée détectée')) {
+                addLog('INFO: Accès autorisé au répertoire /dist/.');
+                newFileSystem = updateNodeByPath(newFileSystem, ['dist'], node => ({...node, isHidden: false}));
+                newFileSystem = updateNodeByPath(newFileSystem, ['dist', 'backdoor.sys'], node => ({...node, isHidden: false}));
+            } else if (directory === 'tools') {
+                if (hasSeenEmail('Changement de plan & nouvelle cible')) {
+                     addLog('INFO: Nouveaux outils d\'analyse débloqués.');
+                     newFileSystem = updateNodeByPath(newFileSystem, ['tools'], node => ({...node, isHidden: false}));
+                     newFileSystem = updateNodeByPath(newFileSystem, ['tools', 'analyze.bin'], node => ({...node, isHidden: false}));
+                     newFileSystem = updateNodeByPath(newFileSystem, ['tools', 'solve.bin'], node => ({...node, isHidden: false}));
+                     newFileSystem = updateNodeByPath(newFileSystem, ['tools', 'SSHBounce.bin'], node => ({...node, isHidden: false}));
+                }
+                if (hasSeenEmail('Phase Finale - Contre-Attaque')) {
+                    addLog('CRITICAL: Arsenal complet de Blackwire débloqué.');
+                    newFileSystem = updateNodeByPath(newFileSystem, ['tools'], node => {
+                        if (node.type === 'folder' && node.children) {
+                            return {
+                                ...node,
+                                isHidden: false,
+                                children: node.children.map(child => ({...child, isHidden: false}))
+                            }
+                        }
+                        return node;
+                    });
+                }
+            } else if (directory === 'dist' && hasSeenEmail('DERNIERE CHANCE')) {
+                 addLog('INFO: Payload de schisme disponible.');
+                 newFileSystem = updateNodeByPath(newFileSystem, ['dist', 'schism.payload'], node => ({...node, isHidden: false}));
+            } else {
+                 addLog(`WARN: Accès non autorisé au répertoire '${directory}' ou pré-requis narratif non rempli.`);
+            }
+
+            return { ...pc, fileSystem: newFileSystem };
+        });
+    });
+};
+
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
 
@@ -1148,6 +1196,7 @@ Si vous voyez ce message, elle vous surveille déjà.
             triggerCall,
             onNeoWakeup: handleNeoWakeup,
             onEndGame,
+            onUnhide: handleUnhide,
         } 
     },
     documents: { 
@@ -1361,4 +1410,3 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
-

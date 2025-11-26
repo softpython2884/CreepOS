@@ -45,6 +45,7 @@ interface TerminalProps {
     triggerCall: (script: CallScript) => void;
     onNeoWakeup: () => void;
     onEndGame: (endType?: 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' | 'true_ending', lines?: string[]) => void;
+    onUnhide: (directory: string) => void;
 }
 
 const PLAYER_PUBLIC_IP = '184.72.238.110';
@@ -172,6 +173,7 @@ export default function Terminal({
     triggerCall,
     onNeoWakeup,
     onEndGame,
+    onUnhide,
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved.", onConfirm: () => {} },
@@ -1317,21 +1319,13 @@ export default function Terminal({
             const currentPc = getCurrentPc();
             if (!currentPc) break;
 
-            const dirNode = findNodeByPath([dirArg], currentPc.fileSystem);
-
-            if (dirNode && dirNode.isHidden) {
-                setNetwork(currentNetwork => currentNetwork.map(pc => {
-                    if (pc.id === currentPc.id) {
-                        const newFs = updateNodeByPath(pc.fileSystem, [dirArg], (node) => ({ ...node, isHidden: false }));
-                        return { ...pc, fileSystem: newFs };
-                    }
-                    return pc;
-                }));
-                handleOutput(`Répertoire '${dirArg}' révélé.`);
-                addLog(`EVENT: Répertoire '${dirArg}' révélé sur ${currentPc.ip}`);
-            } else {
-                handleOutput(`unhide: impossible de trouver le répertoire caché '${dirArg}'.`);
+            if (currentPc.id !== 'blackwire-dropzone') {
+                 handleOutput(`unhide: commande non applicable sur ce système.`);
+                 break;
             }
+            
+            onUnhide(dirArg);
+            handleOutput(`Commande unhide exécutée pour le répertoire '${dirArg}'.`);
             break;
         }
         case 'connect': {
