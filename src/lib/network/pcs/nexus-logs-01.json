@@ -6,7 +6,7 @@
     "type": "Server",
     "links": ["nexus-hr-db", "workstation-nyx"],
     "auth": { "user": "admin", "pass": "nexus_logs" },
-    "firewall": { "enabled": true, "complexity": 3, "solution": "ARCHIVE_2025" },
+    "firewall": { "enabled": false, "complexity": 1, "solution": "ARCHIVE_2025" },
     "proxy": { "enabled": false, "level": 0 },
     "traceTime": 30,
     "requiredPorts": 0,
@@ -34,6 +34,12 @@
             "children": [
                 { "id": "logs-access-log", "name": "access.log", "type": "file", "content": "Log initialized.\n" }
             ]
+        },
+        {
+            "id": "logs-readme",
+            "name": "readme.txt",
+            "type": "file",
+            "content": "NOTE : Le pare-feu du serveur RH est bloqué sur une solution basique. Le mot-clé est 'EMP_RECORD'. Ça devrait suffire."
         },
         {
             "id": "logs-sys",

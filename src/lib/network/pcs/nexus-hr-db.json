@@ -6,10 +6,10 @@
     "type": "Server",
     "links": ["nexus-logs-01"],
     "auth": { "user": "admin", "pass": "HR_SecurePass_2025" },
-    "firewall": { "enabled": true, "complexity": 4, "solution": "EMP_RECORD" },
-    "proxy": { "enabled": true, "level": 2 },
+    "firewall": { "enabled": true, "complexity": 1, "solution": "EMP_RECORD" },
+    "proxy": { "enabled": false, "level": 0 },
     "traceTime": 40,
-    "requiredPorts": 1,
+    "requiredPorts": 0,
     "isDangerous": true,
     "traceability": 25,
     "ports": [
