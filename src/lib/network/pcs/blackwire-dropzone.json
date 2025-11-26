@@ -28,19 +28,22 @@
                 { 
                     "id": "bw-dist-backdoor", 
                     "name": "backdoor.sys", 
-                    "type": "file", 
+                    "type": "file",
+                    "isHidden": true,
                     "content": "BSYS_FRAG_LOADER // DO NOT DISTRIBUTE // SIG:BLKWR"
                 },
                 { 
                     "id": "bw-dist-kernel-backup", 
                     "name": "XserverOS.bkp", 
-                    "type": "file", 
+                    "type": "file",
+                    "isHidden": true,
                     "content": "SYSTEM KERNEL [ENCRYPTED]"
                 },
                 {
                     "id": "bw-dist-schism",
                     "name": "schism.payload",
                     "type": "file",
+                    "isHidden": true,
                     "content": "PAYLOAD DE SCHISME // SIG:BLKWR // OVERRIDE PROTOCOL"
                 }
             ]
@@ -51,17 +54,17 @@
             "type": "folder",
             "isHidden": true,
             "children": [
-                { "id": "file-scan-bw", "name": "scan.bin", "type": "file", "content": "Network scanning utility", "isSystemFile": true },
-                { "id": "file-probe-bw", "name": "probe.bin", "type": "file", "content": "System security probe utility", "isSystemFile": true },
-                { "id": "file-porthack-bw", "name": "porthack.bin", "type": "file", "content": "Port cracking utility", "isSystemFile": true },
-                { "id": "file-fw-analyzer-bw", "name": "analyze.bin", "type": "file", "content": "Firewall analysis tool", "isSystemFile": true },
-                { "id": "file-solve-bw", "name": "solve.bin", "type": "file", "content": "Firewall solver utility", "isSystemFile": true },
-                { "id": "file-overload-bw", "name": "overload.bin", "type": "file", "content": "Proxy overload utility", "isSystemFile": true },
-                { "id": "file-ftpbounce-bw", "name": "FTPBounce.bin", "type": "file", "content": "Port 21 (FTP) cracker.", "isSystemFile": true },
-                { "id": "file-sshbounce-bw", "name": "SSHBounce.bin", "type": "file", "content": "Port 22 (SSH) cracker.", "isSystemFile": true },
-                { "id": "file-smtpoverflow-bw", "name": "SMTPOverflow.bin", "type": "file", "content": "Port 25 (SMTP) cracker.", "isSystemFile": true },
-                { "id": "file-webserverworm-bw", "name": "WebServerWorm.bin", "type": "file", "content": "Port 80 (HTTP) cracker.", "isSystemFile": true },
-                { "id": "file-forkbomb-bw", "name": "forkbomb.bin", "type": "file", "content": "System crash utility.", "isSystemFile": true }
+                { "id": "file-scan-bw", "name": "scan.bin", "type": "file", "content": "Network scanning utility", "isSystemFile": true, "isHidden": true },
+                { "id": "file-probe-bw", "name": "probe.bin", "type": "file", "content": "System security probe utility", "isSystemFile": true, "isHidden": true },
+                { "id": "file-porthack-bw", "name": "porthack.bin", "type": "file", "content": "Port cracking utility", "isSystemFile": true, "isHidden": true },
+                { "id": "file-fw-analyzer-bw", "name": "analyze.bin", "type": "file", "content": "Firewall analysis tool", "isSystemFile": true, "isHidden": true },
+                { "id": "file-solve-bw", "name": "solve.bin", "type": "file", "content": "Firewall solver utility", "isSystemFile": true, "isHidden": true },
+                { "id": "file-overload-bw", "name": "overload.bin", "type": "file", "content": "Proxy overload utility", "isSystemFile": true, "isHidden": true },
+                { "id": "file-ftpbounce-bw", "name": "FTPBounce.bin", "type": "file", "content": "Port 21 (FTP) cracker.", "isSystemFile": true, "isHidden": true },
+                { "id": "file-sshbounce-bw", "name": "SSHBounce.bin", "type": "file", "content": "Port 22 (SSH) cracker.", "isSystemFile": true, "isHidden": true },
+                { "id": "file-smtpoverflow-bw", "name": "SMTPOverflow.bin", "type": "file", "content": "Port 25 (SMTP) cracker.", "isSystemFile": true, "isHidden": true },
+                { "id": "file-webserverworm-bw", "name": "WebServerWorm.bin", "type": "file", "content": "Port 80 (HTTP) cracker.", "isSystemFile": true, "isHidden": true },
+                { "id": "file-forkbomb-bw", "name": "forkbomb.bin", "type": "file", "content": "System crash utility.", "isSystemFile": true, "isHidden": true }
             ]
         },
         {
