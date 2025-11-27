@@ -9,6 +9,10 @@ import { FileSystemNode, PC } from '@/lib/network/types';
 import { network as initialNetworkData } from '@/lib/network';
 import { type Email } from './email-client';
 import { CallScript } from '@/lib/call-system/types';
+import { supervisorChapter2Email } from '@/lib/call-system/scripts/supervisor-chapter2';
+import { blackwireChapter3Mission } from '@/lib/call-system/scripts/blackwire-chapter3-mission';
+import { chapter9IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
+
 
 interface HistoryItem {
   type: 'command' | 'output' | 'confirmation';
@@ -754,6 +758,9 @@ export default function Terminal({
                 } else {
                     if (targetPC) {
                         onStartTrace(targetPC.name, 15, instanceId);
+                        setTimeout(() => {
+                           disconnect(true);
+                        }, 1000); // Delay disconnect to show visuals and prevent instant trace stop
 
                         // Clear all logs on the target PC
                         let newFs = targetPC.fileSystem;
@@ -785,19 +792,17 @@ export default function Terminal({
                             addLog(`CRITICAL: ${targetPC.name} a été définitivement détruit.`);
                         }
                         
-                        disconnect(true);
-
-                        // Make PC normal again after 8 seconds, unless it's destroyed
-                        if (!isDestruct) {
-                            setTimeout(() => {
-                               setNetwork(currentNetwork => currentNetwork.map(pc => {
-                                    if (pc.id === targetPC!.id) {
-                                        return { ...pc, isDangerous: false };
-                                    }
-                                    return pc;
-                                }));
-                            }, 8000);
-                        }
+                           // Make PC normal again after 8 seconds, unless it's destroyed
+                           if (!isDestruct) {
+                               setTimeout(() => {
+                                  setNetwork(currentNetwork => currentNetwork.map(pc => {
+                                       if (pc.id === targetPC!.id) {
+                                           return { ...pc, isDangerous: false };
+                                       }
+                                       return pc;
+                                   }));
+                               }, 8000);
+                           }
                     }
                 }
                 break;
@@ -1509,9 +1514,7 @@ export default function Terminal({
                 if(backdoorFile) {
                     handleOutput('Séquence de la porte dérobée activée... Le système est compromis.');
                     addLog('EVENT: Chapitre 3 initié via la porte dérobée.');
-                    // This should be a specific script, will need to be imported
-                    // For now, let's assume a placeholder or a missing script message
-                    handleOutput('Fonctionnalité de script d\'appel non entièrement implémentée.');
+                    triggerCall(blackwireChapter3Mission);
                 } else {
                     handleOutput(`call: Le script requis 'backdoor.sys' est introuvable sur la cible.`);
                 }
@@ -1553,18 +1556,15 @@ export default function Terminal({
                 
                 setTimeout(() => {
                     receiveEmail(successEmail);
-                    // This needs the right email import
-                    // setTimeout(() => receiveEmail(supervisorChapter2Email), 1000);
+                    setTimeout(() => receiveEmail(supervisorChapter2Email), 1000);
                 }, 500);
 
             } else if (args[0] === 'backdoor') {
                 handleOutput('DEBUG: Skipping to backdoor mission call...');
-                // This needs the right script import
-                // triggerCall(blackwireChapter3Mission);
+                triggerCall(blackwireChapter3Mission);
             } else if (args[0] === 'nihil') {
                 handleOutput('DEBUG: Skipping to final assault mission...');
-                // This needs the right email import
-                // receiveEmail(chapter9IntroEmail);
+                receiveEmail(chapter9IntroEmail);
             } else {
                 handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1` or `debug-skip backdoor` or `debug-skip nihil`');
             }
@@ -1717,3 +1717,8 @@ export default function Terminal({
 
 
 
+
+
+    
+
+    
