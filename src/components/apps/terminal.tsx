@@ -432,6 +432,32 @@ export default function Terminal({
     });
   };
 
+  const runForkbombVisuals = async (isDestruct: boolean) => {
+    const lines = [
+      'CRITICAL PAYLOAD DEPLOYED: FORKBOMB',
+      '====================================',
+      'Injecting into process table...',
+      'Spawning child processes recursively...',
+      '0x00A1: process(fork) -> child(0x00B2)',
+      '0x00B2: process(fork) -> child(0x00C3)',
+      '0x00C3: process(fork) -> child(0x00D4)',
+      'MEMORY SATURATION IMMINENT...',
+      ...Array.from({ length: 5 }, () => `MEM_ALLOC_ERR @ 0x${Math.random().toString(16).substring(2, 10).toUpperCase()}`),
+      'OVERRIDING SYSTEM KERNEL...',
+      isDestruct ? 'DESTRUCTIVE FLAG DETECTED. PURGING MEMORY SECTORS.' : 'Non-destructive mode. Logs will be volatile.',
+      '       ...          ',
+      '      (o o)         ',
+      '  ---ooO-(_)-Ooo---   ',
+      'SYSTEM CRITICAL FAILURE',
+      isDestruct ? 'TARGET NEUTRALIZED. CONNECTION WILL BE SEVERED.' : 'SYSTEM CRASH IMMINENT. DISCONNECTING.',
+    ];
+  
+    for (const line of lines) {
+      setHistory(prev => [...prev, { type: 'output', content: line }]);
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 150 + 50));
+    }
+  };
+
 
   const handleCommand = async () => {
     const fullCommand = input.trim();
@@ -726,15 +752,16 @@ export default function Terminal({
             case 'webserverworm': await handlePortHack(80, 'WebServerWorm'); break;
             case 'forkbomb':
                 const isDestruct = args.includes('--destruct');
+                onSoundEvent?.('glitch');
+
+                await runForkbombVisuals(isDestruct);
+                
                 if (connectedIp === '127.0.0.1') {
-                    handleOutput('ERREUR SYSTÈME CRITIQUE : Forkbomb détecté. Auto-traçage initié.');
                     addLog(`CRITIQUE: Forkbomb exécuté sur la machine locale. Chaos système initié.`);
                     onNeoWakeup(); // Simulates chaos
                     onStartTrace("SYSTEM_KERNEL", 6, instanceId);
                 } else {
                     if (targetPC) {
-                        handleOutput('Forkbomb déployé. Suppression des logs distants et instabilité système locale...');
-                        onSoundEvent?.('glitch');
                         onStartTrace(targetPC.name, 15, instanceId);
 
                         // Clear all logs on the target PC
@@ -743,7 +770,7 @@ export default function Terminal({
                         if (logsFolderNode && logsFolderNode.children) {
                             const clearedChildren = logsFolderNode.children.map(logFile => ({
                                 ...logFile,
-                                content: ''
+                                content: `[MEM CORRUPTED BY ${PLAYER_PUBLIC_IP}]\n`
                             }));
                             newFs = updateNodeByPath(newFs, ['logs'], (node) => ({
                                 ...node,
@@ -767,10 +794,10 @@ export default function Terminal({
                             addLog(`CRITICAL: ${targetPC.name} a été définitivement détruit.`);
                         }
                         
-                        // Disconnect after 4 seconds
+                        // Disconnect after animation
                         setTimeout(() => {
                             disconnect();
-                        }, 4000);
+                        }, 2000);
 
                         // Make PC normal again after 8 seconds, unless it's destroyed
                         if (!isDestruct) {
@@ -1695,6 +1722,7 @@ export default function Terminal({
     
 
     
+
 
 
 
