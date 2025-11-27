@@ -628,7 +628,7 @@ export default function Terminal({
         const executable = allExecutables.find(file => file.name.toLowerCase().startsWith(command.toLowerCase()));
         const cmdName = executable!.name.split('.')[0].toLowerCase();
         
-        if (connectedIp === '127.0.0.1' && cmdName !== 'scan' && cmdName !== 'forkbomb') {
+        if (connectedIp === '127.0.0.1' && cmdName !== 'scan' && cmdName !== 'forkbomb' && cmdName !== 'icebreaker') {
             handleOutput(`Cet outil doit être exécuté sur un système distant.`);
             setIsProcessing(false);
             return;
@@ -745,6 +745,14 @@ export default function Terminal({
             case 'sshbounce': await handlePortHack(22, 'SSHBounce'); break;
             case 'smtpoverflow': await handlePortHack(25, 'SMTPOverflow'); break;
             case 'webserverworm': await handlePortHack(80, 'WebServerWorm'); break;
+            case 'icebreaker':
+                if (connectedIp !== '127.0.0.1') {
+                    handleOutput('icebreaker: Cet outil ne peut être exécuté que sur votre machine locale.');
+                } else {
+                    onStopTrace();
+                    handleOutput('Contre-mesure Icebreaker déployée. Trace annulée.');
+                }
+                break;
             case 'forkbomb':
                 const isDestruct = args.includes('--destruct');
                 onSoundEvent?.('glitch');
@@ -758,10 +766,7 @@ export default function Terminal({
                 } else {
                     if (targetPC) {
                         onStartTrace(targetPC.name, 15, instanceId);
-                        setTimeout(() => {
-                           disconnect(true);
-                        }, 1000); // Delay disconnect to show visuals and prevent instant trace stop
-
+                        
                         // Clear all logs on the target PC
                         let newFs = targetPC.fileSystem;
                         const logsFolderNode = findNodeByPath(['logs'], newFs);
@@ -786,6 +791,8 @@ export default function Terminal({
                             }
                             return pc;
                         }));
+                        
+                        disconnect(true);
 
                         addLog(`EVENT: Forkbomb a effacé les logs sur ${targetPC.name}.`);
                         if (isDestruct) {
@@ -1718,6 +1725,8 @@ export default function Terminal({
 
 
 
+
+    
 
     
 
