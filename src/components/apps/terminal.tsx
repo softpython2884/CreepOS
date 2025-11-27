@@ -187,6 +187,9 @@ export default function Terminal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAwaitingConfirmation, setIsAwaitingConfirmation] = useState(false);
   const [isIcebreakerActive, setIsIcebreakerActive] = useState(false);
+  const [icebreakerCooldown, setIcebreakerCooldown] = useState(0);
+  const [icebreakerTimeLeft, setIcebreakerTimeLeft] = useState(0);
+
   
   // Network and FS state
   const [connectedIp, setConnectedIp] = useState<string>('127.0.0.1');
@@ -226,6 +229,20 @@ export default function Terminal({
         inputRef.current?.focus();
     }
   }, [isProcessing]);
+  
+  useEffect(() => {
+    let icebreakerTimer: NodeJS.Timeout;
+    if (isIcebreakerActive && icebreakerTimeLeft > 0) {
+      icebreakerTimer = setTimeout(() => setIcebreakerTimeLeft(t => t - 1), 1000);
+    } else if (isIcebreakerActive && icebreakerTimeLeft <= 0) {
+      setIsIcebreakerActive(false);
+      onPauseTrace(false);
+      setIcebreakerCooldown(Date.now() + 10000); // 10 second cooldown
+      setHistory(prev => [...prev, { type: 'output', content: '--- ICEBREAKER DÉSENGAGÉ. Reprise de la trace. ---' }]);
+    }
+    return () => clearTimeout(icebreakerTimer);
+  }, [isIcebreakerActive, icebreakerTimeLeft, onPauseTrace]);
+
 
   const getPrompt = () => {
     if (isAwaitingConfirmation || isIcebreakerActive) {
@@ -749,14 +766,16 @@ export default function Terminal({
             case 'smtpoverflow': await handlePortHack(25, 'SMTPOverflow'); break;
             case 'webserverworm': await handlePortHack(80, 'WebServerWorm'); break;
             case 'icebreaker':
-                if (connectedIp !== '127.0.0.1') {
-                    handleOutput('icebreaker: Cet outil ne peut être exécuté que sur votre machine locale.');
-                } else if (machineState !== 'desktop' || !onPauseTrace) { // Assuming trace is only on desktop
+                if (machineState !== 'desktop') {
                     handleOutput('icebreaker: Aucune trace active à contrer.');
+                } else if (Date.now() < icebreakerCooldown) {
+                    const cooldownLeft = Math.ceil((icebreakerCooldown - Date.now()) / 1000);
+                    handleOutput(`icebreaker: Système en cours de rechargement. Disponible dans ${cooldownLeft}s.`);
                 } else {
                     setIsIcebreakerActive(true);
                     onPauseTrace(true);
-                    handleOutput('--- ICEBREAKER ENGAGED ---');
+                    setIcebreakerTimeLeft(20);
+                    handleOutput('--- ICEBREAKER ENGAGED. Trace en pause pour 20 secondes. ---');
                 }
                 break;
             case 'forkbomb':
@@ -1648,12 +1667,7 @@ export default function Terminal({
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (isIcebreakerActive) {
-        if (e.key.toLowerCase() === 'c') {
-            e.preventDefault();
-            setIsIcebreakerActive(false);
-            onPauseTrace(false);
-            setHistory(prev => [...prev, { type: 'output', content: 'Icebreaker désengagé. La trace reprend.' }]);
-        }
+        e.preventDefault();
         return;
     }
 
@@ -1707,7 +1721,7 @@ export default function Terminal({
           ))}
           {isIcebreakerActive && (
               <div className="text-cyan-400 animate-pulse">
-                  {'--- ICEBREAKER ENGAGED --- [Appuyez sur C pour désengager]'}
+                  {`--- ICEBREAKER ENGAGED. Temps restant : ${icebreakerTimeLeft}s ---`}
               </div>
           )}
         </div>

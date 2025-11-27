@@ -253,12 +253,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
 
   const handlePauseTrace = (isPaused: boolean) => {
     setIsTracePaused(isPaused);
-    if(isPaused) {
+    if (isPaused) {
         addLog(`INFO: Contre-mesure Icebreaker active. Trace ennemie mise en pause.`);
-        onAlertEvent('stopScream');
     } else {
         addLog(`INFO: Icebreaker désengagé. La trace reprend.`);
-        onAlertEvent('scream');
     }
   };
 
