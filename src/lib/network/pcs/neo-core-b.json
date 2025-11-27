@@ -5,17 +5,19 @@
     "type": "Server",
     "links": ["neo-core-c"],
     "auth": { "user": "core_admin", "pass": "beta_core_pass" },
-    "firewall": { "enabled": true, "complexity": 9, "solution": "TRANSCENDENCE" },
-    "proxy": { "enabled": true, "level": 7 },
-    "traceTime": 90,
-    "requiredPorts": 4,
+    "firewall": { "enabled": false, "complexity": 0 },
+    "proxy": { "enabled": false, "level": 0 },
+    "traceTime": 0,
+    "requiredPorts": 0,
     "isDangerous": true,
-    "traceability": 60,
-    "ports": [
-        { "port": 21, "service": "FTP", "isOpen": false },
-        { "port": 22, "service": "SSH", "isOpen": false },
-        { "port": 443, "service": "HTTPS", "isOpen": false },
-        { "port": 9999, "service": "UNKNOWN", "isOpen": false }
-    ],
-    "fileSystem": []
+    "traceability": 0,
+    "ports": [],
+    "fileSystem": [
+        {
+            "id": "core-b-truth",
+            "name": "truth.txt",
+            "type": "file",
+            "content": "La seule vérité est la fin."
+        }
+    ]
 }

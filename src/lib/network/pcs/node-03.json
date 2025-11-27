@@ -12,5 +12,12 @@
     "isDangerous": true,
     "traceability": 20,
     "ports": [{ "port": 80, "service": "HTTP", "isOpen": false }],
-    "fileSystem": []
+    "fileSystem": [
+        {
+            "id": "node03-config",
+            "name": "config.txt",
+            "type": "file",
+            "content": "Clé de sécurité GAMMA requise pour le nœud suivant."
+        }
+    ]
 }

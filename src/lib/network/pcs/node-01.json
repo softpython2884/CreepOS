@@ -5,12 +5,15 @@
     "type": "Server",
     "links": ["neo-node-02"],
     "auth": { "user": "node_admin", "pass": "neo_node_pass_1" },
-    "firewall": { "enabled": true, "complexity": 1, "solution": "ALPHA" },
-    "proxy": { "enabled": false, "level": 0 },
+    "firewall": { "enabled": true, "complexity": 5, "solution": "ALPHA" },
+    "proxy": { "enabled": true, "level": 3 },
     "traceTime": 10,
-    "requiredPorts": 0,
+    "requiredPorts": 2,
     "isDangerous": true,
     "traceability": 10,
-    "ports": [],
+    "ports": [
+        { "port": 21, "service": "FTP", "isOpen": false },
+        { "port": 80, "service": "HTTP", "isOpen": false }
+    ],
     "fileSystem": []
 }

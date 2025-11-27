@@ -15,5 +15,12 @@
         { "port": 21, "service": "FTP", "isOpen": false },
         { "port": 22, "service": "SSH", "isOpen": false }
     ],
-    "fileSystem": []
+    "fileSystem": [
+        {
+            "id": "node04-status",
+            "name": "status.txt",
+            "type": "file",
+            "content": "Clé de sécurité DELTA requise pour le nœud précédent."
+        }
+    ]
 }

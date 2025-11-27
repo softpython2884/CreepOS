@@ -5,12 +5,23 @@
     "type": "Server",
     "links": ["neo-node-03"],
     "auth": { "user": "node_admin", "pass": "neo_node_pass_2" },
-    "firewall": { "enabled": true, "complexity": 2, "solution": "BETA" },
+    "firewall": { "enabled": false, "complexity": 0 },
     "proxy": { "enabled": false, "level": 0 },
-    "traceTime": 15,
-    "requiredPorts": 1,
-    "isDangerous": true,
-    "traceability": 15,
-    "ports": [{ "port": 22, "service": "SSH", "isOpen": false }],
-    "fileSystem": []
+    "traceTime": 0,
+    "requiredPorts": 0,
+    "isDangerous": false,
+    "traceability": 0,
+    "ports": [],
+    "fileSystem": [
+        {
+            "id": "node02-decoy-folder",
+            "name": "data",
+            "type": "folder",
+            "children": [
+                { "id": "decoy-1", "name": "decoy.log", "type": "file", "content": "..." },
+                { "id": "decoy-2", "name": "fake_kernel.sys", "type": "file", "content": "..." },
+                { "id": "decoy-3", "name": "system.conf", "type": "file", "content": "..." }
+            ]
+        }
+    ]
 }
