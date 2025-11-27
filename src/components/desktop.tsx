@@ -691,7 +691,14 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
             const newTime = prevTime - 1;
             if (newTime <= 0) {
                 clearInterval(timer);
-                addLog(`CRITICAL: Trace complétée. KERNEL SUPPRIMÉ.`);
+                
+                const targetPc = network.find(pc => pc.name === traceTarget.name);
+                let dangerIncrease = targetPc?.traceability || 20;
+                if (targetPc?.isDangerous) {
+                    dangerIncrease *= 2;
+                }
+                handleIncreaseDanger(dangerIncrease);
+                addLog(`CRITICAL: Trace complétée par ${traceTarget.name}. Danger augmenté de ${dangerIncrease}%. KERNEL SUPPRIMÉ.`);
 
                 const updatedNetwork = network.map(pc => {
                     if (pc.id === 'player-pc') {
@@ -717,7 +724,7 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, hackedPcs, discoveredPcs, handleStopTrace, gameState]);
+}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, gameState, traceTarget, handleIncreaseDanger]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
@@ -1381,3 +1388,6 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
+
+
+    

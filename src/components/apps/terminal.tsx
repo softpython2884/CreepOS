@@ -331,9 +331,14 @@ export default function Terminal({
             dangerMultiplier = 0.03
         }
 
-        const dangerToAdd = Math.ceil(currentPc.traceability * dangerMultiplier);
+        let dangerToAdd = Math.ceil(currentPc.traceability * dangerMultiplier);
+
+        if (currentPc.isDangerous) {
+            dangerToAdd *= 2; // Double danger for dangerous servers
+        }
+
         handleIncreaseDanger(dangerToAdd);
-        addLog(`DANGER: ${traces} trace(s) laissée(s) sur ${currentPc.ip}. Niveau de danger augmenté de ${dangerToAdd}%.`);
+        addLog(`DANGER: ${traces} trace(s) laissée(s) sur ${currentPc.ip}${currentPc.isDangerous ? ' (serveur DANGEREUX)' : ''}. Niveau de danger augmenté de ${dangerToAdd}%.`);
       }
 
       const previousHostName = currentPc.name;
@@ -490,14 +495,9 @@ export default function Terminal({
         const isDangerousAction = allExecutables.some(file => file.name.toLowerCase().startsWith(command.toLowerCase()))
           || command.toLowerCase() === 'solve';
 
-        if (isDangerousAction) {
-          if (targetPc.isDangerous) {
-              onStartTrace(targetPc.name, 6, instanceId); // Default short trace for dangerous servers
-          }
-          else if (targetPc.traceTime > 0) {
-              onStartTrace(targetPc.name, targetPc.traceTime, instanceId);
-              return true;
-          }
+        if (isDangerousAction && targetPc.traceTime > 0) {
+            onStartTrace(targetPc.name, targetPc.traceTime, instanceId);
+            return true;
         }
         return false;
     }
@@ -1676,5 +1676,7 @@ export default function Terminal({
 
 
 
+
+    
 
     
