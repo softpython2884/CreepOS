@@ -177,8 +177,8 @@ export default function Terminal({
     onUnhide,
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
-    { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved.", onConfirm: () => {} },
-    { type: 'output', content: "Tapez 'help' pour une liste de commandes.", onConfirm: () => {} }
+    { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
+    { type: 'output', content: "Tapez 'help' pour une liste de commandes." }
   ]);
   const [input, setInput] = useState('');
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -310,7 +310,7 @@ export default function Terminal({
   const disconnect = (isCrash = false) => {
       const currentPc = getCurrentPc();
       if (!currentPc || connectedIp === '127.0.0.1') {
-          setHistory(prev => [...prev, { type: 'output', content: 'Impossible de se déconnecter de la machine locale.', onConfirm: () => {} }]);
+          setHistory(prev => [...prev, { type: 'output', content: 'Impossible de se déconnecter de la machine locale.' }]);
           return;
       }
 
@@ -349,10 +349,10 @@ export default function Terminal({
       setCurrentDirectory([]);
 
       if (isCrash) {
-           setHistory(prev => [...prev, { type: 'output', content: `Connexion à ${previousHostName} perdue. Hôte distant planté.`, onConfirm: () => {} }]);
+           setHistory(prev => [...prev, { type: 'output', content: `Connexion à ${previousHostName} perdue. Hôte distant planté.` }]);
            addLog(`EVENT: Connexion à ${previousIp} perdue à cause d'un crash distant.`);
       } else {
-          setHistory(prev => [...prev, { type: 'output', content: `Déconnecté de ${previousHostName}.`, onConfirm: () => {} }]);
+          setHistory(prev => [...prev, { type: 'output', content: `Déconnecté de ${previousHostName}.` }]);
           addLog(`EVENT: Déconnecté de ${previousIp}.`);
       }
   }
@@ -363,7 +363,7 @@ export default function Terminal({
     const interval = duration / barLength;
     let currentProgress = 0;
     
-    setHistory(prev => [...prev, {type: 'output', content: '', onConfirm: () => {}}]); // Add an empty line to update
+    setHistory(prev => [...prev, {type: 'output', content: ''}]); // Add an empty line to update
 
     while (currentProgress <= barLength) {
         const bar = '[' + '#'.repeat(currentProgress) + ' '.repeat(barLength - currentProgress) + ']';
@@ -372,7 +372,7 @@ export default function Terminal({
         setHistory(prev => {
             const newHistory = [...prev];
             const content = text ? `${text} ${bar} ${percentage}%` : `${bar} ${percentage}%`;
-            newHistory[newHistory.length - 1] = { type: 'output', content: content, onConfirm: () => {}};
+            newHistory[newHistory.length - 1] = { type: 'output', content: content};
             return newHistory;
         });
 
@@ -391,9 +391,9 @@ export default function Terminal({
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
     const randomChar = () => chars[Math.floor(Math.random() * chars.length)];
 
-    setHistory(prev => [...prev, {type: 'output', content: 'Initiation du scan profond...', onConfirm: () => {}}]);
+    setHistory(prev => [...prev, {type: 'output', content: 'Initiation du scan profond...'}]);
     await new Promise(resolve => setTimeout(resolve, 500));
-    setHistory(prev => [...prev, {type: 'output', content: '', onConfirm: () => {}}]); // Placeholder for the animation
+    setHistory(prev => [...prev, {type: 'output', content: ''}]); // Placeholder for the animation
 
     for (let i = 0; i < steps; i++) {
         let output = '';
@@ -417,7 +417,7 @@ export default function Terminal({
 
         setHistory(prev => {
             const newHistory = [...prev];
-            newHistory[newHistory.length - 1] = { type: 'output', content: `[${output}]`, onConfirm: () => {} };
+            newHistory[newHistory.length - 1] = { type: 'output', content: `[${output}]` };
             return newHistory;
         });
         
@@ -426,7 +426,7 @@ export default function Terminal({
     
     setHistory(prev => {
         const newHistory = [...prev];
-        newHistory[newHistory.length - 1] = { type: 'output', content: `Fragment de solution : [ ${solution} ]`, onConfirm: () => {} };
+        newHistory[newHistory.length - 1] = { type: 'output', content: `Fragment de solution : [ ${solution} ]` };
         return newHistory;
     });
   };
@@ -445,7 +445,7 @@ export default function Terminal({
     }
     
     if (fullCommand === '') {
-        setHistory([...history, { type: 'command', content: getPrompt(), onConfirm: () => {} }]);
+        setHistory([...history, { type: 'command', content: getPrompt() }]);
         return;
     };
 
@@ -454,7 +454,7 @@ export default function Terminal({
     setCommandHistory(prev => [fullCommand, ...prev]);
     setHistoryIndex(-1);
 
-    let newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${fullCommand}`, onConfirm: () => {} }];
+    let newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${fullCommand}` }];
     setHistory(newHistory);
     setInput('');
 
@@ -474,15 +474,15 @@ export default function Terminal({
     
     const handleOutput = (output: string) => {
         if ((redirect || append) && redirectPathArg) {
-            setHistory(prev => [...prev, { type: 'output', content: `erreur : Redirection non implémentée pour cette commande.`, onConfirm: () => {} }]);
+            setHistory(prev => [...prev, { type: 'output', content: `erreur : Redirection non implémentée pour cette commande.` }]);
         } else {
-            setHistory(prev => [...prev, { type: 'output', content: output, onConfirm: () => {} }]);
+            setHistory(prev => [...prev, { type: 'output', content: output }]);
         }
     }
     
     const checkAuth = () => {
         if (!isAuthenticated) {
-            setHistory(prev => [...prev, { type: 'output', content: 'erreur : Permission refusée. Vous n\'êtes pas authentifié.', onConfirm: () => {} }]);
+            setHistory(prev => [...prev, { type: 'output', content: 'erreur : Permission refusée. Vous n\'êtes pas authentifié.' }]);
             return false;
         }
         return true;
@@ -565,16 +565,17 @@ export default function Terminal({
         const targetPC = getCurrentPc();
 
         if (connectedIp === '127.0.0.1' || !targetPC) {
-            handleOutput('solve : Doit être connecté à un système distant.');
+            handleOutput('solve : Doit être exécuté sur un système distant.');
             return;
         }
-        if (!targetPC.firewall.enabled) {
-            handleOutput('Le pare-feu n\'est pas actif.');
+
+        if (!targetPC.firewall.solution) {
+            handleOutput('Ce système n\'a pas de pare-feu configurable.');
             return;
         }
         
         checkAndTriggerTrace(targetPC);
-        
+
         if (targetPC.firewall.solution === solution) {
             setNetwork(currentNetwork => currentNetwork.map(pc => 
                 pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc
@@ -935,7 +936,7 @@ export default function Terminal({
                     type: 'confirmation',
                     content: 'Êtes-vous sûr de vouloir supprimer tous les fichiers de ce répertoire ? (y/n)',
                     onConfirm: async (confirmed) => {
-                        setHistory(prevHist => [...prevHist, {type: 'command', content: confirmed ? 'y' : 'n', onConfirm: () => {}}]);
+                        setHistory(prevHist => [...prevHist, {type: 'command', content: confirmed ? 'y' : 'n'}]);
                         if (confirmed) {
                             let filesToRemove: FileSystemNode[] = [];
                             let filesCleared: FileSystemNode[] = [];
@@ -974,22 +975,22 @@ export default function Terminal({
 
                             const newHistoryItems: HistoryItem[] = [];
                             if (filesToRemove.length > 0) {
-                                newHistoryItems.push({ type: 'output', content: `${filesToRemove.length} fichier(s) supprimé(s).`, onConfirm: () => {} });
+                                newHistoryItems.push({ type: 'output', content: `${filesToRemove.length} fichier(s) supprimé(s).` });
                                 addLog(`EVENT: ${filesToRemove.length} fichiers supprimés de ${connectedIp}:${'/' + currentDirectory.join('/')}`);
                                 if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: ${filesToRemove.length} fichier(s) supprimé(s) par l'utilisateur depuis ${PLAYER_PUBLIC_IP} dans /${currentDirectory.join('/')}`);
                             }
                             if (filesCleared.length > 0) {
-                                newHistoryItems.push({ type: 'output', content: `Contenu de ${filesCleared.length} fichier(s) log effacé.`, onConfirm: () => {} });
+                                newHistoryItems.push({ type: 'output', content: `Contenu de ${filesCleared.length} fichier(s) log effacé.` });
                                 addLog(`EVENT: ${filesCleared.length} logs effacés sur ${connectedIp}`);
                                 if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: ${filesCleared.length} fichier(s) log effacé(s) par l'utilisateur depuis ${PLAYER_PUBLIC_IP}.`, true);
                             }
                             if (filesToRemove.length === 0 && filesCleared.length === 0) {
-                                newHistoryItems.push({ type: 'output', content: "rm: aucun fichier amovible trouvé dans ce répertoire.", onConfirm: () => {} });
+                                newHistoryItems.push({ type: 'output', content: "rm: aucun fichier amovible trouvé dans ce répertoire." });
                             }
                             setHistory(prev => [...prev, ...newHistoryItems]);
 
                         } else {
-                            setHistory(prev => [...prev, { type: 'output', content: 'Opération annulée.', onConfirm: () => {} }]);
+                            setHistory(prev => [...prev, { type: 'output', content: 'Opération annulée.' }]);
                         }
                         setIsProcessing(false);
                     }
@@ -1581,7 +1582,7 @@ export default function Terminal({
         if (possibilities.length === 1) {
             setInput(possibilities[0] + ' ');
         } else if (possibilities.length > 1) {
-            const newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${input}`, onConfirm: () => {} }, { type: 'output', content: possibilities.join('  '), onConfirm: () => {} }];
+            const newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${input}` }, { type: 'output', content: possibilities.join('  ') }];
             setHistory(newHistory);
         }
         return;
@@ -1605,7 +1606,7 @@ export default function Terminal({
         const newText = parts.slice(0, -1).join(' ') + (parts.length > 1 ? ' ' : '') + pathPrefix + completion.name;
         setInput(newText + (completion.type === 'folder' ? '/' : ' '));
     } else if (possibilities.length > 1) {
-        const newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${input}`, onConfirm: () => {} }, { type: 'output', content: possibilities.map(p => p.name).join('  '), onConfirm: () => {} }];
+        const newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${input}` }, { type: 'output', content: possibilities.map(p => p.name).join('  ') }];
         setHistory(newHistory);
     }
   };
@@ -1688,5 +1689,6 @@ export default function Terminal({
     
 
     
+
 
 
