@@ -14,6 +14,7 @@ import { blackwireChapter3IntroEmail } from '@/lib/call-system/scripts/blackwire
 import { blackwireMission1Email } from '@/lib/call-system/scripts/blackwire-mission-1';
 import { blackwireChapter3Mission } from '@/lib/call-system/scripts/blackwire-chapter3-mission';
 import { supervisorChapter2Email } from '@/lib/call-system/scripts/supervisor-chapter2';
+import { chapter9IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
 
 interface HistoryItem {
   type: 'command' | 'output' | 'confirmation';
@@ -560,10 +561,10 @@ export default function Terminal({
         addRemoteLog(`Port ${portNumber} (${port.service}) ouvert depuis ${PLAYER_PUBLIC_IP}.`);
     };
 
-    const handleSolveCommand = async () => {
+    async function handleSolveCommand() {
         const targetPC = getCurrentPc();
-        if (connectedIp === '127.0.0.1' || !targetPC) {
-            handleOutput('solve : Doit être exécuté sur un système distant.');
+        if (!targetPC || connectedIp === '127.0.0.1') {
+            handleOutput('solve: doit être exécuté sur un système distant.');
             return;
         }
     
@@ -585,7 +586,7 @@ export default function Terminal({
              handleOutput('Solution incorrecte.');
              addRemoteLog(`Tentative de solution de pare-feu incorrecte '${solution}' depuis ${PLAYER_PUBLIC_IP}.`);
         }
-    };
+    }
 
     if (command.toLowerCase() === 'neo') {
         if (isNeoInstalled) {
@@ -1546,8 +1547,11 @@ export default function Terminal({
             } else if (args[0] === 'backdoor') {
                 handleOutput('DEBUG: Skipping to backdoor mission call...');
                 triggerCall(blackwireChapter3Mission);
+            } else if (args[0] === 'nihil') {
+                handleOutput('DEBUG: Skipping to final assault mission...');
+                receiveEmail(chapter9IntroEmail);
             } else {
-                handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1` or `debug-skip backdoor`');
+                handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1` or `debug-skip backdoor` or `debug-skip nihil`');
             }
             break;
         }
@@ -1691,6 +1695,7 @@ export default function Terminal({
     
 
     
+
 
 
 
