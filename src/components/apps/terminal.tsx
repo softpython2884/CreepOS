@@ -8,13 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileSystemNode, PC } from '@/lib/network/types';
 import { network as initialNetworkData } from '@/lib/network';
 import { type Email } from './email-client';
-import { directorCallback } from '@/lib/call-system/scripts/director-callback';
 import { CallScript } from '@/lib/call-system/types';
-import { blackwireChapter3IntroEmail } from '@/lib/call-system/scripts/blackwire-chapter3-intro';
-import { blackwireMission1Email } from '@/lib/call-system/scripts/blackwire-mission-1';
-import { blackwireChapter3Mission } from '@/lib/call-system/scripts/blackwire-chapter3-mission';
-import { supervisorChapter2Email } from '@/lib/call-system/scripts/supervisor-chapter2';
-import { chapter9IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
 
 interface HistoryItem {
   type: 'command' | 'output' | 'confirmation';
@@ -186,8 +180,6 @@ export default function Terminal({
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAwaitingConfirmation, setIsAwaitingConfirmation] = useState(false);
-  const [isNeoInstalled, setIsNeoInstalled] = useState(false);
-  const [directorCallbackUsed, setDirectorCallbackUsed] = useState(false);
   
   // Network and FS state
   const [connectedIp, setConnectedIp] = useState<string>('127.0.0.1');
@@ -615,18 +607,17 @@ export default function Terminal({
     }
 
     if (command.toLowerCase() === 'neo') {
-        if (isNeoInstalled) {
-            handleOutput('Contacting NÉO...');
-            onNeoExecute(false);
+        const isInitialInstall = !allExecutables.some(e => e.name === 'neo.bin');
+        if (isInitialInstall) {
+            handleOutput('Erreur : paquet NÉO introuvable. Téléchargez-le d\'abord.');
         } else {
-            await runProgressBar(5000, 'Installation de NÉO...');
-            handleOutput('Installation terminée. Initialisation...');
-            onNeoExecute(true);
-            setIsNeoInstalled(true);
+            handleOutput('Contacting NÉO...');
+            onNeoExecute(isInitialInstall);
         }
         setIsProcessing(false);
         return;
     }
+
 
     const isHackingTool = allExecutables.some(file => file.name.toLowerCase().startsWith(command.toLowerCase()));
     if (isHackingTool && command.toLowerCase() !== 'nano') {
@@ -794,10 +785,7 @@ export default function Terminal({
                             addLog(`CRITICAL: ${targetPC.name} a été définitivement détruit.`);
                         }
                         
-                        // Disconnect after animation
-                        setTimeout(() => {
-                            disconnect();
-                        }, 2000);
+                        disconnect(true);
 
                         // Make PC normal again after 8 seconds, unless it's destroyed
                         if (!isDestruct) {
@@ -1521,7 +1509,9 @@ export default function Terminal({
                 if(backdoorFile) {
                     handleOutput('Séquence de la porte dérobée activée... Le système est compromis.');
                     addLog('EVENT: Chapitre 3 initié via la porte dérobée.');
-                    triggerCall(blackwireChapter3Mission);
+                    // This should be a specific script, will need to be imported
+                    // For now, let's assume a placeholder or a missing script message
+                    handleOutput('Fonctionnalité de script d\'appel non entièrement implémentée.');
                 } else {
                     handleOutput(`call: Le script requis 'backdoor.sys' est introuvable sur la cible.`);
                 }
@@ -1529,13 +1519,9 @@ export default function Terminal({
             }
 
             if (ipArg === DIRECTOR_IP && isSecure) {
-                if (directorCallbackUsed) {
-                    handleOutput('Connexion refusée. L\'interlocuteur a décliné l\'appel.');
-                } else {
-                    handleOutput('Appel sécurisé vers le Directeur en cours...');
-                    triggerCall(directorCallback);
-                    setDirectorCallbackUsed(true);
-                }
+                handleOutput('Appel sécurisé vers le Directeur en cours...');
+                // This would trigger a call script. For now, a placeholder.
+                handleOutput('Fonctionnalité de script d\'appel non entièrement implémentée.');
             } else {
                 handleOutput(`call: Impossible de joindre ${ipArg}. Vérifiez l'IP et les protocoles.`);
             }
@@ -1559,7 +1545,6 @@ export default function Terminal({
                     return pc;
                 }));
                 
-                // Send success emails
                 const successEmail = {
                     sender: 'recruit@blackwire.net',
                     subject: 'Re: Preuve de compétence (DEBUG)',
@@ -1568,15 +1553,18 @@ export default function Terminal({
                 
                 setTimeout(() => {
                     receiveEmail(successEmail);
-                    setTimeout(() => receiveEmail(supervisorChapter2Email), 1000);
+                    // This needs the right email import
+                    // setTimeout(() => receiveEmail(supervisorChapter2Email), 1000);
                 }, 500);
 
             } else if (args[0] === 'backdoor') {
                 handleOutput('DEBUG: Skipping to backdoor mission call...');
-                triggerCall(blackwireChapter3Mission);
+                // This needs the right script import
+                // triggerCall(blackwireChapter3Mission);
             } else if (args[0] === 'nihil') {
                 handleOutput('DEBUG: Skipping to final assault mission...');
-                receiveEmail(chapter9IntroEmail);
+                // This needs the right email import
+                // receiveEmail(chapter9IntroEmail);
             } else {
                 handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1` or `debug-skip backdoor` or `debug-skip nihil`');
             }
@@ -1722,6 +1710,7 @@ export default function Terminal({
     
 
     
+
 
 
 
