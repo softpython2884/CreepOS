@@ -561,21 +561,20 @@ export default function Terminal({
     };
 
     const handleSolveCommand = async () => {
-        const solution = args[0];
         const targetPC = getCurrentPc();
-
         if (connectedIp === '127.0.0.1' || !targetPC) {
             handleOutput('solve : Doit être exécuté sur un système distant.');
             return;
         }
-
+    
         if (!targetPC.firewall.solution) {
             handleOutput('Ce système n\'a pas de pare-feu configurable.');
             return;
         }
-        
+    
         checkAndTriggerTrace(targetPC);
-
+        
+        const solution = args[0];
         if (targetPC.firewall.solution === solution) {
             setNetwork(currentNetwork => currentNetwork.map(pc => 
                 pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc
@@ -586,7 +585,7 @@ export default function Terminal({
              handleOutput('Solution incorrecte.');
              addRemoteLog(`Tentative de solution de pare-feu incorrecte '${solution}' depuis ${PLAYER_PUBLIC_IP}.`);
         }
-    }
+    };
 
     if (command.toLowerCase() === 'neo') {
         if (isNeoInstalled) {
@@ -691,8 +690,11 @@ export default function Terminal({
                     handleOutput('Le pare-feu n\'est pas actif.');
                 } else {
                     await runAnalyzeMinigame(targetPC.firewall.solution || 'INCONNU');
-                    handleOutput(`Analyse du pare-feu terminée. Fragment de solution acquis.`);
-                    addRemoteLog(`L'analyse du pare-feu depuis ${PLAYER_PUBLIC_IP} a révélé la solution : ${targetPC.firewall.solution}`);
+                    setNetwork(currentNetwork => currentNetwork.map(pc => 
+                        pc.id === targetPC!.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc
+                    ));
+                    handleOutput(`Analyse du pare-feu terminée. Pare-feu désactivé.`);
+                    addRemoteLog(`L'analyse du pare-feu depuis ${PLAYER_PUBLIC_IP} a désactivé le pare-feu.`);
                 }
                 break;
             case 'overload':
@@ -1689,6 +1691,7 @@ export default function Terminal({
     
 
     
+
 
 
 
