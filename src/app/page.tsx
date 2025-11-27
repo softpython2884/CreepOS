@@ -468,38 +468,48 @@ export default function Home() {
     }
 
     const handleEndGame = useCallback((endType: 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' | 'true_ending' = 'credits', lines: string[] = []) => {
-        if (endType === 'wait_for_death') {
-            setFadeOut(true);
+        setFadeOut(true);
+
+        const transitionToCredits = (delay: number) => {
             setTimeout(() => {
-                setSoundEvent('kill');
-                setTimeout(() => {
-                    setMusicEvent('credits');
-                    setMachineState('credits');
-                }, 3000);
-            }, 2000);
-        } else if (endType === 'self_destruct') {
-            setMusicEvent('none');
-            setMachineState('endgame');
-            setEndgameData({ lines });
-        } else if (endType === 'flee') {
-            setFadeOut(true);
-            setTimeout(() => setSoundEvent('off'), 1000);
-            setTimeout(() => setSoundEvent('cours'), 2000);
-            setTimeout(() => setSoundEvent('soufle'), 2500);
-            setTimeout(() => setSoundEvent('multikill'), 3700);
-            setTimeout(() => {
+                setFadeOut(false);
                 setMusicEvent('credits');
                 setMachineState('credits');
-            }, 5700);
+            }, delay);
+        };
+
+        if (endType === 'wait_for_death') {
+            setTimeout(() => {
+                setSoundEvent('kill');
+                transitionToCredits(3000);
+            }, 5000);
+        } else if (endType === 'self_destruct') {
+             setTimeout(() => {
+                setMusicEvent('none');
+                setFadeOut(false);
+                setMachineState('endgame');
+                setEndgameData({ lines });
+            }, 5000);
+        } else if (endType === 'flee') {
+            setTimeout(() => {
+                setSoundEvent('off');
+                setTimeout(() => setSoundEvent('cours'), 600);
+                setTimeout(() => setSoundEvent('soufle'), 5000);
+                setTimeout(() => {
+                    setSoundEvent('multikill');
+                    setSoundEvent(null);
+                    setSoundEvent(null);
+                }, 8000);
+                transitionToCredits(10000);
+            }, 5000);
         } else if (endType === 'true_ending') {
-            setFadeOut(true);
             setTimeout(() => {
                 setMusicEvent('none');
+                setFadeOut(false);
                 setMachineState('true_ending');
-            }, 2000);
+            }, 5000);
         } else {
-            setMusicEvent('credits');
-            setMachineState('credits');
+            transitionToCredits(5000);
         }
     }, []);
 
