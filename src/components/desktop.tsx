@@ -150,6 +150,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [isTraced, setIsTraced] = useState(false);
   const [traceTimeLeft, setTraceTimeLeft] = useState(0);
   const [traceTarget, setTraceTarget] = useState({ name: '', time: 0 });
+  const [isTracePaused, setIsTracePaused] = useState(false);
   const [emailNotification, setEmailNotification] = useState(false);
   const [isNeoInstalled, setIsNeoInstalled] = useState(false);
   const [showModuleInit, setShowModuleInit] = useState(false);
@@ -245,9 +246,21 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     onAlertEvent('stopScream');
     onMusicEvent('calm');
     setIsTraced(false);
+    setIsTracePaused(false);
     setTraceTimeLeft(0);
     setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
   }, [addLog, onAlertEvent, onMusicEvent, isTraced, traceTarget]);
+
+  const handlePauseTrace = (isPaused: boolean) => {
+    setIsTracePaused(isPaused);
+    if(isPaused) {
+        addLog(`INFO: Contre-mesure Icebreaker active. Trace ennemie mise en pause.`);
+        onAlertEvent('stopScream');
+    } else {
+        addLog(`INFO: Icebreaker désengagé. La trace reprend.`);
+        onAlertEvent('scream');
+    }
+  };
 
   const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> & { onClose?: () => void }) => {
     onSoundEvent('email');
@@ -689,6 +702,8 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     }
 
     const timer = setInterval(() => {
+        if (isTracePaused) return;
+
         setTraceTimeLeft(prevTime => {
             const newTime = prevTime - 1;
             if (newTime <= 0) {
@@ -726,7 +741,7 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, gameState, traceTarget, handleIncreaseDanger]);
+}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, gameState, traceTarget, handleIncreaseDanger, isTracePaused]);
 
 
   const handleHackedPc = (pcId: string, ip: string) => {
@@ -1163,6 +1178,7 @@ Si vous voyez ce message, elle vous surveille déjà.
             handleIncreaseDanger: handleIncreaseDanger,
             onStartTrace: handleStartTrace,
             onStopTrace: handleStopTrace,
+            onPauseTrace: handlePauseTrace,
             saveGameState: () => saveGameState(username, gameState),
             resetGame: () => {
                 deleteGameState(username);
@@ -1390,5 +1406,3 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
-
-    

@@ -36,6 +36,7 @@ interface TerminalProps {
     handleIncreaseDanger: (amount: number) => void;
     onStartTrace: (targetName: string, time: number, sourceInstanceId: number) => void;
     onStopTrace: () => void;
+    onPauseTrace: (isPaused: boolean) => void;
     saveGameState: () => void;
     resetGame: () => void;
     dangerLevel: number;
@@ -164,6 +165,7 @@ export default function Terminal({
     handleIncreaseDanger,
     onStartTrace,
     onStopTrace,
+    onPauseTrace,
     saveGameState,
     resetGame,
     dangerLevel,
@@ -184,6 +186,7 @@ export default function Terminal({
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAwaitingConfirmation, setIsAwaitingConfirmation] = useState(false);
+  const [isIcebreakerActive, setIsIcebreakerActive] = useState(false);
   
   // Network and FS state
   const [connectedIp, setConnectedIp] = useState<string>('127.0.0.1');
@@ -225,7 +228,7 @@ export default function Terminal({
   }, [isProcessing]);
 
   const getPrompt = () => {
-    if (isAwaitingConfirmation) {
+    if (isAwaitingConfirmation || isIcebreakerActive) {
         return '';
     }
 
@@ -749,8 +752,9 @@ export default function Terminal({
                 if (connectedIp !== '127.0.0.1') {
                     handleOutput('icebreaker: Cet outil ne peut être exécuté que sur votre machine locale.');
                 } else {
-                    onStopTrace();
-                    handleOutput('Contre-mesure Icebreaker déployée. Trace annulée.');
+                    setIsIcebreakerActive(true);
+                    onPauseTrace(true);
+                    handleOutput('--- ICEBREAKER ENGAGED ---');
                 }
                 break;
             case 'forkbomb':
@@ -1640,10 +1644,21 @@ export default function Terminal({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (isIcebreakerActive) {
+        if (e.key.toLowerCase() === 'c') {
+            e.preventDefault();
+            setIsIcebreakerActive(false);
+            onPauseTrace(false);
+            setHistory(prev => [...prev, { type: 'output', content: 'Icebreaker désengagé. La trace reprend.' }]);
+        }
+        return;
+    }
+
     if (isProcessing) {
         e.preventDefault();
         return;
     }
+
     if (e.key === 'Enter') {
       e.preventDefault();
       handleCommand();
@@ -1687,10 +1702,15 @@ export default function Terminal({
               )}
             </div>
           ))}
+          {isIcebreakerActive && (
+              <div className="text-cyan-400 animate-pulse">
+                  {'--- ICEBREAKER ENGAGED --- [Appuyez sur C pour désengager]'}
+              </div>
+          )}
         </div>
       </ScrollArea>
       <div className="flex items-center mt-2">
-        {!isProcessing && (
+        {!isProcessing && !isIcebreakerActive && (
           <>
             <span className="text-muted-foreground">{getPrompt()}</span>
             <Input
@@ -1706,28 +1726,15 @@ export default function Terminal({
             />
           </>
         )}
+         {isIcebreakerActive && (
+            <Input
+            ref={inputRef}
+            onKeyDown={handleKeyDown}
+            className="bg-transparent border-none text-green-400 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 h-6 p-0 ml-1 opacity-0 cursor-default"
+            autoFocus
+            />
+        )}
       </div>
     </div>
   );
 }
-
-
-
-
-    
-
-    
-
-
-
-
-
-
-
-
-
-    
-
-    
-
-    
