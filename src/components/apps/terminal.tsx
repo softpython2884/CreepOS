@@ -1433,18 +1433,22 @@ export default function Terminal({
             const targetPC = getCurrentPc();
             if (connectedIp === '127.0.0.1' || !targetPC) {
                 handleOutput('solve : Doit être connecté à un système distant.');
-            } else if (!targetPC.firewall.enabled) {
+                break;
+            }
+            if (!targetPC.firewall.enabled) {
                 handleOutput('Le pare-feu n\'est pas actif.');
+                break;
+            }
+            
+            checkAndTriggerTrace();
+            
+            if (targetPC.firewall.solution === solution) {
+                setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
+                handleOutput('Pare-feu désactivé.');
+                addRemoteLog(`Pare-feu désactivé depuis ${PLAYER_PUBLIC_IP} avec la solution : ${solution}.`);
             } else {
-                checkAndTriggerTrace();
-                if (targetPC.firewall.solution === solution) {
-                    setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
-                    handleOutput('Pare-feu désactivé.');
-                    addRemoteLog(`Pare-feu désactivé depuis ${PLAYER_PUBLIC_IP} avec la solution : ${solution}.`);
-                } else {
-                     handleOutput('Solution incorrecte.');
-                     addRemoteLog(`Tentative de solution de pare-feu incorrecte '${solution}' depuis ${PLAYER_PUBLIC_IP}.`);
-                }
+                 handleOutput('Solution incorrecte.');
+                 addRemoteLog(`Tentative de solution de pare-feu incorrecte '${solution}' depuis ${PLAYER_PUBLIC_IP}.`);
             }
             break;
         }
