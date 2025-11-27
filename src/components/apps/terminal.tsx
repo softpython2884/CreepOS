@@ -490,16 +490,15 @@ export default function Terminal({
 
     const checkAndTriggerTrace = (pc?: PC | null) => {
         const targetPc = pc || getCurrentPc();
-        if (!targetPc) return false;
+        if (!targetPc) return;
 
-        const isDangerousAction = allExecutables.some(file => file.name.toLowerCase().startsWith(command.toLowerCase()))
-          || command.toLowerCase() === 'solve';
+        const isDangerousCommand = allExecutables.some(file => file.name.toLowerCase().startsWith(command.toLowerCase()))
+          || command.toLowerCase() === 'solve'
+          || command.toLowerCase() === 'porthack';
 
-        if (isDangerousAction && targetPc.traceTime > 0) {
+        if (isDangerousCommand && targetPc.traceTime > 0) {
             onStartTrace(targetPc.name, targetPc.traceTime, instanceId);
-            return true;
         }
-        return false;
     }
 
     const handlePortHack = async (portNumber: number, portName: string) => {
@@ -1440,7 +1439,7 @@ export default function Terminal({
                 break;
             }
             
-            checkAndTriggerTrace();
+            checkAndTriggerTrace(targetPC);
             
             if (targetPC.firewall.solution === solution) {
                 setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
