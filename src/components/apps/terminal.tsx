@@ -46,7 +46,7 @@ interface TerminalProps {
     triggerCall: (script: CallScript) => void;
     onNeoWakeup: () => void;
     onEndGame: (endType?: 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' | 'true_ending', lines?: string[]) => void;
-    onUnhide: (directory: string) => void;
+    onUnhide: (ip: string, path: string[]) => void;
 }
 
 const PLAYER_PUBLIC_IP = '184.72.238.110';
@@ -1316,16 +1316,10 @@ export default function Terminal({
                 handleOutput('unhide: opérande manquant. Utilisation: unhide <répertoire>');
                 break;
             }
-
             const currentPc = getCurrentPc();
             if (!currentPc) break;
-
-            if (currentPc.id !== 'blackwire-dropzone') {
-                 handleOutput(`unhide: commande non applicable sur ce système.`);
-                 break;
-            }
-            
-            onUnhide(dirArg);
+            const path = resolvePath(dirArg);
+            onUnhide(currentPc.ip, path);
             handleOutput(`Commande unhide exécutée pour le répertoire '${dirArg}'.`);
             break;
         }
@@ -1677,3 +1671,6 @@ export default function Terminal({
 }
 
 
+
+
+    
