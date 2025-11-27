@@ -40,7 +40,7 @@ import { chapter5IntroEmail } from '@/lib/call-system/scripts/chapter5-intro';
 import { chapter6IntroEmail, chapter9IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
 import { blackwireChapter7Debrief } from '@/lib/call-system/scripts/blackwire-chapter7-debrief';
 import { blackwireChapter7RevelationsEmail } from '@/lib/call-system/scripts/blackwire-chapter7-revelations';
-import { neoAttackCall } from '@/lib/call-system/scripts/neo-attack-call';
+import { neoRetaliationScripts } from '@/lib/call-system/scripts/neo-retaliation';
 import { finalCallScript } from '@/lib/call-system/scripts/final-call';
 import { blackwireFinalStandCall } from '@/lib/call-system/scripts/blackwire-final-stand';
 import { Progress } from './ui/progress';
@@ -611,7 +611,9 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
 
             if (currentDestroyedCount > destroyedNodeCount.current) {
                 addLog(`EVENT: NÉO a détecté la destruction d'un noeud. Riposte imminente.`);
-                triggerCall(neoAttackCall);
+                
+                const retaliationScript = neoRetaliationScripts[destroyedNodeCount.current] || neoRetaliationScripts[neoRetaliationScripts.length - 1];
+                triggerCall(retaliationScript);
             }
             destroyedNodeCount.current = currentDestroyedCount;
         };
@@ -973,8 +975,8 @@ Si vous voyez ce message, elle vous surveille déjà.
         setTimeout(() => receiveEmail(chapter6IntroEmail), 2000);
     }
      if (email.recipient === 'contact@blackwire.net' && email.body.includes('NIHIL_EST_VERUM')) {
-        addLog("Fin du jeu... pour l'instant.");
-        // This is where the final cutscene/ending would be triggered.
+        addLog('EVENT: Assaut final contre NÉO autorisé.');
+        setTimeout(() => receiveEmail(chapter9IntroEmail), 2000);
     }
   };
 

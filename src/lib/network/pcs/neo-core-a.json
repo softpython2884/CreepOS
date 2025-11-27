@@ -5,7 +5,7 @@
     "type": "Server",
     "links": ["neo-core-b"],
     "auth": { "user": "core_admin", "pass": "alpha_core_pass" },
-    "firewall": { "enabled": true, "complexity": 99, "solution": "REALITY" },
+    "firewall": { "enabled": true, "complexity": 99, "solution": "REALITY-BW388NC493252N68DNKYSXU46P7L" },
     "proxy": { "enabled": true, "level": 9 },
     "traceTime": 60,
     "requiredPorts": 4,

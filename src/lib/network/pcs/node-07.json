@@ -5,7 +5,7 @@
     "type": "Server",
     "links": ["neo-core-a"],
     "auth": { "user": "node_admin", "pass": "neo_node_pass_7" },
-    "firewall": { "enabled": true, "complexity": 8, "solution": "ETA" },
+    "firewall": { "enabled": true, "complexity": 8, "solution": "ETA-GE2QEX74288" },
     "proxy": { "enabled": true, "level": 5 },
     "traceTime": 40,
     "requiredPorts": 4,
