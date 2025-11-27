@@ -255,8 +255,10 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     setIsTracePaused(isPaused);
     if (isPaused) {
         addLog(`INFO: Contre-mesure Icebreaker active. Trace ennemie mise en pause.`);
+        onAlertEvent(null); // Let sound continue but stop visual/music effects
     } else {
         addLog(`INFO: Icebreaker désengagé. La trace reprend.`);
+        if (isTraced) onAlertEvent('scream');
     }
   };
 

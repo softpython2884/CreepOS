@@ -790,25 +790,12 @@ export default function Terminal({
                     onStartTrace("SYSTEM_KERNEL", 6, instanceId);
                 } else {
                     if (targetPC) {
-                        onStartTrace(targetPC.name, 15, instanceId);
-                        
-                        // Clear all logs on the target PC
-                        let newFs = targetPC.fileSystem;
-                        const logsFolderNode = findNodeByPath(['logs'], newFs);
-                        if (logsFolderNode && logsFolderNode.children) {
-                            const clearedChildren = logsFolderNode.children.map(logFile => ({
-                                ...logFile,
-                                content: `[MEM CORRUPTED BY ${PLAYER_PUBLIC_IP}]\n`
-                            }));
-                            newFs = updateNodeByPath(newFs, ['logs'], (node) => ({
-                                ...node,
-                                children: clearedChildren
-                            }));
-                        }
+                        disconnect(true);
+                        // onStartTrace(targetPC.name, 15, instanceId);
                         
                         setNetwork(currentNetwork => currentNetwork.map(pc => {
                             if (pc.id === targetPC!.id) {
-                                let updatedPc = { ...pc, fileSystem: newFs, isDangerous: true };
+                                let updatedPc = { ...pc, isDangerous: true };
                                 if (isDestruct) {
                                     updatedPc.isDestroyed = true;
                                 }
@@ -817,25 +804,10 @@ export default function Terminal({
                             return pc;
                         }));
                         
-                        setTimeout(() => disconnect(true), 14000);
-
-
                         addLog(`EVENT: Forkbomb a effacé les logs sur ${targetPC.name}.`);
                         if (isDestruct) {
                             addLog(`CRITICAL: ${targetPC.name} a été définitivement détruit.`);
                         }
-                        
-                           // Make PC normal again after 8 seconds, unless it's destroyed
-                           if (!isDestruct) {
-                               setTimeout(() => {
-                                  setNetwork(currentNetwork => currentNetwork.map(pc => {
-                                       if (pc.id === targetPC!.id) {
-                                           return { ...pc, isDangerous: false };
-                                       }
-                                       return pc;
-                                   }));
-                               }, 8000);
-                           }
                     }
                 }
                 break;
@@ -1666,12 +1638,16 @@ export default function Terminal({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (isIcebreakerActive) {
-        e.preventDefault();
+    if (isIcebreakerActive && e.key.toLowerCase() === 'c') {
+        setIsIcebreakerActive(false);
+        onPauseTrace(false);
+        setIcebreakerCooldown(Date.now() + 10000);
+        setHistory(prev => [...prev, { type: 'output', content: '--- ICEBREAKER DÉSENGAGÉ. Reprise de la trace. ---' }]);
+        setIcebreakerTimeLeft(0);
         return;
     }
 
-    if (isProcessing) {
+    if (isProcessing || isIcebreakerActive) {
         e.preventDefault();
         return;
     }
@@ -1721,7 +1697,7 @@ export default function Terminal({
           ))}
           {isIcebreakerActive && (
               <div className="text-cyan-400 animate-pulse">
-                  {`--- ICEBREAKER ENGAGED. Temps restant : ${icebreakerTimeLeft}s ---`}
+                  {`--- ICEBREAKER ENGAGED. Trace en pause. [Appuyez sur C pour désengager] ---`}
               </div>
           )}
         </div>

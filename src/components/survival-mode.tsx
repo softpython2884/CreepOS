@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -6,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { SoundEvent } from './audio-manager';
 import { loadGameState, saveGameState } from '@/lib/save-manager';
 import Desktop from './desktop';
+import { type PC, FileSystemNode } from '@/lib/network/types';
 
 interface SurvivalModeProps {
     onWin: () => void;
@@ -131,24 +133,19 @@ export default function SurvivalMode({ onWin, onLose, onSoundEvent }: SurvivalMo
     const fakeDesktopProps = {
         onSoundEvent: onSoundEvent,
         onMusicEvent: () => {},
+        onAlertEvent: () => {},
         username: username,
         onReboot: onLose,
         setMachineState: () => {},
+        scale: 1,
+        onEndGame: () => {},
     };
 
     return (
         <div className="w-full h-full flex items-center justify-center bg-black font-code">
             {/* Desktop is rendered in the background to allow terminal usage */}
-            <div className="absolute inset-0 opacity-30">
-                <Desktop 
-                    {...fakeDesktopProps}
-                    // Pass survival-specific props to a custom prop on Desktop
-                    survivalProps={{
-                        playerDefenses: defenses,
-                        setPlayerDefenses: setDefenses,
-                        machineState: 'survival'
-                    }}
-                />
+            <div className="absolute inset-0 opacity-30 pointer-events-none">
+                <Desktop {...fakeDesktopProps} />
             </div>
             
             <div className="w-full max-w-4xl border-2 border-destructive rounded-lg p-6 shadow-2xl shadow-destructive/20 flex flex-col gap-4 text-destructive-foreground bg-black/80 z-10">
