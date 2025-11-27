@@ -1077,8 +1077,16 @@ Si vous voyez ce message, elle vous surveille déjà.
             const revealNode = (nodes: FileSystemNode[], revealPath: string[]): FileSystemNode[] => {
                 return updateNodeByPath(nodes, revealPath, (node) => ({ ...node, isHidden: false }));
             };
-
-            if (targetPathString === 'dist') {
+            
+            if (targetPathString === 'tools/new-arsenal') {
+                 if (hasSeenEmail('Nouveaux outils & mission critique')) {
+                    addLog('INFO: Nouveaux outils d\'analyse débloqués.');
+                    const toolsToReveal = ['analyze.bin', 'solve.bin', 'SSHBounce.bin'];
+                    toolsToReveal.forEach(toolName => {
+                        newFileSystem = revealNode(newFileSystem, ['tools', toolName]);
+                    });
+                }
+            } else if (targetPathString === 'dist') {
                 if (hasSeenEmail('Porte dérobée détectée')) {
                     addLog(`INFO: Accès autorisé à /${targetPathString}.`);
                     newFileSystem = revealNode(newFileSystem, ['dist']);
@@ -1092,13 +1100,6 @@ Si vous voyez ce message, elle vous surveille déjà.
                             return { ...node, isHidden: false, children: node.children.map(c => ({...c, isHidden: false})) };
                         }
                         return node;
-                    });
-                } else if (hasSeenEmail('Nouveaux outils & mission critique')) {
-                    addLog('INFO: Nouveaux outils d\'analyse débloqués.');
-                    newFileSystem = revealNode(newFileSystem, ['tools']);
-                    const toolsToReveal = ['analyze.bin', 'solve.bin', 'SSHBounce.bin'];
-                    toolsToReveal.forEach(toolName => {
-                        newFileSystem = revealNode(newFileSystem, ['tools', toolName]);
                     });
                 }
             } else if (targetPathString.startsWith('dist/')) {
@@ -1420,3 +1421,6 @@ Si vous voyez ce message, elle vous surveille déjà.
 
 
 
+
+
+    
