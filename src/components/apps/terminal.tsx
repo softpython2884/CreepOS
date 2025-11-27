@@ -558,6 +558,33 @@ export default function Terminal({
         addRemoteLog(`Port ${portNumber} (${port.service}) ouvert depuis ${PLAYER_PUBLIC_IP}.`);
     };
 
+    const handleSolveCommand = async () => {
+        const solution = args[0];
+        const targetPC = getCurrentPc();
+
+        if (connectedIp === '127.0.0.1' || !targetPC) {
+            handleOutput('solve : Doit être connecté à un système distant.');
+            return;
+        }
+        if (!targetPC.firewall.enabled) {
+            handleOutput('Le pare-feu n\'est pas actif.');
+            return;
+        }
+        
+        checkAndTriggerTrace(targetPC);
+        
+        if (targetPC.firewall.solution === solution) {
+            setNetwork(currentNetwork => currentNetwork.map(pc => 
+                pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc
+            ));
+            handleOutput('Pare-feu désactivé.');
+            addRemoteLog(`Pare-feu désactivé depuis ${PLAYER_PUBLIC_IP} avec la solution : ${solution}.`);
+        } else {
+             handleOutput('Solution incorrecte.');
+             addRemoteLog(`Tentative de solution de pare-feu incorrecte '${solution}' depuis ${PLAYER_PUBLIC_IP}.`);
+        }
+    }
+
     if (command.toLowerCase() === 'neo') {
         if (isNeoInstalled) {
             handleOutput('Contacting NÉO...');
@@ -1428,27 +1455,7 @@ export default function Terminal({
             break;
         }
         case 'solve': {
-            const solution = args[0];
-            const targetPC = getCurrentPc();
-            if (connectedIp === '127.0.0.1' || !targetPC) {
-                handleOutput('solve : Doit être connecté à un système distant.');
-                break;
-            }
-            if (!targetPC.firewall.enabled) {
-                handleOutput('Le pare-feu n\'est pas actif.');
-                break;
-            }
-            
-            checkAndTriggerTrace(targetPC);
-            
-            if (targetPC.firewall.solution === solution) {
-                setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC.id ? { ...pc, firewall: { ...pc.firewall, enabled: false } } : pc));
-                handleOutput('Pare-feu désactivé.');
-                addRemoteLog(`Pare-feu désactivé depuis ${PLAYER_PUBLIC_IP} avec la solution : ${solution}.`);
-            } else {
-                 handleOutput('Solution incorrecte.');
-                 addRemoteLog(`Tentative de solution de pare-feu incorrecte '${solution}' depuis ${PLAYER_PUBLIC_IP}.`);
-            }
+            await handleSolveCommand();
             break;
         }
         case 'call': {
@@ -1679,3 +1686,4 @@ export default function Terminal({
     
 
     
+
