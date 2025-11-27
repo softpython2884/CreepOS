@@ -1,8 +1,9 @@
+
 import type { Email } from '@/components/apps/email-client';
 
 export const blackwireChapter4IntroEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
   sender: 'contact@blackwire.net',
-  subject: 'Nouveaux outils & mission critique',
+  subject: 'Changement de plan & nouvelle cible',
   body: `Recrue,
 
 L'opération a été un échec partiel. Votre activation de la porte dérobée a déclenché une alerte sur tout le réseau Nexus. La machine cible (198.51.100.17) est maintenant verrouillée. Inutile de réessayer.
@@ -10,14 +11,16 @@ L'opération a été un échec partiel. Votre activation de la porte dérobée a
 Mais tout n'est pas perdu. Cette diversion nous a permis de cartographier une partie de leur infrastructure. Nous avons une nouvelle piste.
 
 **Votre mission :**
-Infiltrer la station de travail de votre propre superviseur. Son IP est **10.1.1.5**.
-Ses défenses sont plus solides. Vous aurez besoin de nouveaux outils. Nous vous avons laissé des paquets sur le serveur de dépôt (18.117.228.214). Utilisez les décrypteurs en pièce jointe pour accéder à votre nouvel arsenal.
 
-- \`analyze\` vous permettra de scanner un pare-feu pour trouver sa "solution".
-- \`solve <solution>\` désactivera le pare-feu si la solution est correcte.
-- \`SSHBounce\` est un exploit pour le port 22 (SSH).
+1.  Utilisez les décrypteurs en pièce jointe pour accéder à votre nouvel arsenal sur notre serveur de dépôt (18.117.228.214). Récupérez et installez \`analyze.bin\`, \`solve.bin\`, et \`SSHBounce.bin\`.
 
-Cherchez des communications, des journaux, n'importe quoi qui pourrait nous éclairer sur le projet "Kinito" ou le sort de nos agents.
+2.  Infiltrez la station de travail de votre propre superviseur. Son IP est **10.1.1.5**. Ses défenses sont plus solides ; vous aurez besoin de ces nouveaux outils.
+
+3.  Une fois à l'intérieur, copiez tous les rapports que vous trouverez.
+
+4.  Uploadez ces rapports sur notre serveur de dépôt (18.117.228.214) dans le répertoire /upload.
+
+5.  Envoyez-nous un e-mail de confirmation avec le code : **PROJET-SHEARNEO**.
 
 Soyez prudent. Vous êtes maintenant sur leurs radars.
 

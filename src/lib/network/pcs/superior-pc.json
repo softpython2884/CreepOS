@@ -6,11 +6,11 @@
     "links": [],
     "auth": { "user": "admin", "pass": "TopS3cr3t!" },
     "firewall": { "enabled": true, "complexity": 4, "solution": "NEXUS_CORE" },
-    "proxy": { "enabled": true, "level": 2 },
+    "proxy": { "enabled": false, "level": 2 },
     "traceTime": 45,
-    "requiredPorts": 2,
+    "requiredPorts": 1,
     "isDangerous": true,
-    "traceability": 35,
+    "traceability": 45,
     "ports": [
         { "port": 21, "service": "FTP", "isOpen": false },
         { "port": 80, "service": "HTTP", "isOpen": false }
