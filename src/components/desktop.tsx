@@ -972,7 +972,7 @@ Si vous voyez ce message, elle vous surveille déjà.
         addLog("Fin du jeu... pour l'instant.");
         setTimeout(() => receiveEmail(chapter6IntroEmail), 2000);
     }
-     if (email.recipient === 'recruit@blackwire.net' && email.body.includes('NIHIL_EST_VERUM')) {
+     if (email.recipient === 'contact@blackwire.net' && email.body.includes('NIHIL_EST_VERUM')) {
         addLog("Fin du jeu... pour l'instant.");
         // This is where the final cutscene/ending would be triggered.
     }
@@ -1388,6 +1388,5 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
-
 
     
