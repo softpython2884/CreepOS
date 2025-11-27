@@ -996,11 +996,11 @@ Si vous voyez ce message, elle vous surveille déjà.
 
     if (url.startsWith('download://')) {
         const urlParts = url.substring(11).split('/');
-        const targetIdentifier = urlParts[0]; // Can be IP or just path
+        const targetIp = urlParts[0];
         const targetPath = urlParts.slice(1);
         const fileName = targetPath[targetPath.length - 1] || 'directory';
 
-        handleUnhide(targetIdentifier, targetPath.slice(0, -1));
+        handleUnhide(targetIp, targetPath);
         addLog(`EVENT: Déchiffrement du lien... Accès à ${fileName} autorisé.`);
         return;
     }
@@ -1065,51 +1065,17 @@ Si vous voyez ce message, elle vous surveille déjà.
   const handleUnhide = (ip: string, path: string[]) => {
     addLog(`EVENT: Tentative de révéler '${path.join('/')}' sur ${ip}.`);
 
-    const hasSeenEmail = (emailSubject: string) => emails.some(e => e.subject.includes(emailSubject));
-    const isTargetServer = (pc: PC) => pc.ip === ip;
-    const targetPathString = path.join('/');
-
     setNetwork(currentNetwork => {
         return currentNetwork.map(pc => {
-            if (!isTargetServer(pc)) return pc;
+            if (pc.ip !== ip) return pc;
 
-            let newFileSystem = pc.fileSystem;
-            const revealNode = (nodes: FileSystemNode[], revealPath: string[]): FileSystemNode[] => {
-                return updateNodeByPath(nodes, revealPath, (node) => ({ ...node, isHidden: false }));
-            };
+            const newFileSystem = updateNodeByPath(pc.fileSystem, path, (node) => ({ ...node, isHidden: false }));
             
-            if (targetPathString === 'tools/new-arsenal') {
-                 if (hasSeenEmail('Nouveaux outils & mission critique')) {
-                    addLog('INFO: Nouveaux outils d\'analyse débloqués.');
-                    const toolsToReveal = ['analyze.bin', 'solve.bin', 'SSHBounce.bin'];
-                    toolsToReveal.forEach(toolName => {
-                        newFileSystem = revealNode(newFileSystem, ['tools', toolName]);
-                    });
-                }
-            } else if (targetPathString === 'dist') {
-                if (hasSeenEmail('Porte dérobée détectée')) {
-                    addLog(`INFO: Accès autorisé à /${targetPathString}.`);
-                    newFileSystem = revealNode(newFileSystem, ['dist']);
-                    newFileSystem = revealNode(newFileSystem, ['dist', 'backdoor.sys']);
-                }
-            } else if (targetPathString === 'tools') {
-                 if (hasSeenEmail('Phase Finale - Contre-Attaque')) {
-                    addLog('CRITICAL: Arsenal complet de Blackwire débloqué.');
-                    newFileSystem = updateNodeByPath(newFileSystem, ['tools'], node => {
-                        if (node.type === 'folder' && node.children) {
-                            return { ...node, isHidden: false, children: node.children.map(c => ({...c, isHidden: false})) };
-                        }
-                        return node;
-                    });
-                }
-            } else if (targetPathString.startsWith('dist/')) {
-                 if (hasSeenEmail('DERNIERE CHANCE')) {
-                    addLog('INFO: Payload de schisme disponible.');
-                    newFileSystem = revealNode(newFileSystem, path);
-                 }
+            if (JSON.stringify(pc.fileSystem) !== JSON.stringify(newFileSystem)) {
+                addLog(`INFO: Accès autorisé à ${path[path.length - 1]}.`);
             } else {
-                 addLog(`WARN: Accès non autorisé à '${targetPathString}' ou pré-requis narratif non rempli.`);
-                 return pc;
+                addLog(`WARN: Accès non autorisé à '${path.join('/')}' ou pré-requis narratif non rempli.`);
+                return pc;
             }
 
             return { ...pc, fileSystem: newFileSystem };

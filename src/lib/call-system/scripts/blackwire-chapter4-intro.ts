@@ -11,7 +11,7 @@ Mais tout n'est pas perdu. Cette diversion nous a permis de cartographier une pa
 
 **Votre mission :**
 Infiltrer la station de travail de votre propre superviseur. Son IP est **10.1.1.5**.
-Ses défenses sont plus solides. Vous aurez besoin de nouveaux outils. Nous vous avons laissé un paquet sur le serveur de dépôt (18.117.228.214). Utilisez le décrypteur en pièce jointe pour accéder à votre nouvel arsenal.
+Ses défenses sont plus solides. Vous aurez besoin de nouveaux outils. Nous vous avons laissé des paquets sur le serveur de dépôt (18.117.228.214). Utilisez les décrypteurs en pièce jointe pour accéder à votre nouvel arsenal.
 
 - \`analyze\` vous permettra de scanner un pare-feu pour trouver sa "solution".
 - \`solve <solution>\` désactivera le pare-feu si la solution est correcte.
@@ -24,10 +24,16 @@ Soyez prudent. Vous êtes maintenant sur leurs radars.
 - Blackwire`,
     attachments: [
     {
-      fileName: 'Tools_Decryptor.tool',
-      link: 'download://18.117.228.214/tools/new-arsenal',
+      fileName: 'analyze_decryptor.tool',
+      link: 'download://18.117.228.214/tools/analyze.bin',
+    },
+    {
+      fileName: 'solve_decryptor.tool',
+      link: 'download://18.117.228.214/tools/solve.bin',
+    },
+    {
+      fileName: 'sshbounce_decryptor.tool',
+      link: 'download://18.117.228.214/tools/SSHBounce.bin',
     },
   ],
 };
-
-    
