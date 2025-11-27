@@ -14,11 +14,11 @@ interface CallViewProps {
 }
 
 export default function CallView({ call, onPlayerChoice, onClose }: CallViewProps) {
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+    if (viewportRef.current) {
+      viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [call.messages]);
 
@@ -40,8 +40,8 @@ export default function CallView({ call, onPlayerChoice, onClose }: CallViewProp
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-grow p-4" viewportRef={scrollAreaRef}>
-        <div className="flex flex-col gap-4">
+      <ScrollArea className="flex-grow p-4">
+        <div className="flex flex-col gap-4" ref={viewportRef}>
           {call.messages.map((msg, index) => (
             <div
               key={index}

@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Cpu, RotateCcw, GitFork, Forward } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -94,6 +94,7 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
     const [activeColor, setActiveColor] = useState<string | null>(null);
     const [completedPaths, setCompletedPaths] = useState<string[]>([]);
     const [neoMessages, setNeoMessages] = useState<string[]>(["NÉO: Initialisation de l'analyseur. Veuillez tracer les chemins de données."]);
+    const viewportRef = useRef<HTMLDivElement>(null);
     
     const size = 4; // Grid size
 
@@ -241,12 +242,18 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
         buildGrid();
     }
     
+    useEffect(() => {
+        if (viewportRef.current) {
+            viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
+        }
+    }, [neoMessages]);
+    
     return (
         <div className="w-full h-full bg-card font-code text-sm flex">
             <div className="w-64 border-r bg-secondary/30 p-2 flex flex-col">
                 <h3 className="font-bold text-accent mb-2 p-2 flex-shrink-0">Console NÉO</h3>
                 <ScrollArea className="flex-grow bg-black/30 rounded-md">
-                    <div className="p-2">
+                    <div className="p-2" ref={viewportRef}>
                         {neoMessages.map((msg, i) => <p key={i} className="animate-in fade-in">{msg}</p>)}
                     </div>
                 </ScrollArea>

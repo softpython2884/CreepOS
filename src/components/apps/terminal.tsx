@@ -196,7 +196,7 @@ export default function Terminal({
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [currentDirectory, setCurrentDirectory] = useState<string[]>([]);
   
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const getCurrentPc = useCallback(() => {
@@ -219,8 +219,8 @@ export default function Terminal({
   }, [network]);
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight });
+    if (viewportRef.current) {
+      viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight });
     }
   }, [history]);
 
@@ -1680,8 +1680,8 @@ export default function Terminal({
 
   return (
     <div className="h-full bg-black/80 text-green-400 font-code p-4 flex flex-col" onClick={() => inputRef.current?.focus()}>
-      <ScrollArea className="flex-1" viewportRef={scrollAreaRef}>
-        <div className="pr-4">
+      <ScrollArea className="flex-1">
+        <div className="pr-4" ref={viewportRef}>
           {history.map((item, index) => (
             <div key={index} className="whitespace-pre-wrap break-words">
               {item.type === 'command' ? (

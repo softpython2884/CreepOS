@@ -9,18 +9,18 @@ interface LiveLogsProps {
 }
 
 export default function LiveLogs({ logs }: LiveLogsProps) {
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const viewportRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        if (viewportRef.current) {
+            viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
         }
     }, [logs]);
 
     return (
         <div className="h-full bg-card/90 text-sm text-foreground p-2 font-code">
-            <ScrollArea className="h-full" viewportRef={scrollAreaRef}>
-                <div className="p-2 whitespace-pre-wrap">
+            <ScrollArea className="h-full">
+                <div className="p-2 whitespace-pre-wrap" ref={viewportRef}>
                     {logs.map((log, index) => (
                         <p key={index} className="animate-in fade-in">
                             <span className="text-muted-foreground/50 mr-2">{index.toString().padStart(4, '0')}</span>
