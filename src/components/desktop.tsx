@@ -144,6 +144,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const currentNodeIdRef = useRef<string | null>(null);
   const callQueueRef = useRef<(() => void)[]>([]);
   const callConsequencesTriggeredRef = useRef<Set<string>>(new Set());
+  const directorCallTriggeredRef = useRef(false);
 
   // Trace state
   const [isTraced, setIsTraced] = useState(false);
@@ -155,7 +156,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [moduleProgress, setModuleProgress] = useState(0);
   const [isSystemUnstable, setIsSystemUnstable] = useState(false);
   const [isNexusLockdown, setIsNexusLockdown] = useState(false);
-  const directorCallTriggeredRef = useRef(false);
   
   const [emails, setEmails] = useState<Email[]>(() => {
     const savedState = loadGameState(username);
@@ -961,7 +961,7 @@ Si vous voyez ce message, elle vous surveille déjà.
             addLog("EVENT: Chapitre 3 initié.");
         }, 5000);
     }
-    if (email.recipient === 'recruit@blackwire.net' && email.body.includes('CODE_NEO_V4')) {
+    if (email.recipient === 'recruit@blackwire.net' && email.body.includes('PROJET-SHEARNEO')) {
         addLog("Fin du jeu... pour l'instant.");
         setTimeout(() => receiveEmail(chapter6IntroEmail), 2000);
     }
@@ -1390,3 +1390,4 @@ Si vous voyez ce message, elle vous surveille déjà.
 
 
     
+
