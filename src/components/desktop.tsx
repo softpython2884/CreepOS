@@ -961,7 +961,7 @@ Si vous voyez ce message, elle vous surveille déjà.
             addLog("EVENT: Chapitre 3 initié.");
         }, 5000);
     }
-    if (email.recipient === 'recruit@blackwire.net' && email.body.includes('PROJET-SHEARNEO')) {
+    if (email.recipient === 'contact@blackwire.net' && email.body.includes('PROJET-SHEARNEO')) {
         addLog("Fin du jeu... pour l'instant.");
         setTimeout(() => receiveEmail(chapter6IntroEmail), 2000);
     }
@@ -1381,13 +1381,3 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
-
-
-
-
-
-
-
-
-    
-
