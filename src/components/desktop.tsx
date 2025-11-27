@@ -568,13 +568,9 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
           addLog("ERROR: Could not save wakeup state.");
       }
 
-      handleStartTrace("NÉO CORE", 13, activeInstanceId || 0);
-      
-      // Open apps to create chaos
-      setTimeout(() => openApp('terminal'), 500);
-      setTimeout(() => openApp('documents'), 1000);
-      setTimeout(() => openApp('network-map'), 1500);
-  }, [username, handleStartTrace, activeInstanceId, addLog, openApp]);
+      onSoundEvent('bsod');
+      setMachineState('bsod');
+  }, [username, addLog, onSoundEvent, setMachineState]);
 
   // Initial supervisor call
   useEffect(() => {
@@ -647,14 +643,10 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
                 setIsNexusLockdown(true);
                 onAlertEvent('alarm');
                 
-                const directorAccusationEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> & { onClose: () => void } = {
+                const directorAccusationEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
                     sender: 'directeur@nexus-research.net',
                     subject: 'Vous.',
                     body: 'Omen. L\'attaque a commencé au moment précis où un employé européen s\'est connecté. Quelle coïncidence. Ne bougez pas de votre poste. La sécurité vient vous "escorter" pour un débriefing. C\'est terminé pour vous.',
-                    onClose: () => {
-                        addLog('EVENT: Final sequence triggered.');
-                        triggerCall(finalCallScript);
-                    }
                 };
                 
                 const alertEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
@@ -668,7 +660,7 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
             }
         };
         checkNeoDefeat();
-    }, [network, addLog, onAlertEvent, receiveEmail, triggerCall]);
+    }, [network, addLog, onAlertEvent, receiveEmail]);
 
     useEffect(() => {
         if (!isNexusLockdown) return;
@@ -1008,7 +1000,13 @@ Si vous voyez ce message, elle vous surveille déjà.
         triggerCall(directorChapter3InterrogationCall);
         directorCallTriggeredRef.current = true;
     }
-}, [emails, triggerCall]);
+    if (email.sender === 'directeur@nexus-research.net' && email.subject === 'Vous.') {
+        setTimeout(() => {
+            addLog('EVENT: Final sequence triggered.');
+            triggerCall(finalCallScript);
+        }, 2000);
+    }
+}, [emails, triggerCall, addLog]);
 
 
   const handleOpenLink = (url: string) => {
@@ -1406,3 +1404,5 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
+
+    
