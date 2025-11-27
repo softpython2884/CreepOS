@@ -27,7 +27,8 @@
                 { "id": "file-sshbounce", "name": "SSHBounce.bin", "type": "file", "content": "Port 22 (SSH) cracker.", "isSystemFile": true },
                 { "id": "file-smtpoverflow", "name": "SMTPOverflow.bin", "type": "file", "content": "Port 25 (SMTP) cracker.", "isSystemFile": true },
                 { "id": "file-webserverworm", "name": "WebServerWorm.bin", "type": "file", "content": "Port 80 (HTTP) cracker.", "isSystemFile": true },
-                { "id": "file-forkbomb", "name": "forkbomb.bin", "type": "file", "content": "System crash utility.", "isSystemFile": true }
+                { "id": "file-forkbomb", "name": "forkbomb.bin", "type": "file", "content": "System crash utility.", "isSystemFile": true },
+                { "id": "file-icebreaker-cheat", "name": "icebreaker.bin", "type": "file", "content": "Contre-mesure locale pour annuler une trace en cours.", "isSystemFile": true }
             ]
         },
         {

@@ -751,6 +751,8 @@ export default function Terminal({
             case 'icebreaker':
                 if (connectedIp !== '127.0.0.1') {
                     handleOutput('icebreaker: Cet outil ne peut être exécuté que sur votre machine locale.');
+                } else if (machineState !== 'desktop' || !onPauseTrace) { // Assuming trace is only on desktop
+                    handleOutput('icebreaker: Aucune trace active à contrer.');
                 } else {
                     setIsIcebreakerActive(true);
                     onPauseTrace(true);
@@ -796,7 +798,8 @@ export default function Terminal({
                             return pc;
                         }));
                         
-                        disconnect(true);
+                        setTimeout(() => disconnect(true), 14000);
+
 
                         addLog(`EVENT: Forkbomb a effacé les logs sur ${targetPC.name}.`);
                         if (isDestruct) {

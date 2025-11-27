@@ -64,6 +64,15 @@
                 "content": "Fin du code : ...QUI\nFaut vraiment qu'on arrête avec ces mots de passe coupés en deux."
               }
             ]
+        },
+        {
+            "id": "remote-bin",
+            "name": "bin",
+            "type": "folder",
+            "isHidden": true,
+            "children": [
+                { "id": "file-icebreaker-hidden", "name": "icebreaker.bin", "type": "file", "content": "Contre-mesure locale pour annuler une trace en cours.", "isSystemFile": true }
+            ]
         }
     ]
 }

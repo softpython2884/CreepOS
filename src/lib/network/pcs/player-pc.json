@@ -17,8 +17,7 @@
             "name": "bin",
             "type": "folder",
             "children": [
-                { "id": "file-nano", "name": "nano.bin", "type": "file", "content": "Text editor executable", "isSystemFile": true },
-                { "id": "file-icebreaker", "name": "icebreaker.bin", "type": "file", "content": "Contre-mesure locale pour annuler une trace en cours.", "isSystemFile": true }
+                { "id": "file-nano", "name": "nano.bin", "type": "file", "content": "Text editor executable", "isSystemFile": true }
             ]
         },
         {
