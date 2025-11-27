@@ -490,7 +490,7 @@ export default function Terminal({
 
     const checkAndTriggerTrace = (pc?: PC | null) => {
         const targetPc = pc || getCurrentPc();
-        if (!targetPc) return;
+        if (!targetPc) return false;
 
         const isDangerousCommand = allExecutables.some(file => file.name.toLowerCase().startsWith(command.toLowerCase()))
           || command.toLowerCase() === 'solve'
@@ -498,7 +498,9 @@ export default function Terminal({
 
         if (isDangerousCommand && targetPc.traceTime > 0) {
             onStartTrace(targetPc.name, targetPc.traceTime, instanceId);
+            return true;
         }
+        return false;
     }
 
     const handlePortHack = async (portNumber: number, portName: string) => {
@@ -1686,4 +1688,5 @@ export default function Terminal({
     
 
     
+
 
