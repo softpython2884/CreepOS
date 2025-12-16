@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { cn } from '@/lib/utils';
 import type { SoundEvent } from './audio-manager';
 
 interface TrueEndingScreenProps {
@@ -33,8 +32,8 @@ class Particle {
         if (phase === 4) { // Implosion
             const dx = width / 2 - this.x;
             const dy = height / 2 - this.y;
-            this.speedX = dx / 10;
-            this.speedY = dy / 10;
+            this.speedX = dx / 20;
+            this.speedY = dy / 20;
         } else {
             this.speedY += gravity;
         }
@@ -82,9 +81,13 @@ export default function TrueEndingScreen({ onComplete, onSoundEvent }: TrueEndin
             phase = 0;
         };
 
-        const drawText = (text: string, alpha: number, onEnd: () => void) => {
+        const drawText = (text: string, onEnd: () => void) => {
             let i = 0;
             const interval = setInterval(() => {
+                if (phase !== 1) {
+                    clearInterval(interval);
+                    return;
+                }
                 ctx.clearRect(0, 0, width, height);
                 ctx.globalAlpha = 1;
                 ctx.fillStyle = '#fff';
@@ -97,6 +100,7 @@ export default function TrueEndingScreen({ onComplete, onSoundEvent }: TrueEndin
                     setTimeout(onEnd, 1000);
                 }
             }, 60);
+            timeoutIds.current.push(interval as unknown as NodeJS.Timeout);
         };
         
         const animateGrid = () => {
@@ -113,7 +117,7 @@ export default function TrueEndingScreen({ onComplete, onSoundEvent }: TrueEndin
                 line.alpha = Math.min(1, line.alpha + 0.01);
             });
 
-            requestAnimationFrame(animateGrid);
+            animationFrameId.current = requestAnimationFrame(animateGrid);
         };
 
         const animateCascade = () => {
@@ -130,7 +134,7 @@ export default function TrueEndingScreen({ onComplete, onSoundEvent }: TrueEndin
             });
 
             if (phase === 4 && particles.every(p => Math.abs(width/2 - p.x) < 5 && Math.abs(height/2 - p.y) < 5)) {
-                // End of implosion
+                if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
                 return;
             }
 
@@ -142,13 +146,13 @@ export default function TrueEndingScreen({ onComplete, onSoundEvent }: TrueEndin
             reset();
             phase = 1;
             onSoundEvent('click');
-            drawText('> schism.payload :: confirmed', 1, () => {
-                drawText('> running...', 1, () => {
+            drawText('> schism.payload :: confirmed', () => {
+                drawText('> running...', () => {
                     // Phase 2: Grid Fracture
                     phase = 2;
                     onSoundEvent('grid-fracture');
                     let i = 0;
-                    const interval = setInterval(() => {
+                    const gridInterval = setInterval(() => {
                         const isHorizontal = Math.random() > 0.5;
                         if(isHorizontal) {
                             lines.push({ x1: 0, y1: Math.random() * height, x2: width, y2: Math.random() * height, alpha: 0 });
@@ -156,8 +160,9 @@ export default function TrueEndingScreen({ onComplete, onSoundEvent }: TrueEndin
                             lines.push({ x1: Math.random() * width, y1: 0, x2: Math.random() * width, y2: height, alpha: 0 });
                         }
                         i++;
-                        if (i > 50) clearInterval(interval);
+                        if (i > 50) clearInterval(gridInterval);
                     }, 50);
+                    timeoutIds.current.push(gridInterval as unknown as NodeJS.Timeout);
                     animateGrid();
 
                     timeoutIds.current.push(setTimeout(() => {

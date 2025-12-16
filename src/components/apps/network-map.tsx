@@ -22,7 +22,7 @@ const iconMap: Record<PC['type'], React.ReactNode> = {
     Mobile: <Smartphone className="w-8 h-8" />,
 };
 
-const Node = ({ pc, x, y, isHacked }: { pc: PC; x: number; y: number; isHacked: boolean }) => {
+const Node = ({ pc, x, y, isHacked, mapHeight }: { pc: PC; x: number; y: number; isHacked: boolean, mapHeight: number }) => {
     const statusColor = pc.isDestroyed
         ? "bg-destructive/50 border-destructive text-destructive"
         : isHacked 
@@ -31,7 +31,7 @@ const Node = ({ pc, x, y, isHacked }: { pc: PC; x: number; y: number; isHacked: 
         ? "bg-destructive/20 border-destructive text-destructive"
         : "bg-secondary/50 border-border text-muted-foreground";
     
-    const tooltipSide = y < 50 ? 'bottom' : 'top';
+    const tooltipSide = y < (mapHeight / 2) ? 'bottom' : 'top';
 
     return (
         <motion.div
@@ -82,28 +82,28 @@ const Link = ({ from, to }: { from: { x: number; y: number }; to: { x: number; y
 };
 
 export default function NetworkMap({ network, hackedPcs }: NetworkMapProps) {
+    
+    const MAP_WIDTH = 800;
+    const MAP_HEIGHT = 600;
 
     const { nodes, links } = useMemo(() => {
         const nodePositions: { [key: string]: { x: number; y: number } } = {};
-        const width = 800; // Corresponds to the window width
-        const height = 600; // Corresponds to the window height
         
         const playerNode = network.find(pc => pc.id === 'player-pc');
         const otherNodes = network.filter(pc => pc.id !== 'player-pc');
 
-        // Center the player node in the available space
         if (playerNode) {
-            nodePositions[playerNode.id] = { x: width / 2 - 48, y: height / 2 - 48 };
+            nodePositions[playerNode.id] = { x: MAP_WIDTH / 2 - 48, y: MAP_HEIGHT / 2 - 48 };
         }
 
-        const radius = Math.min(width, height) / 2 - 80; // Adjusted radius
+        const radius = Math.min(MAP_WIDTH, MAP_HEIGHT) / 2 - 80;
         const angleStep = (2 * Math.PI) / (otherNodes.length || 1);
 
         otherNodes.forEach((pc, i) => {
             const angle = i * angleStep;
             nodePositions[pc.id] = {
-                x: (width / 2 - 48) + radius * Math.cos(angle),
-                y: (height / 2 - 48) + radius * Math.sin(angle),
+                x: (MAP_WIDTH / 2 - 48) + radius * Math.cos(angle),
+                y: (MAP_HEIGHT / 2 - 48) + radius * Math.sin(angle),
             };
         });
 
@@ -120,7 +120,7 @@ export default function NetworkMap({ network, hackedPcs }: NetworkMapProps) {
 
     return (
         <div className="h-full w-full bg-card/80 p-4 flex justify-center items-center overflow-hidden">
-             <div className="relative w-[800px] h-[600px]">
+             <div className="relative" style={{ width: MAP_WIDTH, height: MAP_HEIGHT }}>
                 <svg className="absolute inset-0 w-full h-full">
                     {links.map((link, i) => {
                         const fromNode = nodes[link.source];
@@ -133,7 +133,7 @@ export default function NetworkMap({ network, hackedPcs }: NetworkMapProps) {
                 {network.map(pc => {
                     const pos = nodes[pc.id];
                     if (!pos) return null;
-                    return <Node key={pc.id} pc={pc} x={pos.x} y={pos.y} isHacked={hackedPcs.has(pc.id)} />;
+                    return <Node key={pc.id} pc={pc} x={pos.x} y={pos.y} isHacked={hackedPcs.has(pc.id)} mapHeight={MAP_HEIGHT} />;
                 })}
             </div>
         </div>
