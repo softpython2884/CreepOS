@@ -42,7 +42,7 @@ import { blackwireChapter7Debrief } from '@/lib/call-system/scripts/blackwire-ch
 import { blackwireChapter7RevelationsEmail } from '@/lib/call-system/scripts/blackwire-chapter7-revelations';
 import { neoRetaliationScripts } from '@/lib/call-system/scripts/neo-retaliation';
 import { finalCallScript } from '@/lib/call-system/scripts/final-call';
-import { blackwireFinalStandCall } from '@/lib/call-system/scripts/blackwire-final-stand';
+import { blackwireFinalStandEmail } from '@/lib/call-system/scripts/blackwire-final-stand';
 import { Progress } from './ui/progress';
 
 
@@ -370,13 +370,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     }
     
     const lastScript = callScriptRef.current;
-    if (activeCall && !activeCall.isFinished) {
-      const lastNodeId = currentNodeIdRef.current;
-
-      if (lastScript && lastNodeId) {
-          const lastNode = lastScript.nodes[lastNodeId];
-          handleCallConsequences(lastNode?.consequences);
-      }
+    if (activeCall && lastScript) {
+        const lastNodeId = currentNodeIdRef.current;
+        if (lastNodeId) {
+            const lastNode = lastScript.nodes[lastNodeId];
+            handleCallConsequences(lastNode?.consequences);
+        }
     }
 
     // Explicit chapter progression logic
@@ -410,7 +409,7 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
         };
         setTimeout(() => receiveEmail(mindBreakEmail), 1000);
     }
-    if (lastScript?.id === 'blackwire-final-stand-call') {
+    if (lastScript?.id === 'final-call') {
       addLog('EVENT: Mission finale reçue par e-mail. Consultez votre messagerie.');
     }
 

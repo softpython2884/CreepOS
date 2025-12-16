@@ -1,6 +1,7 @@
 
 import type { CallScript } from '../types';
-import { blackwireFinalStandCall } from './blackwire-final-stand';
+import { blackwireFinalStandEmail } from './blackwire-final-stand';
+import { blackwireFinalMissionEmail } from './blackwire-final-mission';
 
 export const finalCallScript: CallScript = {
   id: 'final-call',
@@ -79,11 +80,11 @@ export const finalCallScript: CallScript = {
             text: 'Contacter Blackwire. Tenter une dernière fois.',
             nextNode: 'end-call',
             consequences: {
-                endCallAndTrigger: {
-                    type: 'call',
-                    script: blackwireFinalStandCall,
-                }
-            }
+              endCallAndTrigger: {
+                type: 'email',
+                email: blackwireFinalMissionEmail,
+              },
+            },
         }
       ],
     },
