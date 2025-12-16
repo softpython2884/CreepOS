@@ -1064,9 +1064,8 @@ Si vous voyez ce message, elle vous surveille déjà.
     }
 
     if (url.startsWith('download://')) {
-        const urlParts = url.substring(11).split('/');
-        const targetIp = urlParts[0];
-        const targetPath = urlParts.slice(1);
+        const targetIp = url.substring(11).split('/')[0];
+        const targetPath = url.substring(11).split('/').slice(1);
         const fileName = targetPath[targetPath.length - 1] || 'directory';
 
         handleUnhide(targetIp, targetPath);
@@ -1440,5 +1439,6 @@ Si vous voyez ce message, elle vous surveille déjà.
 }
 
     
+
 
 
