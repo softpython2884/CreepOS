@@ -9,7 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { PC, FileSystemNode } from '@/lib/network/types';
+import { PC, FileSystemNode, PC_Type } from '@/lib/network/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type Scenario = {
   name: string;
@@ -19,6 +20,8 @@ type Scenario = {
   // calls: CallScript[];
   // triggers: Trigger[];
 };
+
+const PC_TYPES: PC_Type[] = ['Server', 'Desktop', 'WebServer', 'Laptop', 'Mobile'];
 
 const EMPTY_PC: Omit<PC, 'id' | 'name' | 'ip'> = {
   type: 'Server',
@@ -45,6 +48,7 @@ export default function EditorPage() {
 
   const [selectedPcId, setSelectedPcId] = useState<string | null>(null);
   const [fileSystemJson, setFileSystemJson] = useState('[]');
+  const [websiteContent, setWebsiteContent] = useState('');
 
   const selectedPc = scenario.pcs.find(p => p.id === selectedPcId) || null;
 
@@ -59,11 +63,13 @@ export default function EditorPage() {
     setScenario(prev => ({ ...prev, pcs: [...prev.pcs, newPc] }));
     setSelectedPcId(id);
     setFileSystemJson(JSON.stringify(newPc.fileSystem, null, 2));
+    setWebsiteContent(newPc.websiteContent || '');
   };
   
   const handleSelectPc = (pc: PC) => {
     setSelectedPcId(pc.id);
     setFileSystemJson(JSON.stringify(pc.fileSystem, null, 2));
+    setWebsiteContent(pc.websiteContent || '');
   };
 
   const handlePcChange = (field: keyof PC, value: any) => {
@@ -101,6 +107,12 @@ export default function EditorPage() {
     } catch (e) {
         alert('Erreur: Le JSON du système de fichiers est invalide.');
     }
+  };
+  
+  const handleSaveWebsiteContent = () => {
+      if (!selectedPcId) return;
+      handlePcChange('websiteContent', websiteContent);
+      alert('Contenu du site web sauvegardé !');
   };
 
 
@@ -171,6 +183,15 @@ export default function EditorPage() {
                       <Label>Adresse IP</Label>
                       <Input value={selectedPc.ip} onChange={e => handlePcChange('ip', e.target.value)} />
                     </div>
+                     <div>
+                        <Label>Type de PC</Label>
+                        <Select value={selectedPc.type} onValueChange={v => handlePcChange('type', v as PC_Type)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {PC_TYPES.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                     </div>
                   </div>
                   <Separator />
                   <CardTitle className="text-lg">Sécurité</CardTitle>
@@ -200,11 +221,51 @@ export default function EditorPage() {
                    </div>
                     {selectedPc.proxy.enabled && (
                         <div className="pl-6 space-y-2">
-                             <Label>Niveau du proxy</Label>
+                             <Label>Niveau du proxy (noeuds requis)</Label>
                              <Input type="number" value={selectedPc.proxy.level} onChange={e => handleNestedPcChange('proxy.level', parseInt(e.target.value) || 0)} />
                         </div>
                     )}
+                    <Separator />
+                    <CardTitle className="text-lg">Traçage & Danger</CardTitle>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                            <Label>Temps de traçage (s)</Label>
+                            <Input type="number" value={selectedPc.traceTime} onChange={e => handlePcChange('traceTime', parseInt(e.target.value) || 0)} />
+                        </div>
+                        <div>
+                            <Label>Dangerosité (%)</Label>
+                            <Input type="number" value={selectedPc.traceability} onChange={e => handlePcChange('traceability', parseInt(e.target.value) || 0)} />
+                        </div>
+                        <div>
+                            <Label>Ports requis (Porthack)</Label>
+                            <Input type="number" value={selectedPc.requiredPorts} onChange={e => handlePcChange('requiredPorts', parseInt(e.target.value) || 0)} />
+                        </div>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <Switch id="is-dangerous" checked={selectedPc.isDangerous} onCheckedChange={c => handlePcChange('isDangerous', c)}/>
+                        <Label htmlFor="is-dangerous">Marquer comme DANGEREUX (double pénalité)</Label>
+                   </div>
                      <Separator />
+                     {selectedPc.type === 'WebServer' && (
+                        <>
+                            <CardTitle className="text-lg">Serveur Web</CardTitle>
+                             <div className='space-y-2'>
+                                <Label>Domaine (ex: site.com)</Label>
+                                <Input value={selectedPc.domain} onChange={e => handlePcChange('domain', e.target.value)} />
+                             </div>
+                             <div className='space-y-2'>
+                                <Label>Contenu du site (HTML)</Label>
+                                <Textarea 
+                                    placeholder='Collez votre code HTML ici...'
+                                    className="h-40"
+                                    value={websiteContent}
+                                    onChange={e => setWebsiteContent(e.target.value)}
+                                />
+                                <Button onClick={handleSaveWebsiteContent} size="sm">Sauvegarder le contenu du site</Button>
+                             </div>
+                            <Separator />
+                        </>
+                     )}
                     <CardTitle className="text-lg">Système de Fichiers (JSON)</CardTitle>
                      <Textarea 
                         placeholder='Collez un tableau JSON de FileSystemNode ici...'
@@ -243,3 +304,5 @@ export default function EditorPage() {
     </div>
   );
 }
+
+    
