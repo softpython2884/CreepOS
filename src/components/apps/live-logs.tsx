@@ -19,8 +19,8 @@ export default function LiveLogs({ logs }: LiveLogsProps) {
 
     return (
         <div className="h-full bg-card/90 text-sm text-foreground p-2 font-code">
-            <ScrollArea className="h-full">
-                <div className="p-2 whitespace-pre-wrap" ref={viewportRef}>
+            <ScrollArea className="h-full" viewportRef={viewportRef}>
+                <div className="p-2 whitespace-pre-wrap">
                     {logs.map((log, index) => (
                         <p key={index} className="animate-in fade-in">
                             <span className="text-muted-foreground/50 mr-2">{index.toString().padStart(4, '0')}</span>

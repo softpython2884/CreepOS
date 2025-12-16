@@ -12,6 +12,7 @@ import { CallScript } from '@/lib/call-system/types';
 import { supervisorChapter2Email } from '@/lib/call-system/scripts/supervisor-chapter2';
 import { blackwireChapter3Mission } from '@/lib/call-system/scripts/blackwire-chapter3-mission';
 import { chapter9IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
+import { finalCallScript } from '@/lib/call-system/scripts/final-call';
 
 
 interface HistoryItem {
@@ -782,17 +783,13 @@ export default function Terminal({
                 const isDestruct = args.includes('--destruct');
                 onSoundEvent?.('glitch');
 
-                await runForkbombVisuals(isDestruct);
-                
                 if (connectedIp === '127.0.0.1') {
-                    addLog(`CRITIQUE: Forkbomb exécuté sur la machine locale. Chaos système initié.`);
-                    onNeoWakeup(); // Simulates chaos
-                    onStartTrace("SYSTEM_KERNEL", 6, instanceId);
+                    await runForkbombVisuals(isDestruct);
+                    addLog(`CRITIQUE: Forkbomb exécuté sur la machine locale. Crash système imminent.`);
+                    setTimeout(() => onReboot(), 2000);
                 } else {
                     if (targetPC) {
                         disconnect(true);
-                        // onStartTrace(targetPC.name, 15, instanceId);
-                        
                         setNetwork(currentNetwork => currentNetwork.map(pc => {
                             if (pc.id === targetPC!.id) {
                                 let updatedPc = { ...pc, isDangerous: true };
@@ -803,7 +800,7 @@ export default function Terminal({
                             }
                             return pc;
                         }));
-                        
+                        await runForkbombVisuals(isDestruct);
                         addLog(`EVENT: Forkbomb a effacé les logs sur ${targetPC.name}.`);
                         if (isDestruct) {
                             addLog(`CRITICAL: ${targetPC.name} a été définitivement détruit.`);
@@ -1570,8 +1567,11 @@ export default function Terminal({
             } else if (args[0] === 'nihil') {
                 handleOutput('DEBUG: Skipping to final assault mission...');
                 receiveEmail(chapter9IntroEmail);
+            } else if (args[0] === 'final') {
+                handleOutput('DEBUG: Skipping to final call...');
+                triggerCall(finalCallScript);
             } else {
-                handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1` or `debug-skip backdoor` or `debug-skip nihil`');
+                handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1` or `debug-skip backdoor` or `debug-skip nihil` or `debug-skip final`');
             }
             break;
         }
@@ -1680,8 +1680,8 @@ export default function Terminal({
 
   return (
     <div className="h-full bg-black/80 text-green-400 font-code p-4 flex flex-col" onClick={() => inputRef.current?.focus()}>
-      <ScrollArea className="flex-1">
-        <div className="pr-4" ref={viewportRef}>
+      <ScrollArea className="flex-1" viewportRef={viewportRef}>
+        <div className="pr-4">
           {history.map((item, index) => (
             <div key={index} className="whitespace-pre-wrap break-words">
               {item.type === 'command' ? (
