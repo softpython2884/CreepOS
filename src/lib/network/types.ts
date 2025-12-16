@@ -50,3 +50,5 @@ export interface PC {
     isDangerous?: boolean;
     isDestroyed?: boolean;
 }
+
+    

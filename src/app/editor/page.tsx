@@ -14,6 +14,7 @@ import { PC, FileSystemNode, PC_Type, Port, PortType } from '@/lib/network/types
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { X } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type Scenario = {
   name: string;
@@ -31,10 +32,14 @@ const EMPTY_PC: Omit<PC, 'id' | 'name' | 'ip'> = {
   firewall: { enabled: false, complexity: 0, solution: '' },
   proxy: { enabled: false, level: 0 },
   traceTime: 0,
-  requiredPorts: 0,
-  ports: [],
+  requiredPorts: 1,
+  ports: [
+    { port: 80, service: 'HTTP', isOpen: false },
+    { port: 21, service: 'FTP', isOpen: false },
+    { port: 22, service: 'SSH', isOpen: false }
+  ],
   fileSystem: [],
-  traceability: 0,
+  traceability: 10,
   isDangerous: false,
   isDestroyed: false,
 };
@@ -51,7 +56,7 @@ export default function EditorPage() {
   const [fileSystemJson, setFileSystemJson] = useState('[]');
   const [websiteContent, setWebsiteContent] = useState('');
   
-  const [newPort, setNewPort] = useState<{ port: number, service: PortType }>({ port: 80, service: 'HTTP' });
+  const [newPort, setNewPort] = useState<{ port: number, service: PortType }>({ port: 0, service: 'HTTP' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedPc = scenario.pcs.find(p => p.id === selectedPcId) || null;
@@ -136,6 +141,10 @@ export default function EditorPage() {
       if (!selectedPc || !newPort.port) return;
       const newPortToAdd: Port = { ...newPort, isOpen: false };
       const currentPorts = selectedPc.ports || [];
+      if (currentPorts.some(p => p.port === newPortToAdd.port)) {
+          alert("Erreur: Ce port existe déjà.");
+          return;
+      }
       handlePcChange('ports', [...currentPorts, newPortToAdd]);
       setNewPort({ port: 0, service: 'HTTP' }); // Reset form
   }
@@ -229,14 +238,16 @@ export default function EditorPage() {
               <CardTitle>Liste des PCs</CardTitle>
               <Button size="sm" onClick={handleAddPc}>Ajouter</Button>
             </CardHeader>
-            <CardContent className="overflow-y-auto">
-              <div className="flex flex-col gap-2">
-                {scenario.pcs.map(pc => (
-                  <Button key={pc.id} variant={selectedPcId === pc.id ? 'secondary' : 'ghost'} onClick={() => handleSelectPc(pc)}>
-                    {pc.name} ({pc.ip})
-                  </Button>
-                ))}
-              </div>
+            <CardContent className="flex-grow overflow-y-auto">
+              <ScrollArea className="h-full">
+                <div className="flex flex-col gap-2">
+                  {scenario.pcs.map(pc => (
+                    <Button key={pc.id} variant={selectedPcId === pc.id ? 'secondary' : 'ghost'} onClick={() => handleSelectPc(pc)}>
+                      {pc.name} ({pc.ip})
+                    </Button>
+                  ))}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
           <Card className="w-2/3 flex flex-col">
@@ -244,7 +255,7 @@ export default function EditorPage() {
               <CardTitle>{selectedPc ? `Édition de: ${selectedPc.name}` : 'Sélectionnez un PC'}</CardTitle>
               <CardDescription>Configurez les propriétés de l'ordinateur.</CardDescription>
             </CardHeader>
-            <CardContent className="overflow-y-auto space-y-4">
+            <CardContent className="flex-grow overflow-y-auto pr-4 space-y-4">
               {selectedPc ? (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -420,5 +431,7 @@ export default function EditorPage() {
     </div>
   );
 }
+
+    
 
     
