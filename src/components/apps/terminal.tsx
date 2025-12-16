@@ -1680,7 +1680,7 @@ export default function Terminal({
 
   return (
     <div className="h-full bg-black/80 text-green-400 font-code p-4 flex flex-col" onClick={() => inputRef.current?.focus()}>
-      <ScrollArea className="flex-1" viewportRef={viewportRef}>
+      <ScrollArea className="flex-1" ref={viewportRef}>
         <div className="pr-4">
           {history.map((item, index) => (
             <div key={index} className="whitespace-pre-wrap break-words">
