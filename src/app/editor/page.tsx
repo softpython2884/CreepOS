@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,19 +10,19 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { PC, FileSystemNode, PC_Type } from '@/lib/network/types';
+import { PC, FileSystemNode, PC_Type, Port, PortType } from '@/lib/network/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { X } from 'lucide-react';
 
 type Scenario = {
   name: string;
   description: string;
   pcs: PC[];
-  // emails: Email[];
-  // calls: CallScript[];
-  // triggers: Trigger[];
 };
 
 const PC_TYPES: PC_Type[] = ['Server', 'Desktop', 'WebServer', 'Laptop', 'Mobile'];
+const PORT_TYPES: PortType[] = ['HTTP', 'FTP', 'SSH', 'SMTP', 'UNKNOWN', 'SQL'];
 
 const EMPTY_PC: Omit<PC, 'id' | 'name' | 'ip'> = {
   type: 'Server',
@@ -49,21 +50,21 @@ export default function EditorPage() {
   const [selectedPcId, setSelectedPcId] = useState<string | null>(null);
   const [fileSystemJson, setFileSystemJson] = useState('[]');
   const [websiteContent, setWebsiteContent] = useState('');
+  
+  const [newPort, setNewPort] = useState<{ port: number, service: PortType }>({ port: 80, service: 'HTTP' });
 
   const selectedPc = scenario.pcs.find(p => p.id === selectedPcId) || null;
 
   const handleAddPc = () => {
     const id = `pc-${Date.now()}`;
     const newPc: PC = {
-      ...EMPTY_PC,
+      ...JSON.parse(JSON.stringify(EMPTY_PC)),
       id: id,
       name: `Nouveau-PC-${scenario.pcs.length + 1}`,
       ip: `192.168.100.${100 + scenario.pcs.length}`,
     };
     setScenario(prev => ({ ...prev, pcs: [...prev.pcs, newPc] }));
-    setSelectedPcId(id);
-    setFileSystemJson(JSON.stringify(newPc.fileSystem, null, 2));
-    setWebsiteContent(newPc.websiteContent || '');
+    handleSelectPc(newPc);
   };
   
   const handleSelectPc = (pc: PC) => {
@@ -74,22 +75,28 @@ export default function EditorPage() {
 
   const handlePcChange = (field: keyof PC, value: any) => {
     if (!selectedPcId) return;
-    setScenario(prev => ({
-      ...prev,
-      pcs: prev.pcs.map(pc => 
-        pc.id === selectedPcId ? { ...pc, [field]: value } : pc
-      ),
-    }));
+    
+    setScenario(prev => {
+        const newPcs = prev.pcs.map(pc => {
+            if (pc.id === selectedPcId) {
+                return { ...pc, [field]: value };
+            }
+            return pc;
+        });
+        return { ...prev, pcs: newPcs };
+    });
   };
   
   const handleNestedPcChange = (path: string, value: any) => {
      if (!selectedPcId) return;
      const [parent, child] = path.split('.');
+
      setScenario(prev => ({
        ...prev,
        pcs: prev.pcs.map(pc => {
          if (pc.id === selectedPcId) {
             const updatedPc = { ...pc };
+            // Type assertion to access nested properties dynamically
             (updatedPc as any)[parent][child] = value;
             return updatedPc;
          }
@@ -114,6 +121,29 @@ export default function EditorPage() {
       handlePcChange('websiteContent', websiteContent);
       alert('Contenu du site web sauvegardé !');
   };
+  
+  const handleLinkToggle = (targetId: string, isLinked: boolean) => {
+      if (!selectedPc) return;
+      const currentLinks = selectedPc.links || [];
+      const newLinks = isLinked 
+        ? [...currentLinks, targetId] 
+        : currentLinks.filter(id => id !== targetId);
+      handlePcChange('links', newLinks);
+  }
+  
+  const handleAddPort = () => {
+      if (!selectedPc || !newPort.port) return;
+      const newPortToAdd: Port = { ...newPort, isOpen: false };
+      const currentPorts = selectedPc.ports || [];
+      handlePcChange('ports', [...currentPorts, newPortToAdd]);
+      setNewPort({ port: 0, service: 'HTTP' }); // Reset form
+  }
+  
+  const handleRemovePort = (portNumber: number) => {
+      if (!selectedPc) return;
+      const newPorts = selectedPc.ports.filter(p => p.port !== portNumber);
+      handlePcChange('ports', newPorts);
+  }
 
 
   return (
@@ -246,6 +276,49 @@ export default function EditorPage() {
                         <Label htmlFor="is-dangerous">Marquer comme DANGEREUX (double pénalité)</Label>
                    </div>
                      <Separator />
+                     
+                      <CardTitle className="text-lg">Réseau & Ports</CardTitle>
+                      <div>
+                          <Label>PCs Liés</Label>
+                          <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border p-2 rounded-md">
+                              {scenario.pcs.filter(p => p.id !== selectedPcId).map(p => (
+                                <div key={`link-${p.id}`} className="flex items-center space-x-2">
+                                    <Checkbox 
+                                        id={`link-${p.id}`}
+                                        checked={(selectedPc.links || []).includes(p.id)}
+                                        onCheckedChange={c => handleLinkToggle(p.id, !!c)}
+                                    />
+                                    <Label htmlFor={`link-${p.id}`}>{p.name} ({p.ip})</Label>
+                                </div>
+                              ))}
+                               {scenario.pcs.length <= 1 && <p className="text-muted-foreground text-sm">Créez d'autres PCs pour pouvoir les lier.</p>}
+                          </div>
+                      </div>
+                      <div>
+                          <Label>Ports Réseau</Label>
+                          <div className="space-y-2 mt-2">
+                              {selectedPc.ports.map(p => (
+                                <div key={p.port} className="flex items-center justify-between p-2 bg-secondary/50 rounded-md">
+                                    <p className="text-sm">{p.port} - {p.service}</p>
+                                    <Button size="icon" variant="destructive" className="h-6 w-6" onClick={() => handleRemovePort(p.port)}>
+                                        <X size={14}/>
+                                    </Button>
+                                </div>
+                              ))}
+                          </div>
+                          <div className="flex gap-2 mt-4">
+                              <Input type="number" placeholder="Numéro de port" value={newPort.port || ''} onChange={e => setNewPort(p => ({ ...p, port: parseInt(e.target.value) }))} />
+                              <Select value={newPort.service} onValueChange={v => setNewPort(p => ({...p, service: v as PortType}))}>
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                      {PORT_TYPES.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                                  </SelectContent>
+                              </Select>
+                              <Button onClick={handleAddPort}>Ajouter Port</Button>
+                          </div>
+                      </div>
+                      <Separator />
+
                      {selectedPc.type === 'WebServer' && (
                         <>
                             <CardTitle className="text-lg">Serveur Web</CardTitle>
