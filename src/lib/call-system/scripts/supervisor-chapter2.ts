@@ -8,6 +8,10 @@ export const supervisorChapter2Email: Omit<Email, 'id' | 'timestamp' | 'folder' 
 
 Les premiers résultats de DELTA7 ont révélé de nouvelles anomalies.
 Un ancien opérateur a laissé des journaux cryptés. On voudrait que vous les parcouriez.
+
+Le mot de passe pour l'archive est notre clé de département standard : memkey_042
+
+- Superviseur
 `,
   attachments: [
     {
