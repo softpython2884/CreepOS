@@ -1,4 +1,4 @@
-import type { CallScript } from '../types';
+import type { CallScript } from '@/lib/call-system/types';
 
 export const supervisorChapter2Call: CallScript = {
   id: 'supervisor-chapter2-call',
@@ -7,6 +7,7 @@ export const supervisorChapter2Call: CallScript = {
   startNode: 'start',
   nodes: {
     start: {
+      id: 'start',
       message: {
         speaker: 'Superviseur',
         text: 'Omen. Rapport quotidien. Tout est normal de votre côté ?',
@@ -30,18 +31,21 @@ export const supervisorChapter2Call: CallScript = {
       ],
     },
     'lie-response': {
+      id: 'lie-response',
       message: {
         speaker: 'Superviseur',
         text: 'Parfait. Si vous voyez quoi que ce soit de suspect, prévenez-moi par e-mail. Terminé.',
       },
     },
     'truth-response': {
+      id: 'truth-response',
       message: {
         speaker: 'Superviseur',
         text: '...Compris. Terminé.',
       },
     },
     'insult-response': {
+        id: 'insult-response',
         message: {
             speaker: 'Superviseur',
             text: 'Révisez votre contrat, Omen. Vous n\'avez aucun droit de contestation. Continuez votre travail. Terminé.',

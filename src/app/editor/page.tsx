@@ -62,13 +62,13 @@ const EMPTY_DIALOGUE: Omit<CallScript, 'id'> = {
     interlocutor: 'Inconnu',
     isSecure: false,
     startNode: 'start',
-    nodes: [
-        {
+    nodes: {
+        'start': {
             id: 'start',
             message: { speaker: 'Inconnu', text: '...' },
             choices: [{ id: 'choice-1', text: 'Continuer...', nextNode: 'start' }]
         }
-    ]
+    }
 };
 
 
@@ -265,54 +265,56 @@ export default function EditorPage() {
     }));
   };
   
-  const handleDialogueNodeChange = (nodeIndex: number, field: keyof CallNode, value: any) => {
+  const handleDialogueNodeChange = (nodeId: string, field: keyof CallNode, value: any) => {
       if (!selectedDialogue) return;
-      const newNodes = [...selectedDialogue.nodes];
-      newNodes[nodeIndex] = { ...newNodes[nodeIndex], [field]: value };
+      const newNodes = { ...selectedDialogue.nodes };
+      newNodes[nodeId] = { ...newNodes[nodeId], [field]: value };
       handleDialogueChange('nodes', newNodes);
   }
   
-  const handleNodeMessageChange = (nodeIndex: number, field: keyof CallMessage, value: string) => {
+  const handleNodeMessageChange = (nodeId: string, field: keyof CallMessage, value: string) => {
       if (!selectedDialogue) return;
-      const newNodes = [...selectedDialogue.nodes];
-      const message = newNodes[nodeIndex].message;
-      newNodes[nodeIndex].message = { ...message, [field]: value };
+      const newNodes = { ...selectedDialogue.nodes };
+      const message = newNodes[nodeId].message;
+      newNodes[nodeId].message = { ...message, [field]: value };
       handleDialogueChange('nodes', newNodes);
   }
 
-  const handleNodeChoiceChange = (nodeIndex: number, choiceIndex: number, field: keyof CallChoice, value: string) => {
+  const handleNodeChoiceChange = (nodeId: string, choiceIndex: number, field: keyof CallChoice, value: string) => {
       if (!selectedDialogue) return;
-      const newNodes = [...selectedDialogue.nodes];
-      const choices = newNodes[nodeIndex].choices || [];
+      const newNodes = { ...selectedDialogue.nodes };
+      const choices = newNodes[nodeId].choices || [];
       choices[choiceIndex] = { ...choices[choiceIndex], [field]: value };
-      newNodes[nodeIndex].choices = choices;
+      newNodes[nodeId].choices = choices;
       handleDialogueChange('nodes', newNodes);
   };
   
   const handleAddNode = () => {
       if (!selectedDialogue) return;
+      const nodeId = `node-${Date.now()}`;
       const newNode: CallNode = {
-          id: `node-${Date.now()}`,
+          id: nodeId,
           message: { speaker: selectedDialogue.interlocutor, text: ''},
           choices: []
       };
-      handleDialogueChange('nodes', [...selectedDialogue.nodes, newNode]);
+      const newNodes = { ...selectedDialogue.nodes, [nodeId]: newNode };
+      handleDialogueChange('nodes', newNodes);
   };
   
-  const handleAddChoice = (nodeIndex: number) => {
+  const handleAddChoice = (nodeId: string) => {
       if (!selectedDialogue) return;
       const newChoice: CallChoice = { id: `choice-${Date.now()}`, text: '', nextNode: '' };
-      const newNodes = [...selectedDialogue.nodes];
-      const choices = newNodes[nodeIndex].choices || [];
-      newNodes[nodeIndex].choices = [...choices, newChoice];
+      const newNodes = { ...selectedDialogue.nodes };
+      const choices = newNodes[nodeId].choices || [];
+      newNodes[nodeId].choices = [...choices, newChoice];
       handleDialogueChange('nodes', newNodes);
   }
 
-  const handleRemoveChoice = (nodeIndex: number, choiceIndex: number) => {
+  const handleRemoveChoice = (nodeId: string, choiceIndex: number) => {
       if (!selectedDialogue) return;
-      const newNodes = [...selectedDialogue.nodes];
-      const choices = newNodes[nodeIndex].choices || [];
-      newNodes[nodeIndex].choices = choices.filter((_, i) => i !== choiceIndex);
+      const newNodes = { ...selectedDialogue.nodes };
+      const choices = newNodes[nodeId].choices || [];
+      newNodes[nodeId].choices = choices.filter((_, i) => i !== choiceIndex);
       handleDialogueChange('nodes', newNodes);
   }
 
@@ -673,35 +675,35 @@ export default function EditorPage() {
                                 <Button size="sm" variant="outline" onClick={handleAddNode}><Plus size={16}/> Ajouter un Nœud</Button>
                             </div>
                             <div className="space-y-4">
-                                {selectedDialogue.nodes.map((node, nodeIndex) => (
+                                {Object.values(selectedDialogue.nodes).map((node, nodeIndex) => (
                                     <Card key={node.id} className="bg-secondary/50">
                                         <CardHeader className="p-4">
                                             <div className="flex justify-between">
                                                 <Label>ID du Nœud</Label>
-                                                <Input className="w-1/2 h-8" value={node.id} onChange={e => handleDialogueNodeChange(nodeIndex, 'id', e.target.value)}/>
+                                                <Input className="w-1/2 h-8" value={node.id} onChange={e => handleDialogueNodeChange(node.id, 'id', e.target.value)}/>
                                             </div>
                                         </CardHeader>
                                         <CardContent className="p-4 pt-0 space-y-2">
                                             <Label>Message</Label>
                                             <div className="flex gap-2">
-                                                <Input placeholder="Locuteur" className="w-1/3" value={node.message.speaker} onChange={e => handleNodeMessageChange(nodeIndex, 'speaker', e.target.value)} />
-                                                <Textarea placeholder="Texte du message..." value={node.message.text} onChange={e => handleNodeMessageChange(nodeIndex, 'text', e.target.value)} />
+                                                <Input placeholder="Locuteur" className="w-1/3" value={node.message.speaker} onChange={e => handleNodeMessageChange(node.id, 'speaker', e.target.value)} />
+                                                <Textarea placeholder="Texte du message..." value={node.message.text} onChange={e => handleNodeMessageChange(node.id, 'text', e.target.value)} />
                                             </div>
                                             <div className="flex justify-between items-center pt-2">
                                                 <Label>Choix du joueur</Label>
-                                                <Button size="xs" variant="outline" onClick={() => handleAddChoice(nodeIndex)}><Plus size={14}/> Ajouter</Button>
+                                                <Button size="xs" variant="outline" onClick={() => handleAddChoice(node.id)}><Plus size={14}/> Ajouter</Button>
                                             </div>
                                             <div className="space-y-2">
                                                 {(node.choices || []).map((choice, choiceIndex) => (
                                                     <div key={choice.id} className="flex gap-2 items-center p-2 bg-background/50 rounded">
-                                                        <Input placeholder="Texte du choix" value={choice.text} onChange={e => handleNodeChoiceChange(nodeIndex, choiceIndex, 'text', e.target.value)} />
-                                                        <Select value={choice.nextNode} onValueChange={v => handleNodeChoiceChange(nodeIndex, choiceIndex, 'nextNode', v)}>
+                                                        <Input placeholder="Texte du choix" value={choice.text} onChange={e => handleNodeChoiceChange(node.id, choiceIndex, 'text', e.target.value)} />
+                                                        <Select value={choice.nextNode} onValueChange={v => handleNodeChoiceChange(node.id, choiceIndex, 'nextNode', v)}>
                                                             <SelectTrigger className="w-[180px]"><SelectValue placeholder="Nœud suivant..."/></SelectTrigger>
                                                             <SelectContent>
-                                                                {selectedDialogue.nodes.map(n => <SelectItem key={n.id} value={n.id}>{n.id}</SelectItem>)}
+                                                                {Object.keys(selectedDialogue.nodes).map(nodeId => <SelectItem key={nodeId} value={nodeId}>{nodeId}</SelectItem>)}
                                                             </SelectContent>
                                                         </Select>
-                                                         <Button size="icon" variant="destructive" className="h-8 w-8" onClick={() => handleRemoveChoice(nodeIndex, choiceIndex)}><X size={14}/></Button>
+                                                         <Button size="icon" variant="destructive" className="h-8 w-8" onClick={() => handleRemoveChoice(node.id, choiceIndex)}><X size={14}/></Button>
                                                     </div>
                                                 ))}
                                             </div>
