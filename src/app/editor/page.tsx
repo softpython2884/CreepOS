@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PC, FileSystemNode, PC_Type, Port, PortType } from '@/lib/network/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { X } from 'lucide-react';
+import { X, ArrowUp, ArrowDown } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Email, Attachment } from '@/components/apps/email-client';
 
@@ -49,7 +49,7 @@ const EMPTY_PC: Omit<PC, 'id' | 'name' | 'ip'> = {
 
 const EMPTY_EMAIL: Omit<Email, 'id'> = {
     sender: 'expediteur@domaine.com',
-    recipient: 'destinataire@domaine.com',
+    recipient: 'Dr.Omen@recherche-lab.net',
     subject: 'Nouveau Sujet',
     body: 'Contenu du message...',
     timestamp: new Date().toISOString(),
@@ -75,9 +75,21 @@ export default function EditorPage() {
   const [newPort, setNewPort] = useState<{ port: number, service: PortType }>({ port: 0, service: 'HTTP' });
   const [newAttachment, setNewAttachment] = useState<Attachment>({ fileName: '', link: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const selectedPc = scenario.pcs.find(p => p.id === selectedPcId) || null;
   const selectedEmail = scenario.emails.find(e => e.id === selectedEmailId) || null;
+
+  // --- Scroll Management ---
+  const handleScroll = (direction: 'up' | 'down') => {
+    if (scrollRef.current) {
+        const scrollAmount = 400; // a-vous de voir
+        scrollRef.current.scrollBy({
+            top: direction === 'up' ? -scrollAmount : scrollAmount,
+            behavior: 'smooth'
+        });
+    }
+  };
 
   // --- PC Management ---
   const handleAddPc = () => {
@@ -307,7 +319,7 @@ export default function EditorPage() {
                 <CardTitle>{selectedPc ? `Édition de: ${selectedPc.name}` : 'Sélectionnez un PC'}</CardTitle>
                 <CardDescription>Configurez les propriétés de l'ordinateur.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex-grow overflow-y-auto pr-4 space-y-4">
+                <CardContent ref={scrollRef} className="flex-grow overflow-y-auto pr-4 space-y-4">
                 {selectedPc ? (
                     <>
                     <div className="grid grid-cols-2 gap-4">
@@ -484,7 +496,7 @@ export default function EditorPage() {
                     <CardTitle>{selectedEmail ? `Édition de: ${selectedEmail.subject}` : 'Sélectionnez un E-mail'}</CardTitle>
                     <CardDescription>Configurez le contenu de l'e-mail.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex-grow overflow-y-auto pr-4 space-y-4">
+                <CardContent ref={scrollRef} className="flex-grow overflow-y-auto pr-4 space-y-4">
                     {selectedEmail ? (
                         <>
                             <div className="grid grid-cols-2 gap-4">
@@ -547,6 +559,15 @@ export default function EditorPage() {
         </TabsContent>
 
       </Tabs>
+
+        <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2">
+            <Button size="icon" variant="outline" onClick={() => handleScroll('up')}>
+                <ArrowUp />
+            </Button>
+            <Button size="icon" variant="outline" onClick={() => handleScroll('down')}>
+                <ArrowDown />
+            </Button>
+        </div>
     </div>
   );
 }
