@@ -1050,8 +1050,16 @@ Si vous voyez ce message, elle vous surveille déjà.
     }
 
     if (url.startsWith('download://')) {
-        const targetIp = url.substring(11).split('/')[0];
-        const targetPath = url.substring(11).split('/').slice(1);
+        const isLocal = url.startsWith('download:///');
+        let targetIp = '127.0.0.1'; // Default to player PC
+        let pathString = url.substring(isLocal ? 12 : 11);
+
+        if (!isLocal) {
+            targetIp = pathString.split('/')[0];
+            pathString = pathString.split('/').slice(1).join('/');
+        }
+        
+        const targetPath = pathString.split('/').filter(p => p);
         const fileName = targetPath[targetPath.length - 1] || 'directory';
 
         handleUnhide(targetIp, targetPath);
@@ -1222,6 +1230,7 @@ Si vous voyez ce message, elle vous surveille déjà.
             onNeoWakeup: handleNeoWakeup,
             onEndGame,
             onUnhide: handleUnhide,
+            instanceId: 0,
         } 
     },
     documents: { 
