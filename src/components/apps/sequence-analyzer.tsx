@@ -31,9 +31,9 @@ const puzzles: Record<string, { starts: any[], ends: any[], rotatables?: any[] }
         ends: [{ q: 3, r: 0, color: '#eab308' }],
         rotatables: [
             { q: -2, r: 0, connections: [0, 3], targetRotation: 0 },
-            { q: -1, r: 0, connections: [0, 3], targetRotation: 5 },
-            { q: 0, r: 0, connections: [1, 4], targetRotation: 0 },
-            { q: 1, r: 0, connections: [0, 3], targetRotation: 1 },
+            { q: -1, r: 0, connections: [1, 4], targetRotation: 1 },
+            { q: 0, r: 0, connections: [2, 5], targetRotation: 2 },
+            { q: 1, r: 0, connections: [1, 4], targetRotation: 1 },
             { q: 2, r: 0, connections: [0, 3], targetRotation: 0 },
         ]
     }
@@ -95,13 +95,6 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     
     const size = 4; // Grid size
-
-    const isPathComplete = (path: Hex[]) => {
-        if (!puzzle.rotatables) return true;
-        const pathSet = new Set(path.map(h => `${h.q},${h.r}`));
-        const allRotatablesInPath = grid.filter(h => h.isRotatable && pathSet.has(`${h.q},${h.r}`));
-        return allRotatablesInPath.every(h => h.rotation === h.targetRotation);
-    }
     
     const checkWinCondition = useCallback((currentCompleted: string[], currentGrid: Hex[]) => {
         const allPathsDone = currentCompleted.length === puzzle.starts.length;
