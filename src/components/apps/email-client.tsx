@@ -144,7 +144,7 @@ export default function EmailClient({ emails, onSend, currentUser, onOpenLink, o
                 </p>
                 <p className="text-xs text-muted-foreground">{formatTimestamp(email.timestamp)}</p>
               </div>
-              <p className="text-sm truncate">{truncateSubject(email.subject, 86)}</p>
+              <p className="text-sm truncate">{truncateSubject(email.subject, 78)}</p>
             </div>
           ))
         )}
@@ -159,7 +159,7 @@ export default function EmailClient({ emails, onSend, currentUser, onOpenLink, o
                 <CornerUpLeft size={16} />
             </Button>
             <h2 className="text-lg font-semibold truncate flex-1" title={selectedEmail?.subject}>
-              {selectedEmail?.subject ? truncateSubject(selectedEmail.subject, 26) : ''}
+              {selectedEmail?.subject ? truncateSubject(selectedEmail.subject, 46) : ''}
             </h2>
         </div>
         {selectedEmail && (
