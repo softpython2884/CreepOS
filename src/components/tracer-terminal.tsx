@@ -7,7 +7,7 @@ import { ScrollArea } from './ui/scroll-area';
 
 export const traceCommands = [
     'INITIATING REVERSE TRACE...',
-    'TARGET IP: 127.0.0.1',
+    'TARGET IP: 184.72.238.110',
     'BYPASSING LOCAL PROXY... [OK]',
     'CONNECTION ESTABLISHED. ANALYZING SIGNATURE...',
     'SIGNATURE FOUND: "OPERATOR"',
@@ -99,7 +99,10 @@ export default function TracerTerminal({ title, commands, startDelay = 0 }: Trac
 
     useEffect(() => {
         if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+            const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+            if (viewport) {
+                viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+            }
         }
     }, [lines]);
 
@@ -108,7 +111,7 @@ export default function TracerTerminal({ title, commands, startDelay = 0 }: Trac
             <div className="flex-shrink-0 text-center border-b border-destructive-foreground/30 pb-1 mb-1">
                 {title}
             </div>
-            <ScrollArea className="flex-grow" viewportRef={scrollAreaRef}>
+            <ScrollArea className="flex-grow" ref={scrollAreaRef}>
                 <div className='p-1'>
                     {lines.map((line, i) => (
                         <p key={i} className={cn("whitespace-nowrap", (i === lines.length - 1 && !isComplete) && 'animate-typing-cursor-slow border-r-2 border-current')}>{`> ${line}`}</p>

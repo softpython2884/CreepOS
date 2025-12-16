@@ -44,6 +44,7 @@ import { neoRetaliationScripts } from '@/lib/call-system/scripts/neo-retaliation
 import { finalCallScript } from '@/lib/call-system/scripts/final-call';
 import { blackwireFinalStandEmail } from '@/lib/call-system/scripts/blackwire-final-stand';
 import { Progress } from './ui/progress';
+import TracerTerminal, { traceCommands, decryptCommands, isolationCommands } from './tracer-terminal';
 
 
 export type AppId = 'terminal' | 'documents' | 'logs' | 'network-map' | 'email' | 'web-browser' | 'media-player' | 'contract-viewer' | 'sequence-analyzer';
@@ -120,6 +121,47 @@ const updateNodeByPath = (
       }
       return node;
   });
+};
+
+const TraceOverlay = ({ timeLeft, targetName }: { timeLeft: number, targetName: string }) => {
+    const totalTime = 30; // Assume a max time for display logic, can be passed as prop
+    const showDecrypt = timeLeft < totalTime * 0.7;
+    const showIsolate = timeLeft < totalTime * 0.3;
+
+    const formatTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <div className="absolute inset-0 z-[9998] pointer-events-none">
+            <div className="absolute inset-0 bg-destructive/80 animate-scream" />
+            <div className="absolute inset-0 bg-vignette animate-pulse-slow" />
+            
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4 font-code text-destructive-foreground">
+                <div className="w-[400px] border-2 border-destructive-foreground/50 bg-destructive/30 p-4 text-center backdrop-blur-sm">
+                    <h2 className="text-xl font-bold tracking-widest animate-pulse">TRACE EN COURS</h2>
+                    <p className="text-6xl font-bold mt-1">{formatTime(timeLeft)}</p>
+                    <p className="text-sm text-destructive-foreground/70">CIBLE: {targetName}</p>
+                </div>
+            </div>
+
+            <div className="absolute top-4 left-4">
+                <TracerTerminal title="REVERSE TRACE" commands={traceCommands} />
+            </div>
+            {showDecrypt && (
+                <div className="absolute bottom-4 right-4">
+                    <TracerTerminal title="DECRYPT PAYLOAD" commands={decryptCommands} startDelay={1000} />
+                </div>
+            )}
+             {showIsolate && (
+                <div className="absolute top-1/4 left-1/2 -translate-x-1/2">
+                    <TracerTerminal title="NODE ISOLATION" commands={isolationCommands} startDelay={500} />
+                </div>
+            )}
+        </div>
+    );
 };
 
 
@@ -230,6 +272,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     
     addLog(`DANGER: Trace initiée depuis ${targetName}. Vous avez ${time} secondes pour vous déconnecter.`);
     onAlertEvent('scream');
+    onSoundEvent('lag');
     setIsTraced(true);
     setTraceTimeLeft(time);
     setTraceTarget({ name: targetName, time: time });
@@ -237,7 +280,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     setOpenApps(prev => prev.map(app => 
         app.instanceId === sourceInstanceId ? { ...app, isSourceOfTrace: true } : app
     ));
-  }, [addLog, onAlertEvent, isTraced]);
+  }, [addLog, onAlertEvent, isTraced, onSoundEvent]);
   
   const handleStopTrace = useCallback(() => {
     if (!isTraced) return;
@@ -1304,23 +1347,10 @@ Si vous voyez ce message, elle vous surveille déjà.
       )}
       style={{ backgroundImage: `linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)`, backgroundSize: `2rem 2rem` }}
     >
-      {isTraced && (
-          <div className="absolute inset-0 bg-destructive/80 animate-scream pointer-events-none z-[9998]" />
-      )}
+      {isTraced && <TraceOverlay timeLeft={traceTimeLeft} targetName={traceTarget.name}/>}
+
       <div className={cn("absolute inset-0 bg-gradient-to-b from-transparent to-background/80 transition-opacity", isTraced && "bg-destructive/30 animate-pulse-slow")} />
       
-      {isTraced && (
-          <div className="absolute top-4 left-4 z-[9999] text-destructive-foreground font-code animate-pulse-slow">
-              <div className="flex items-center gap-4 p-4 bg-destructive/80 border-2 border-destructive-foreground rounded-lg shadow-2xl shadow-destructive/20">
-                  <AlertTriangle className="h-16 w-16" />
-                  <div>
-                      <h2 className="text-2xl font-bold tracking-widest">TRACE DÉTECTÉE</h2>
-                      <p className="text-5xl font-bold text-center mt-1">{formatTime(traceTimeLeft)}</p>
-                  </div>
-              </div>
-          </div>
-      )}
-
       {showModuleInit && (
         <div className="absolute inset-0 bg-black/80 flex justify-center items-center z-[10000]">
           <div className="w-[400px] text-center p-8 bg-card border border-accent rounded-lg flex flex-col items-center gap-4">
@@ -1410,3 +1440,4 @@ Si vous voyez ce message, elle vous surveille déjà.
 }
 
     
+
