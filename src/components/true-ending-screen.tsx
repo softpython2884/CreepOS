@@ -277,7 +277,7 @@ export default function TrueEndingScreen({ onComplete, onSoundEvent }: TrueEndin
             timeouts.current.forEach(clearTimeout);
             window.removeEventListener('resize', handleResize);
         };
-    }, [onComplete, onSoundEvent]);
+    }, []);
 
     return (
         <canvas ref={canvasRef} className="w-full h-full bg-black cursor-none" />
