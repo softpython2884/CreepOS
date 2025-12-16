@@ -144,7 +144,7 @@ export default function EmailClient({ emails, onSend, currentUser, onOpenLink, o
                 </p>
                 <p className="text-xs text-muted-foreground">{formatTimestamp(email.timestamp)}</p>
               </div>
-              <p className="text-sm truncate">{email.subject}</p>
+              <p className="text-sm truncate">{truncateSubject(email.subject, 86)}</p>
             </div>
           ))
         )}

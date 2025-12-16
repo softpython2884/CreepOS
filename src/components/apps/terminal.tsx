@@ -635,7 +635,7 @@ export default function Terminal({
         const neoBin = findNodeByPath(['bin', 'neo.bin'], playerPC?.fileSystem || []);
 
         if (!neoBin) {
-            handleOutput("Erreur : paquet NÉO introuvable. Téléchargez-le d'abord.");
+            handleOutput("Erreur : paquet NÉO introuvable. Téléchargez-le d\'abord.");
         } else {
             await onNeoExecute({
                 showProgress: runProgressBar,
