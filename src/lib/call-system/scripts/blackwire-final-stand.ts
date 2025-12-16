@@ -28,8 +28,7 @@ export const blackwireFinalStandCall: CallScript = {
       consequences: {
         triggerSound: 'glitch',
         endCallAndTrigger: {
-          type: 'machine_state',
-          state: 'survival',
+          type: 'email',
           email: blackwireFinalMissionEmail,
         }
       }

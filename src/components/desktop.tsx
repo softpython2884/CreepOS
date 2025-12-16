@@ -336,6 +336,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
             callQueueRef.current.push(() => triggerCall(endTrigger.script));
         } else if (endTrigger.type === 'email') {
             callQueueRef.current.push(() => receiveEmail(endTrigger.email));
+            if(endTrigger.email.subject === blackwireChapter4IntroEmail.subject){
+              addLog('EVENT: Chapitre 4 initié.');
+            }
         } else if (endTrigger.type === 'trace') {
             handleStartTrace("CONTACT EXTERNE", endTrigger.duration, activeInstanceId || 0);
         } else if (endTrigger.type === 'alarm') {
@@ -406,6 +409,9 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
             }
         };
         setTimeout(() => receiveEmail(mindBreakEmail), 1000);
+    }
+    if (lastScript?.id === 'blackwire-final-stand-call') {
+      addLog('EVENT: Mission finale reçue par e-mail. Consultez votre messagerie.');
     }
 
     setCallState('idle');
