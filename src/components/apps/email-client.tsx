@@ -113,6 +113,13 @@ export default function EmailClient({ emails, onSend, currentUser, onOpenLink, o
     return date.toLocaleString();
   };
 
+  const truncateSubject = (subject: string, maxLength: number) => {
+    if (subject.length <= maxLength) {
+      return subject;
+    }
+    return subject.substring(0, maxLength) + '...';
+  };
+
   const ListView = () => (
     <div className='h-full flex flex-col'>
       <div className="p-2 border-b flex justify-between items-center">
@@ -151,7 +158,9 @@ export default function EmailClient({ emails, onSend, currentUser, onOpenLink, o
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentView('list')}>
                 <CornerUpLeft size={16} />
             </Button>
-            <h2 className="text-lg font-semibold truncate flex-1">{selectedEmail?.subject}</h2>
+            <h2 className="text-lg font-semibold truncate flex-1" title={selectedEmail?.subject}>
+              {selectedEmail?.subject ? truncateSubject(selectedEmail.subject, 86) : ''}
+            </h2>
         </div>
         {selectedEmail && (
             <ScrollArea className="flex-grow">
