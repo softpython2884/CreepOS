@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -52,6 +52,7 @@ export default function EditorPage() {
   const [websiteContent, setWebsiteContent] = useState('');
   
   const [newPort, setNewPort] = useState<{ port: number, service: PortType }>({ port: 80, service: 'HTTP' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedPc = scenario.pcs.find(p => p.id === selectedPcId) || null;
 
@@ -145,12 +146,54 @@ export default function EditorPage() {
       handlePcChange('ports', newPorts);
   }
 
+  const handleSaveScenario = () => {
+    const dataStr = JSON.stringify(scenario, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataUri);
+    downloadAnchorNode.setAttribute("download", "scenario.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  }
+
+  const handleLoadScenario = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const content = e.target?.result as string;
+            const loadedScenario = JSON.parse(content);
+            // Basic validation
+            if (loadedScenario.name && loadedScenario.description && Array.isArray(loadedScenario.pcs)) {
+                setScenario(loadedScenario);
+                setSelectedPcId(null);
+                alert('Scénario chargé avec succès !');
+            } else {
+                throw new Error("Invalid scenario file structure.");
+            }
+        } catch (error) {
+            alert('Erreur: Le fichier de scénario est invalide ou corrompu.');
+        }
+    };
+    reader.readAsText(file);
+    // Reset file input to allow loading the same file again
+    event.target.value = '';
+  }
+
 
   return (
     <div className="h-screen w-screen bg-background text-foreground font-code p-4 flex flex-col gap-4">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-accent">Éditeur de Scénario</h1>
-        <Button>Charger / Sauvegarder Scénario</Button>
+        <div className="flex gap-2">
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>Charger Scénario</Button>
+            <Button onClick={handleSaveScenario}>Sauvegarder Scénario</Button>
+            <input type="file" ref={fileInputRef} onChange={handleLoadScenario} accept=".json" className="hidden" />
+        </div>
       </div>
       <Tabs defaultValue="scenario" className="flex-grow flex flex-col">
         <TabsList>
