@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -8,20 +9,17 @@ interface LiveLogsProps {
 }
 
 export default function LiveLogs({ logs }: LiveLogsProps) {
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const viewportRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (scrollAreaRef.current) {
-            const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-            if (viewport) {
-                viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
-            }
+        if (viewportRef.current) {
+            viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
         }
     }, [logs]);
 
     return (
         <div className="h-full bg-card/90 text-sm text-foreground p-2 font-code">
-            <ScrollArea className="h-full" ref={scrollAreaRef}>
+            <ScrollArea className="h-full" viewportRef={viewportRef}>
                 <div className="p-2 whitespace-pre-wrap">
                     {logs.map((log, index) => (
                         <p key={index} className="animate-in fade-in">

@@ -243,7 +243,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     if (!isTraced) return;
     
     addLog(`INFO: Trace évitée. Déconnecté de ${traceTarget.name}.`);
-    onAlertEvent('stopScream');
+    onAlertEvent('stopAlert');
     onMusicEvent('calm');
     setIsTraced(false);
     setIsTracePaused(false);
@@ -341,7 +341,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         } else if (endTrigger.type === 'alarm') {
             addLog(`ALARM: Intrusion réseau détectée sur le réseau Nexus.`);
             onAlertEvent('alarm');
-            setTimeout(() => onAlertEvent('stopAlarm'), endTrigger.duration);
+            setTimeout(() => onAlertEvent('stopAlert'), endTrigger.duration);
             if (endTrigger.alertEmail) {
                 receiveEmail(endTrigger.alertEmail);
             }
@@ -360,8 +360,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   }, [receiveEmail, handleStartTrace, activeInstanceId, onAlertEvent, addLog, onSoundEvent, handleIncreaseDanger, handleStartSystemInstability, onEndGame, setMachineState, triggerCall]);
   
   const endCall = useCallback((isManualClose: boolean = false) => {
-    onAlertEvent('stopRingtone');
-    onAlertEvent('stopAlarm');
+    onAlertEvent('stopAlert');
     
     if (isManualClose && activeCall && !activeCall.isFinished) {
         onSoundEvent('endCall');
@@ -486,7 +485,7 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     const script = callScriptRef.current;
     if (!script || callState !== 'incoming') return;
     
-    onAlertEvent('stopRingtone');
+    onAlertEvent('stopAlert');
     onSoundEvent('startCall');
     setCallState('active');
 

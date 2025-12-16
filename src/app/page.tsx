@@ -494,12 +494,10 @@ export default function Home() {
             setTimeout(() => {
                 setSoundEvent('off');
                 setTimeout(() => setSoundEvent('cours'), 600);
-                setTimeout(() => setSoundEvent('soufle'), 5000);
+                setTimeout(() => setSoundEvent('soufle'), 5600); // 5s after 'cours' starts
                 setTimeout(() => {
                     setSoundEvent('multikill');
-                    setSoundEvent(null);
-                    setSoundEvent(null);
-                }, 8000);
+                }, 8600); // 8s after 'cours' starts
                 transitionToCredits(10000);
             }, 5000);
         } else if (endType === 'true_ending') {
@@ -511,7 +509,7 @@ export default function Home() {
         } else {
             transitionToCredits(5000);
         }
-    }, []);
+    }, [setSoundEvent, setMusicEvent, setMachineState, setFadeOut, setEndgameData]);
 
     const handleEndgameScreenComplete = () => {
         setSoundEvent('kill');

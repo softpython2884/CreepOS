@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect, KeyboardEvent, useCallback, useMemo } from 'react';
@@ -195,7 +196,7 @@ export default function Terminal({
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [currentDirectory, setCurrentDirectory] = useState<string[]>([]);
   
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const getCurrentPc = useCallback(() => {
@@ -218,11 +219,8 @@ export default function Terminal({
   }, [network]);
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-        const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-        if (viewport) {
-            viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
-        }
+    if (viewportRef.current) {
+        viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [history]);
 
@@ -787,7 +785,10 @@ export default function Terminal({
                 
                 if (connectedIp === '127.0.0.1') {
                     addLog(`CRITIQUE: Forkbomb exécuté sur la machine locale. Crash système imminent.`);
-                    onReboot();
+                    setTimeout(() => {
+                        onSoundEvent?.('bsod');
+                        onReboot();
+                    }, 1000);
                 } else if (targetPC) {
                     const targetName = targetPC.name;
                     disconnect(true); // Disconnect immediately
@@ -1681,7 +1682,7 @@ export default function Terminal({
 
   return (
     <div className="h-full bg-black/80 text-green-400 font-code p-4 flex flex-col" onClick={() => inputRef.current?.focus()}>
-      <ScrollArea className="flex-1" ref={scrollAreaRef}>
+      <ScrollArea className="flex-1" viewportRef={viewportRef}>
         <div className="pr-4">
           {history.map((item, index) => (
             <div key={index} className="whitespace-pre-wrap break-words">
