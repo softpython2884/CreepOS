@@ -139,7 +139,7 @@ const TraceOverlay = ({ timeLeft, targetName }: { timeLeft: number, targetName: 
             <div className="absolute inset-0 bg-destructive/80 animate-scream" />
             <div className="absolute inset-0 bg-vignette animate-pulse-slow" />
             
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4 font-code text-destructive-foreground">
+            <div className="absolute top-4 left-4 flex flex-col items-center gap-4 font-code text-destructive-foreground">
                 <div className="w-[400px] border-2 border-destructive-foreground/50 bg-destructive/30 p-4 text-center backdrop-blur-sm">
                     <h2 className="text-xl font-bold tracking-widest animate-pulse">TRACE EN COURS</h2>
                     <p className="text-6xl font-bold mt-1">{formatTime(timeLeft)}</p>
@@ -147,7 +147,7 @@ const TraceOverlay = ({ timeLeft, targetName }: { timeLeft: number, targetName: 
                 </div>
             </div>
 
-            <div className="absolute top-4 left-4">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                 <TracerTerminal title="REVERSE TRACE" commands={traceCommands} />
             </div>
             {showDecrypt && (
@@ -1440,4 +1440,5 @@ Si vous voyez ce message, elle vous surveille déjà.
 }
 
     
+
 

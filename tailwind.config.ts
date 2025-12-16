@@ -11,7 +11,7 @@ export default {
     extend: {
       backgroundImage: {
         'grid-pattern': "linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)",
-        'vignette': 'radial-gradient(ellipse at center, transparent 50%, hsl(var(--destructive)) 100%)',
+        'vignette': 'radial-gradient(ellipse at center, transparent 70%, hsl(var(--background)) 100%)',
       },
       fontFamily: {
         body: ['Inter', 'sans-serif'],
@@ -220,3 +220,4 @@ export default {
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
+
