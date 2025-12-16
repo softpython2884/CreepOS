@@ -159,7 +159,7 @@ export default function EmailClient({ emails, onSend, currentUser, onOpenLink, o
                 <CornerUpLeft size={16} />
             </Button>
             <h2 className="text-lg font-semibold truncate flex-1" title={selectedEmail?.subject}>
-              {selectedEmail?.subject ? truncateSubject(selectedEmail.subject, 86) : ''}
+              {selectedEmail?.subject ? truncateSubject(selectedEmail.subject, 26) : ''}
             </h2>
         </div>
         {selectedEmail && (
