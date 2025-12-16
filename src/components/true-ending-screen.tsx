@@ -208,7 +208,8 @@ export default function TrueEndingScreen({ onComplete, onSoundEvent }: TrueEndin
             timeoutIds.current.forEach(clearTimeout);
             window.removeEventListener('resize', handleResize);
         };
-    }, [onComplete, onSoundEvent]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <canvas ref={canvasRef} className="w-full h-full bg-black" />
