@@ -10,7 +10,7 @@ export interface GameState {
     hackedPcs: Set<string>;
     discoveredPcs: Set<string>;
     emails: Email[];
-    isNeoInstalled?: boolean;
+    isNeoInstalled: boolean;
     machineState?: string;
 }
 
@@ -102,6 +102,7 @@ export const loadGameState = (username: string): GameState => {
               folder: 'inbox',
             },
         ],
+        isNeoInstalled: false,
     };
 };
 
@@ -112,3 +113,5 @@ export const deleteGameState = (username: string) => {
         console.error("Failed to delete game state:", error);
     }
 };
+
+    

@@ -533,14 +533,14 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     advanceCall(choiceId);
   }
 
-  const handleNeoExecute = useCallback((isInitial: boolean) => {
-    if (isInitial) {
-        setIsNeoInstalled(true);
-        triggerCall(directorCall);
-    } else {
+  const handleNeoExecute = useCallback(() => {
+    if (isNeoInstalled) {
         triggerCall(neoPhase1Call);
+    } else {
+        triggerCall(directorCall);
+        setIsNeoInstalled(true);
     }
-  }, [triggerCall]);
+  }, [triggerCall, isNeoInstalled]);
 
   const openApp = useCallback((appId: AppId, appProps?: any) => {
     const config = appConfig[appId];
@@ -1412,3 +1412,5 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
+
+    

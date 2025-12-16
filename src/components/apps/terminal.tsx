@@ -42,7 +42,7 @@ interface TerminalProps {
     dangerLevel: number;
     machineState: string; // To know if we are in survival mode
     receiveEmail: (email: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => void;
-    onNeoExecute: (isInitial: boolean) => void;
+    onNeoExecute: () => void;
     isNeoInstalled: boolean;
     triggerCall: (script: CallScript) => void;
     onNeoWakeup: () => void;
@@ -640,7 +640,7 @@ export default function Terminal({
             handleOutput('Erreur : paquet NÉO introuvable. Téléchargez-le d\'abord.');
         } else {
             handleOutput('Contacting NÉO...');
-            onNeoExecute(!isNeoInstalled);
+            onNeoExecute();
         }
         setIsProcessing(false);
         return;
@@ -1737,3 +1737,5 @@ export default function Terminal({
     </div>
   );
 }
+
+    
