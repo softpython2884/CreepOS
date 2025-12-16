@@ -42,7 +42,8 @@ interface TerminalProps {
     dangerLevel: number;
     machineState: string; // To know if we are in survival mode
     receiveEmail: (email: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => void;
-    onNeoExecute: (isInitialInstall: boolean) => void;
+    onNeoExecute: (isInitial: boolean) => void;
+    isNeoInstalled: boolean;
     triggerCall: (script: CallScript) => void;
     onNeoWakeup: () => void;
     onEndGame: (endType?: 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' | 'true_ending', lines?: string[]) => void;
@@ -172,6 +173,7 @@ export default function Terminal({
     machineState,
     receiveEmail,
     onNeoExecute,
+    isNeoInstalled,
     triggerCall,
     onNeoWakeup,
     onEndGame,
@@ -631,12 +633,14 @@ export default function Terminal({
     }
 
     if (command.toLowerCase() === 'neo') {
-        const isInitialInstall = !allExecutables.some(e => e.name === 'neo.bin');
-        if (isInitialInstall) {
+        const playerPC = network.find(pc => pc.id === 'player-pc');
+        const neoBin = findNodeByPath(['bin', 'neo.bin'], playerPC?.fileSystem || []);
+
+        if (!neoBin) {
             handleOutput('Erreur : paquet NÉO introuvable. Téléchargez-le d\'abord.');
         } else {
             handleOutput('Contacting NÉO...');
-            onNeoExecute(isInitialInstall);
+            onNeoExecute(!isNeoInstalled);
         }
         setIsProcessing(false);
         return;

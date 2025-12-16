@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useRef, useCallback, createRef, useEffect } from 'react';
@@ -173,9 +172,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [editingFile, setEditingFile] = useState<EditingFile>(null);
   const nanoRef = useRef(null);
 
-  const [network, setNetwork] = useState<PC[]>(() => loadGameState(username).network);
-  const [hackedPcs, setHackedPcs] = useState<Set<string>>(() => loadGameState(username).hackedPcs);
-  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => loadGameState(username).discoveredPcs || new Set(['player-pc']));
+  const gameStateRef = useRef(loadGameState(username));
+  
+  const [network, setNetwork] = useState<PC[]>(() => gameStateRef.current.network);
+  const [hackedPcs, setHackedPcs] = useState<Set<string>>(() => gameStateRef.current.hackedPcs);
+  const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => gameStateRef.current.discoveredPcs);
+  const [isNeoInstalled, setIsNeoInstalled] = useState<boolean>(() => gameStateRef.current.isNeoInstalled || false);
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
   const [dangerLevel, setDangerLevel] = useState(0);
 
@@ -194,40 +196,14 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [traceTarget, setTraceTarget] = useState({ name: '', time: 0 });
   const [isTracePaused, setIsTracePaused] = useState(false);
   const [emailNotification, setEmailNotification] = useState(false);
-  const [isNeoInstalled, setIsNeoInstalled] = useState(false);
   const [showModuleInit, setShowModuleInit] = useState(false);
   const [moduleProgress, setModuleProgress] = useState(0);
   const [isSystemUnstable, setIsSystemUnstable] = useState(false);
   const [isNexusLockdown, setIsNexusLockdown] = useState(false);
   
-  const [emails, setEmails] = useState<Email[]>(() => {
-    const savedState = loadGameState(username);
-    if (savedState.emails && savedState.emails.length > 0) {
-      return savedState.emails;
-    }
-    return [
-      {
-        id: 'welcome-email',
-        sender: 'RH@recherche-lab.net',
-        recipient: 'Dr.Omen@recherche-lab.net',
-        subject: 'Bienvenue et instructions',
-        body: `Cher Dr. Omen,\n\nAu nom de toute l'équipe Nexus, nous sommes heureux de vous accueillir.\n\nVotre première mission est de vous familiariser avec le système NÉO. Voici vos identifiants pour accéder au portail de téléchargement :\n\nSite : neo.nexus (accessible via le navigateur Hypnet)\nUtilisateur : dromen\nMot de passe : nexus-init-key\n\nConsultez le portail pour obtenir les instructions de déploiement de NÉO. Un superviseur vous contactera sous peu pour un briefing.\n\nCordialement,\nLes Ressources Humaines de Nexus`,
-        timestamp: new Date(new Date().getTime() - 10 * 60000).toISOString(),
-        folder: 'inbox',
-      },
-      {
-        id: 'supervisor-email-initial',
-        sender: 'Superviseur@recherche-lab.net',
-        recipient: 'Dr.Omen@recherche-lab.net',
-        subject: 'Appel programmé',
-        body: `Omen,\n\nJ'ai planifié un appel avec vous aujourd'hui pour passer en revue vos objectifs. Soyez prêt.\n\n- Superviseur`,
-        timestamp: new Date(new Date().getTime() - 5 * 60000).toISOString(),
-        folder: 'inbox',
-      },
-    ];
-  });
+  const [emails, setEmails] = useState<Email[]>(() => gameStateRef.current.emails);
 
-  const gameState = { network, hackedPcs, discoveredPcs, emails, machineState: 'desktop' };
+  const gameState = { network, hackedPcs, discoveredPcs, emails, isNeoInstalled, machineState: 'desktop' };
 
   const addLog = useCallback((message: string) => {
     setLogs(prev => {
@@ -557,16 +533,14 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     advanceCall(choiceId);
   }
 
-  const handleNeoExecute = useCallback((isInitialInstall: boolean) => {
-    if (isInitialInstall) {
+  const handleNeoExecute = useCallback((isInitial: boolean) => {
+    if (isInitial) {
         setIsNeoInstalled(true);
-        // This triggers the Director's call
         triggerCall(directorCall);
     } else {
-        // This triggers the "Phase 1" dialogue with Néo
         triggerCall(neoPhase1Call);
     }
-}, [triggerCall]);
+  }, [triggerCall]);
 
   const openApp = useCallback((appId: AppId, appProps?: any) => {
     const config = appConfig[appId];
@@ -648,7 +622,7 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     }, 5000); 
 
     return () => clearInterval(saveInterval);
-  }, [network, hackedPcs, discoveredPcs, emails, username, gameState]);
+  }, [network, hackedPcs, discoveredPcs, emails, username, gameState, isNeoInstalled]);
 
     useEffect(() => {
         if (dangerLevel >= 100) {
@@ -1232,6 +1206,7 @@ Si vous voyez ce message, elle vous surveille déjà.
             machineState: 'desktop', // Default state for desktop terminal
             receiveEmail,
             onNeoExecute: handleNeoExecute,
+            isNeoInstalled: isNeoInstalled,
             triggerCall,
             onNeoWakeup: handleNeoWakeup,
             onEndGame,
@@ -1437,8 +1412,3 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
-
-    
-
-
-
