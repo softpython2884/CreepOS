@@ -12,6 +12,7 @@ import { supervisorChapter2Email } from '@/lib/call-system/scripts/supervisor-ch
 import { blackwireChapter3Mission } from '@/lib/call-system/scripts/blackwire-chapter3-mission';
 import { chapter9IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
 import { finalCallScript } from '@/lib/call-system/scripts/final-call';
+import { directorCallback } from '@/lib/call-system/scripts/director-callback';
 
 
 interface HistoryItem {
@@ -42,8 +43,7 @@ interface TerminalProps {
     dangerLevel: number;
     machineState: string; // To know if we are in survival mode
     receiveEmail: (email: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'>) => void;
-    onNeoExecute: () => void;
-    isNeoInstalled: boolean;
+    onNeoExecute: (terminal: { showProgress: (duration: number, text: string) => Promise<void>, writeOutput: (output: string) => void }) => Promise<void>;
     triggerCall: (script: CallScript) => void;
     onNeoWakeup: () => void;
     onEndGame: (endType?: 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' | 'true_ending', lines?: string[]) => void;
@@ -173,7 +173,6 @@ export default function Terminal({
     machineState,
     receiveEmail,
     onNeoExecute,
-    isNeoInstalled,
     triggerCall,
     onNeoWakeup,
     onEndGame,
@@ -639,8 +638,10 @@ export default function Terminal({
         if (!neoBin) {
             handleOutput('Erreur : paquet NÉO introuvable. Téléchargez-le d\'abord.');
         } else {
-            handleOutput('Contacting NÉO...');
-            onNeoExecute();
+            await onNeoExecute({
+                showProgress: runProgressBar,
+                writeOutput: handleOutput
+            });
         }
         setIsProcessing(false);
         return;
@@ -1502,7 +1503,13 @@ export default function Terminal({
                 break;
             }
 
-             if (ipArg === '10.0.0.4' && isSecure) {
+            if (ipArg === DIRECTOR_IP && isSecure) {
+                handleOutput('Appel sécurisé vers le Directeur en cours...');
+                triggerCall(directorCallback);
+                break;
+            }
+            
+            if (ipArg === '10.0.0.4' && isSecure) {
                 const updateServer = network.find(pc => pc.ip === '10.0.0.4');
                 const payload = findNodeByPath(['schism.payload'], updateServer?.fileSystem || []);
                 if (payload) {

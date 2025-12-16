@@ -533,14 +533,26 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     advanceCall(choiceId);
   }
 
-  const handleNeoExecute = useCallback(() => {
+  const handleNeoExecute = useCallback(async (terminal: { showProgress: (duration: number, text: string) => Promise<void>, writeOutput: (output: string) => void }) => {
     if (isNeoInstalled) {
+        // Scénario où Néo est déjà installée
+        terminal.writeOutput("Lancement de l'interface NÉO...");
+        await new Promise(resolve => setTimeout(resolve, 500)); // Courte pause
+        terminal.writeOutput("Un appel va être établi.");
         triggerCall(neoPhase1Call);
     } else {
+        // Scénario de la première installation
+        terminal.writeOutput("Initialisation du framework NÉO... Cela peut prendre un moment.");
+        await terminal.showProgress(4000, 'Configuration des modules');
+        terminal.writeOutput("Configuration terminée. En attente de la liaison sécurisée...");
+        await new Promise(resolve => setTimeout(resolve, 1000));
         triggerCall(directorCall);
         setIsNeoInstalled(true);
     }
-  }, [triggerCall, isNeoInstalled]);
+  }, [isNeoInstalled, triggerCall, setIsNeoInstalled]);
+
+
+
 
   const openApp = useCallback((appId: AppId, appProps?: any) => {
     const config = appConfig[appId];
@@ -1206,7 +1218,6 @@ Si vous voyez ce message, elle vous surveille déjà.
             machineState: 'desktop', // Default state for desktop terminal
             receiveEmail,
             onNeoExecute: handleNeoExecute,
-            isNeoInstalled: isNeoInstalled,
             triggerCall,
             onNeoWakeup: handleNeoWakeup,
             onEndGame,
