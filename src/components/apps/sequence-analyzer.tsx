@@ -27,15 +27,18 @@ const puzzles: Record<string, { starts: any[], ends: any[], rotatables?: any[] }
         ends: [{ q: 2, r: 2, color: '#3b82f6' }, {q: -1, r: 3, color: '#22c55e'}],
     },
     MEMO_BIN: {
-        starts: [{ q: -3, r: 0, color: '#eab308' }],
-        ends: [{ q: 3, r: 0, color: '#eab308' }],
-        rotatables: [
-            { q: -2, r: 0, connections: [0, 3], targetRotation: 0 },
-            { q: -1, r: 0, connections: [1, 4], targetRotation: 1 },
-            { q: 0, r: 0, connections: [2, 5], targetRotation: 2 },
-            { q: 1, r: 0, connections: [1, 4], targetRotation: 1 },
-            { q: 2, r: 0, connections: [0, 3], targetRotation: 0 },
-        ]
+        starts: [
+            { q: -4, r: 0, color: '#3b82f6' }, // Blue
+            { q: 0, r: -4, color: '#22c55e' }, // Green
+            { q: 4, r: -4, color: '#ef4444' }, // Red
+            { q: 4, r: 2, color: '#eab308' }, // Yellow
+        ],
+        ends: [
+            { q: 4, r: 0, color: '#3b82f6' }, // Blue
+            { q: 0, r: 4, color: '#22c55e' }, // Green
+            { q: -4, r: 4, color: '#ef4444' }, // Red
+            { q: -4, r: 2, color: '#eab308' }, // Yellow
+        ],
     }
 };
 
@@ -99,24 +102,15 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
     const checkWinCondition = useCallback((currentCompleted: string[], currentGrid: Hex[]) => {
         const allPathsDone = currentCompleted.length === puzzle.starts.length;
         
-        let allRotatablesCorrect = true;
-        if(puzzle.rotatables) {
-            allRotatablesCorrect = currentGrid
-                .filter(h => h.isRotatable)
-                .every(h => h.rotation === h.targetRotation);
-        }
-
-        if (allPathsDone && allRotatablesCorrect) {
+        if (allPathsDone) {
             const winMessages = [`NÉO: Analyse terminée. Stabilité de la mémoire à 100%. Données restaurées.`];
             if (puzzleId === 'DELTA7') {
                 winMessages.push(`NÉO: Fichier 'rapport_sequences_delta7.txt' généré dans /documents.`);
             }
             setNeoMessages(prev => [...prev, ...winMessages]);
             setTimeout(() => onAnalysisComplete(puzzleId), 1000);
-        } else if (allPathsDone && !allRotatablesCorrect) {
-            setNeoMessages(prev => [...prev, `NÉO: Chemin connecté, mais la séquence est instable. Alignez les relais.`]);
         }
-    }, [puzzle.starts, puzzle.rotatables, puzzleId, onAnalysisComplete]);
+    }, [puzzle.starts, puzzleId, onAnalysisComplete]);
 
     const buildGrid = useCallback(() => {
         const newGrid: Hex[] = [];
