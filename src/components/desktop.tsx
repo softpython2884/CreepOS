@@ -534,14 +534,20 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
   }
 
   const handleNeoExecute = useCallback(async (terminal: { showProgress: (duration: number, text: string) => Promise<void>, writeOutput: (output: string) => void }) => {
+    const playerPC = network.find(pc => pc.id === 'player-pc');
+    const neoBin = playerPC?.fileSystem.find(f => f.name === 'bin')?.children?.find(c => c.name === 'neo.bin');
+
+    if (!neoBin) {
+        terminal.writeOutput("Erreur : paquet NÉO introuvable. Téléchargez-le d'abord.");
+        return;
+    }
+      
     if (isNeoInstalled) {
-        // Scénario où Néo est déjà installée
         terminal.writeOutput("Lancement de l'interface NÉO...");
-        await new Promise(resolve => setTimeout(resolve, 500)); // Courte pause
+        await new Promise(resolve => setTimeout(resolve, 500));
         terminal.writeOutput("Un appel va être établi.");
         triggerCall(neoPhase1Call);
     } else {
-        // Scénario de la première installation
         terminal.writeOutput("Initialisation du framework NÉO... Cela peut prendre un moment.");
         await terminal.showProgress(4000, 'Configuration des modules');
         terminal.writeOutput("Configuration terminée. En attente de la liaison sécurisée...");
@@ -549,7 +555,7 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
         triggerCall(directorCall);
         setIsNeoInstalled(true);
     }
-  }, [isNeoInstalled, triggerCall, setIsNeoInstalled]);
+  }, [isNeoInstalled, triggerCall, setIsNeoInstalled, network]);
 
 
 
