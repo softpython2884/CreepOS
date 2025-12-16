@@ -31,13 +31,11 @@ const puzzles: Record<string, { starts: any[], ends: any[], rotatables?: any[] }
             { q: -4, r: 0, color: '#3b82f6' }, // Blue
             { q: 0, r: -4, color: '#22c55e' }, // Green
             { q: 4, r: -4, color: '#ef4444' }, // Red
-            { q: 4, r: 2, color: '#eab308' }, // Yellow
         ],
         ends: [
             { q: 4, r: 0, color: '#3b82f6' }, // Blue
             { q: 0, r: 4, color: '#22c55e' }, // Green
             { q: -4, r: 4, color: '#ef4444' }, // Red
-            { q: -4, r: 2, color: '#eab308' }, // Yellow
         ],
     }
 };
