@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
@@ -94,7 +92,7 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
     const [activeColor, setActiveColor] = useState<string | null>(null);
     const [completedPaths, setCompletedPaths] = useState<string[]>([]);
     const [neoMessages, setNeoMessages] = useState<string[]>(["NÉO: Initialisation de l'analyseur. Veuillez tracer les chemins de données."]);
-    const viewportRef = useRef<HTMLDivElement>(null);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
     
     const size = 4; // Grid size
 
@@ -243,8 +241,11 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
     }
     
     useEffect(() => {
-        if (viewportRef.current) {
-            viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
+        if (scrollAreaRef.current) {
+            const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+            if (viewport) {
+                viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+            }
         }
     }, [neoMessages]);
     
@@ -252,8 +253,8 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
         <div className="w-full h-full bg-card font-code text-sm flex">
             <div className="w-64 border-r bg-secondary/30 p-2 flex flex-col">
                 <h3 className="font-bold text-accent mb-2 p-2 flex-shrink-0">Console NÉO</h3>
-                <ScrollArea className="flex-grow bg-black/30 rounded-md">
-                    <div className="p-2" ref={viewportRef}>
+                <ScrollArea className="flex-grow bg-black/30 rounded-md" ref={scrollAreaRef}>
+                    <div className="p-2">
                         {neoMessages.map((msg, i) => <p key={i} className="animate-in fade-in">{msg}</p>)}
                     </div>
                 </ScrollArea>
@@ -289,4 +290,3 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
         </div>
     );
 }
-

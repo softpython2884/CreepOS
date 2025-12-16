@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useRef, useEffect, KeyboardEvent, useCallback, useMemo } from 'react';
@@ -197,7 +195,7 @@ export default function Terminal({
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [currentDirectory, setCurrentDirectory] = useState<string[]>([]);
   
-  const viewportRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const getCurrentPc = useCallback(() => {
@@ -220,8 +218,11 @@ export default function Terminal({
   }, [network]);
 
   useEffect(() => {
-    if (viewportRef.current) {
-      viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight });
+    if (scrollAreaRef.current) {
+        const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (viewport) {
+            viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+        }
     }
   }, [history]);
 
@@ -782,29 +783,29 @@ export default function Terminal({
             case 'forkbomb':
                 const isDestruct = args.includes('--destruct');
                 onSoundEvent?.('glitch');
-
+                await runForkbombVisuals(isDestruct);
+                
                 if (connectedIp === '127.0.0.1') {
-                    await runForkbombVisuals(isDestruct);
                     addLog(`CRITIQUE: Forkbomb exécuté sur la machine locale. Crash système imminent.`);
-                    setTimeout(() => onReboot(), 2000);
-                } else {
-                    if (targetPC) {
-                        disconnect(true);
-                        setNetwork(currentNetwork => currentNetwork.map(pc => {
-                            if (pc.id === targetPC!.id) {
-                                let updatedPc = { ...pc, isDangerous: true };
-                                if (isDestruct) {
-                                    updatedPc.isDestroyed = true;
-                                }
-                                return updatedPc;
+                    onReboot();
+                } else if (targetPC) {
+                    const targetName = targetPC.name;
+                    disconnect(true); // Disconnect immediately
+                    
+                    setNetwork(currentNetwork => currentNetwork.map(pc => {
+                        if (pc.id === targetPC!.id) {
+                            let updatedPc = { ...pc, isDangerous: true };
+                            if (isDestruct) {
+                                updatedPc.isDestroyed = true;
                             }
-                            return pc;
-                        }));
-                        await runForkbombVisuals(isDestruct);
-                        addLog(`EVENT: Forkbomb a effacé les logs sur ${targetPC.name}.`);
-                        if (isDestruct) {
-                            addLog(`CRITICAL: ${targetPC.name} a été définitivement détruit.`);
+                            return updatedPc;
                         }
+                        return pc;
+                    }));
+
+                    addLog(`EVENT: Forkbomb a effacé les logs sur ${targetName}.`);
+                    if (isDestruct) {
+                        addLog(`CRITICAL: ${targetName} a été définitivement détruit.`);
                     }
                 }
                 break;
@@ -1680,7 +1681,7 @@ export default function Terminal({
 
   return (
     <div className="h-full bg-black/80 text-green-400 font-code p-4 flex flex-col" onClick={() => inputRef.current?.focus()}>
-      <ScrollArea className="flex-1" ref={viewportRef}>
+      <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="pr-4">
           {history.map((item, index) => (
             <div key={index} className="whitespace-pre-wrap break-words">
