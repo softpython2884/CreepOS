@@ -517,11 +517,19 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     setTimeout(() => {
         const startNode = script.nodes[script.startNode];
         handleCallConsequences(startNode.consequences);
+
+        const isMonologue = !startNode.choices || startNode.choices.length === 0;
+
         setActiveCall(prev => prev ? ({
           ...prev,
           messages: [startNode.message],
           choices: startNode.choices || [],
+          isFinished: isMonologue,
         }) : null);
+
+        if (isMonologue) {
+          onSoundEvent('endCall');
+        }
     }, 800);
   }, [callState, onAlertEvent, onSoundEvent, handleCallConsequences]);
 
