@@ -120,6 +120,8 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
             }
             setNeoMessages(prev => [...prev, ...winMessages]);
             setTimeout(() => onAnalysisComplete(puzzleId), 1000);
+        } else if (allPathsDone && !allRotatablesCorrect) {
+            setNeoMessages(prev => [...prev, `NÉO: Chemin connecté, mais la séquence est instable. Alignez les relais.`]);
         }
     }, [puzzle.starts, puzzle.rotatables, puzzleId, onAnalysisComplete]);
 
@@ -174,13 +176,6 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
                  setCurrentPath(newPath);
 
                  if (hex.isEnd && hex.color === activeColor) {
-                    if (puzzleId === 'MEMO_BIN' && !isPathComplete(newPath)) {
-                        setNeoMessages(prev => [...prev, `NÉO: Erreur. Le chemin est connecté mais les relais ne sont pas correctement alignés.`]);
-                        setCurrentPath([]);
-                        setActiveColor(null);
-                        return;
-                    }
-
                     setNeoMessages(prev => [...prev, `NÉO: Chemin '${activeColor}' complété.`]);
                     
                     const newCompletedPaths = [...completedPaths, activeColor];
@@ -218,10 +213,7 @@ export default function SequenceAnalyzer({ puzzleId = 'DELTA7', onAnalysisComple
             return newGrid;
         });
 
-        // Check for win condition on rotation, only if all paths are complete
-        if (completedPaths.length === puzzle.starts.length) {
-            checkWinCondition(completedPaths, newGrid);
-        }
+        checkWinCondition(completedPaths, newGrid);
     };
 
     const gridWithCurrentPath = useMemo(() => {
