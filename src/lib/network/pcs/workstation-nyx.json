@@ -2,7 +2,7 @@
 {
     "id": "workstation-nyx",
     "name": "WK-NYX-02",
-    "ip": "10.0.1.16",
+    "ip": "208.67.219.14",
     "type": "Desktop",
     "links": ["nexus-logs-01"],
     "auth": { "user": "nyx", "pass": "darkness_falls" },

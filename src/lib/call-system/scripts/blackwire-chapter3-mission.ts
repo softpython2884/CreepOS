@@ -54,7 +54,7 @@ export const blackwireChapter3Mission: CallScript = {
         choices: [
             {
                 id: 'found-log',
-                text: '[Après piratage] J\'ai trouvé "transfer_log.enc". Il pointe vers 10.255.255.2.',
+                text: '[Après piratage] J\'ai trouvé "transfer_log.enc". Il pointe vers 128.76.14.203.',
                 nextNode: 'second-target',
             },
             {
@@ -77,12 +77,12 @@ export const blackwireChapter3Mission: CallScript = {
     'second-target': {
         message: {
             speaker: 'Blackwire Agent',
-            text: '10.255.255.2... C\'est la base de données RH. Logique. Ils ont dû chercher des infos sur les employés. Pirate-le. On cherche les noms Helios et Nyx.',
+            text: '128.76.14.203... C\'est la base de données RH. Logique. Ils ont dû chercher des infos sur les employés. Pirate-le. On cherche les noms Helios et Nyx.',
         },
         choices: [
             {
                 id: 'found-hr-records',
-                text: '[Après piratage] Trouvé. Helios, dernière IP : 10.0.1.15. Nyx : 10.0.1.16.',
+                text: '[Après piratage] Trouvé. Helios, dernière IP : 10.0.1.15. Nyx : 208.67.219.14.',
                 nextNode: 'third-target',
             },
             {
@@ -92,7 +92,7 @@ export const blackwireChapter3Mission: CallScript = {
             },
             {
                 id: 'nyx-only',
-                text: 'J\'ai l\'IP de Nyx (10.0.1.16) mais rien sur Helios.',
+                text: 'J\'ai l\'IP de Nyx (208.67.219.14) mais rien sur Helios.',
                 nextNode: 'trace-punishment',
             },
             {
@@ -110,7 +110,7 @@ export const blackwireChapter3Mission: CallScript = {
         choices: [
             {
                 id: 'found-helios-clue',
-                text: '[Après piratage] J\'ai trouvé un fichier projet, project_schism.c. Il mentionne une sandbox sur 10.0.0.13 et un mot de passe, "IcarusFell".',
+                text: '[Après piratage] J\'ai trouvé un fichier projet, project_schism.c. Il mentionne une sandbox sur 23.91.144.12 et un mot de passe, "IcarusFell".',
                 nextNode: 'fourth-target',
             },
             {

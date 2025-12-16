@@ -1,7 +1,7 @@
 {
     "id": "neo-core-b",
     "name": "NEO-CORE-BETA",
-    "ip": "10.0.0.2",
+    "ip": "64.32.119.54",
     "type": "Server",
     "links": ["neo-core-c"],
     "auth": { "user": "core_admin", "pass": "beta_core_pass" },

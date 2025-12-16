@@ -22,7 +22,7 @@
                     "id": "helios-schism-proj", 
                     "name": "project_schism.c",
                     "type": "file",
-                    "content": "// TODO: Find a way to overload the core logic. Maybe a sandbox environment?\n// Nyx suggested sandbox 13 (10.0.0.13). The password must be 'IcarusFell'."
+                    "content": "// TODO: Find a way to overload the core logic. Maybe a sandbox environment?\n// Nyx suggested sandbox 13 (23.91.144.12). The password must be 'IcarusFell'."
                 }
             ]
         },

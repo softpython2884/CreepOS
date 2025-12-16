@@ -23,7 +23,7 @@
                     "id": "logs-transfer-log", 
                     "name": "transfer_log.enc", 
                     "type": "file",
-                    "content": "Fichier crypté. Contient les journaux de transfert de données vers la base de données des RH (10.255.255.2)."
+                    "content": "Fichier crypté. Contient les journaux de transfert de données vers la base de données des RH (128.76.14.203)."
                 }
             ]
         },

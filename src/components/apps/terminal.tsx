@@ -1498,8 +1498,8 @@ export default function Terminal({
                 break;
             }
 
-             if (ipArg === '10.0.0.4' && isSecure) {
-                const updateServer = network.find(pc => pc.ip === '10.0.0.4');
+             if (ipArg === '109.238.91.166' && isSecure) {
+                const updateServer = network.find(pc => pc.ip === '109.238.91.166');
                 const payload = findNodeByPath(['schism.payload'], updateServer?.fileSystem || []);
                 if (payload) {
                     handleOutput('Payload de schisme activé... Déclenchement de la séquence finale...');

@@ -41,7 +41,7 @@ C'est le moment. L'analyse des données du noyau a révélé la structure de NÉ
 
 Utilisez \`forkbomb --destruct\` sur chaque cible. C'est notre seule option.
 
-Point d'entrée : \`NEO-NODE-01\` (IP: 10.10.1.1).
+Point d'entrée : \`NEO-NODE-01\` (IP: 138.201.44.19).
 
 À chaque nœud que vous détruirez, attendez-vous à une riposte de NÉO. Elle va se débattre. Elle va vous attaquer. Tenez bon.
 

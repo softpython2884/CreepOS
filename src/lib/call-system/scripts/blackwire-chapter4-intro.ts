@@ -14,7 +14,7 @@ Mais tout n'est pas perdu. Cette diversion nous a permis de cartographier une pa
 
 1.  Utilisez les décrypteurs en pièce jointe pour accéder à votre nouvel arsenal sur notre serveur de dépôt (18.117.228.214). Récupérez et installez \`analyze.bin\`, \`solve.bin\`, et \`SSHBounce.bin\`.
 
-2.  Infiltrez la station de travail de votre propre superviseur. Son IP est **10.1.1.5**. Ses défenses sont plus solides ; vous aurez besoin de ces nouveaux outils.
+2.  Infiltrez la station de travail de votre propre superviseur. Son IP est **193.70.55.201**. Ses défenses sont plus solides ; vous aurez besoin de ces nouveaux outils.
 
 3.  Une fois à l'intérieur, copiez tous les rapports que vous trouverez.
 

@@ -1,7 +1,7 @@
 {
     "id": "neo-node-02",
     "name": "NEO-NODE-02",
-    "ip": "10.10.1.2",
+    "ip": "145.239.88.121",
     "type": "Server",
     "links": ["neo-node-03"],
     "auth": { "user": "node_admin", "pass": "neo_node_pass_2" },

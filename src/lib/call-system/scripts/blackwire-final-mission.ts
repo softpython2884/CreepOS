@@ -8,13 +8,13 @@ export const blackwireFinalMissionEmail: Omit<Email, 'id' | 'timestamp' | 'folde
 NÉO nous a coupés. Elle panique. C'est le moment.
 
 Sa dernière faille : un serveur de mise à jour interne. Elle s'en sert pour se réparer.
-IP: 10.0.0.4
+IP: 109.238.91.166
 
 Objectifs :
 1. Utilisez le décrypteur ci-joint pour révéler le 'schism.payload' sur notre serveur de dépôt (18.117.228.214, dans /dist/). Récupérez-le.
-2. Infiltrez le serveur de mise à jour de NÉO (10.0.0.4). Défenses maximales attendues.
+2. Infiltrez le serveur de mise à jour de NÉO (109.238.91.166). Défenses maximales attendues.
 3. Uploadez 'schism.payload' à la racine du serveur.
-4. Exécutez le payload via cette commande : call 10.0.0.4 --secure
+4. Exécutez le payload via cette commande : call 109.238.91.166 --secure
 
 C'est tout ou rien. Pour Helios. Pour Nyx. Pour vous.
 

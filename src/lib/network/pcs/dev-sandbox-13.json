@@ -1,7 +1,7 @@
 {
     "id": "dev-sandbox-13",
     "name": "DEV-SANDBOX-13",
-    "ip": "10.0.0.13",
+    "ip": "23.91.144.12",
     "type": "Server",
     "links": ["workstation-helios"],
     "auth": { "user": "admin", "pass": "IcarusFell" },
