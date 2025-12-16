@@ -1,23 +1,21 @@
+import type { Email } from '@/components/apps/email-client';
 
-
-import type { Email, Attachment } from '@/components/apps/email-client';
-import type { CallScript as CallScriptType } from './types'; // Self-reference for recursive types
+export type CallParticipant = 'Operator' | 'Néo' | 'Superviseur' | 'Directeur' | 'Alex' | 'Blackwire Agent' | 'Dr. Omen' | string;
 
 export interface CallMessage {
-    speaker: string; // e.g., 'Operator', 'Néo'
+    speaker: CallParticipant;
     text: string;
 }
 
-type EndgameType = 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' | 'true_ending';
+export type EndgameType = 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' | 'true_ending';
 
-type ConsequenceTrigger = 
-    | { type: 'call'; script: CallScriptType }
+export type ConsequenceTrigger = 
+    | { type: 'call'; script: CallScript }
     | { type: 'email'; email: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> }
     | { type: 'trace'; duration: number }
-    | { type: 'alarm', duration: number, nextCall?: CallScriptType, alertEmail?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> }
+    | { type: 'alarm', duration: number, nextCall?: CallScript, alertEmail?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> }
     | { type: 'endgame', endType: EndgameType, lines?: string[] }
     | { type: 'machine_state', state: string, email?: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> };
-
 
 export interface CallChoice {
     id: string;
@@ -33,6 +31,7 @@ export interface CallChoice {
 }
 
 export interface CallNode {
+    id: string;
     message: CallMessage;
     choices?: CallChoice[];
     consequences?: {
@@ -48,7 +47,7 @@ export interface CallScript {
     interlocutor: string;
     isSecure: boolean;
     startNode: string;
-    nodes: Record<string, CallNode>;
+    nodes: CallNode[];
 }
 
 export interface Call {
