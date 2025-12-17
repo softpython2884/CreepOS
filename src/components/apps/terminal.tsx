@@ -178,7 +178,7 @@ export default function Terminal({
     onUnhide,
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
-    { type: 'output', content: "SUBSYSTEM OS [Version 2.1.0-beta]\n(c) Cauchemar Virtuel Corporation. All rights reserved." },
+    { type: 'output', content: "DOD-ARS Terminal [Build 7.4.12]\n(c) United Defense Research Directorate. Classified Environment." },
     { type: 'output', content: "Tapez 'help' pour une liste de commandes." }
   ]);
   const [input, setInput] = useState('');
