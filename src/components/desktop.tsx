@@ -239,9 +239,9 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     });
   }, []);
   
-  const handleIncreaseDanger = (amount: number) => {
+  const handleIncreaseDanger = useCallback((amount: number) => {
     setDangerLevel(prev => Math.min(prev + amount, 100));
-  };
+  }, []);
 
   const handleStartTrace = useCallback((targetName: string, time: number, sourceInstanceId: number) => {
     if (isTraced) return;
@@ -270,7 +270,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     setOpenApps(prev => prev.map(app => ({...app, isSourceOfTrace: false})));
   }, [addLog, onAlertEvent, onMusicEvent, isTraced, traceTarget]);
 
-  const handlePauseTrace = (isPaused: boolean) => {
+  const handlePauseTrace = useCallback((isPaused: boolean) => {
     setIsTracePaused(isPaused);
     if (isPaused) {
         addLog(`INFO: Contre-mesure Icebreaker active. Trace ennemie mise en pause.`);
@@ -279,7 +279,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         addLog(`INFO: Icebreaker désengagé. La trace reprend.`);
         if (isTraced) onAlertEvent('scream');
     }
-  };
+  }, [addLog, onAlertEvent, isTraced]);
 
   const receiveEmail = useCallback((emailDetails: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> & { onClose?: () => void }) => {
     onSoundEvent('email');
@@ -563,7 +563,7 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
         triggerCall(directorCall);
         setIsNeoInstalled(true);
     }
-  }, [isNeoInstalled, triggerCall, setIsNeoInstalled, network]);
+  }, [isNeoInstalled, triggerCall, network]);
 
 
 
@@ -783,12 +783,12 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
 }, [isTraced, addLog, onSoundEvent, network, username, setMachineState, gameState, traceTarget, handleIncreaseDanger, isTracePaused]);
 
 
-  const handleHackedPc = (pcId: string, ip: string) => {
+  const handleHackedPc = useCallback((pcId: string, ip: string) => {
     addLog(`SUCCÈS: Accès root obtenu sur ${ip}`);
     setHackedPcs(prev => new Set(prev).add(pcId));
-  }
+  }, [addLog]);
 
-  const handleDiscoveredPc = (pcId: string) => {
+  const handleDiscoveredPc = useCallback((pcId: string) => {
     setDiscoveredPcs(prev => {
         const newSet = new Set(prev);
         if (!newSet.has(pcId)) {
@@ -797,7 +797,7 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
         }
         return newSet;
     });
-  }
+  }, [addLog]);
 
   const handleOpenFileEditor = (path: string[], content: string) => {
     setEditingFile({ path, content });
@@ -818,7 +818,7 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     });
   };
 
-  const handleAnalysisComplete = () => {
+  const handleAnalysisComplete = useCallback(() => {
     addLog(`EVENT: Module NÉO mis à jour.`);
     
     // Trigger visual/audio feedback
@@ -855,9 +855,9 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
             return binFolder;
         });
     });
-};
+  }, [addLog, onSoundEvent, receiveEmail]);
 
-  const handleSequenceAnalysisComplete = (puzzleId: string) => {
+  const handleSequenceAnalysisComplete = useCallback((puzzleId: string) => {
     
     if (puzzleId === 'DELTA7') {
       addLog(`EVENT: Analyse de séquence (${puzzleId}) terminée. Rapport généré.`);
@@ -920,7 +920,7 @@ Si vous voyez ce message, elle vous surveille déjà.
         // Trigger Chapter 5 sequence
         handleAnalysisComplete();
     }
-  };
+  }, [addLog, handleAnalysisComplete]);
 
   const handleSaveFile = (path: string[], newContent: string) => {
       addLog(`EVENT: Fichier sauvegardé à /${path.join('/')}`);
@@ -1151,7 +1151,7 @@ Si vous voyez ce message, elle vous surveille déjà.
         }
   };
 
-  const handleUnhide = (ip: string, path: string[]) => {
+  const handleUnhide = useCallback((ip: string, path: string[]) => {
     addLog(`EVENT: Tentative de révéler '${path.join('/')}' sur ${ip}.`);
 
     setNetwork(currentNetwork => {
@@ -1170,7 +1170,7 @@ Si vous voyez ce message, elle vous surveille déjà.
             return { ...pc, fileSystem: newFileSystem };
         });
     });
-};
+}, [addLog]);
 
   const bringToFront = (instanceId: number) => {
     if (instanceId === activeInstanceId) return;
@@ -1460,3 +1460,5 @@ Si vous voyez ce message, elle vous surveille déjà.
   );
 }
  
+
+    
