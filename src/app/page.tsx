@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -290,18 +288,30 @@ const RecoveryTerminal = ({ onReboot }: { onReboot: () => void }) => {
         // This is a simplified save for recovery.
         // The main goal is to get XserverOS.sys back.
         if (path.join('/') === 'sys/XserverOS.sys') {
-            const playerPcTemplate = initialNetworkData.find(p => p.id === 'player-pc');
-            const xserverFileTemplate = playerPcTemplate?.fileSystem.find(f => f.name === 'sys')?.children?.find(f => f.name === 'XserverOS.sys');
-            
-            if(xserverFileTemplate) {
-                 const gameState = JSON.parse(localStorage.getItem('gameState_Operator') || '{}');
-                 const playerPc = gameState.network.find((p:any) => p.id === 'player-pc');
-                 const sysFolder = playerPc.fileSystem.find((f:any) => f.name === 'sys');
-                 if (sysFolder && !sysFolder.children.some((f:any) => f.name === 'XserverOS.sys')) {
-                    sysFolder.children.push({ ...xserverFileTemplate, content: content });
-                    localStorage.setItem('gameState_Operator', JSON.stringify(gameState));
-                    onReboot();
-                 }
+            try {
+                const gameState = JSON.parse(localStorage.getItem('gameState_Operator') || '{}');
+                const playerPcIndex = gameState.network.findIndex((p:any) => p.id === 'player-pc');
+                
+                if (playerPcIndex !== -1) {
+                    const playerPc = gameState.network[playerPcIndex];
+                    const sysFolderIndex = playerPc.fileSystem.findIndex((f:any) => f.name === 'sys');
+                    
+                    if (sysFolderIndex !== -1) {
+                        const sysFolder = playerPc.fileSystem[sysFolderIndex];
+                        if (sysFolder && !sysFolder.children.some((f:any) => f.name === 'XserverOS.sys')) {
+                            const playerPcTemplate = initialNetworkData.find(p => p.id === 'player-pc');
+                            const xserverFileTemplate = playerPcTemplate?.fileSystem.find(f => f.name === 'sys')?.children?.find(f => f.name === 'XserverOS.sys');
+                            
+                            if (xserverFileTemplate) {
+                                sysFolder.children.push({ ...xserverFileTemplate, content: content });
+                                gameState.network[playerPcIndex] = playerPc;
+                                localStorage.setItem('gameState_Operator', JSON.stringify(gameState));
+                            }
+                        }
+                    }
+                }
+            } catch(e) {
+                console.error("Failed to restore kernel in recovery:", e);
             }
         }
     }
@@ -310,7 +320,7 @@ const RecoveryTerminal = ({ onReboot }: { onReboot: () => void }) => {
         <div className="w-full h-full p-2 bg-black font-code">
             <div className="border-2 border-red-500/50 p-2 h-full flex flex-col">
                 <div className="text-center text-red-500 animate-pulse p-1">RECOVERY MODE</div>
-                <div className="flex-grow">
+                <div className="flex-grow flex">
                      <Terminal
                         username="recovery"
                         instanceId={999}
