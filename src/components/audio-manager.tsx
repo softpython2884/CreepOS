@@ -43,7 +43,7 @@ const sounds: Record<NonNullable<SoundEvent>, { src: string | string[]; volume: 
 const musicTracks: Record<Exclude<MusicEvent, 'none' | 'calm'>, { src: string; volume: number; loop?: boolean }> = {
     epic: { src: '/start.mp3', volume: 0.4, loop: true },
     cinematic: { src: '/Néo.mp3', volume: 0.8, loop: false },
-    credits: { src: '/Néo.mp3', volume: 0.8, loop: true },
+    credits: { src: '/present30s.mp3', volume: 0.8, loop: true },
 };
 
 const alertSounds: Record<Extract<AlertEvent, 'scream' | 'ringtone' | 'alarm'>, { src: string; volume: number; loop?: boolean }> = {

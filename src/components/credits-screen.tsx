@@ -6,12 +6,12 @@ import { cn } from '@/lib/utils';
 
 const creditLines = [
     { text: 'NEO-SYSTEM : BREACH', duration: 4000, className: 'text-4xl font-bold' },
-    { text: 'Créé sur Firebase Studio', duration: 3000, className: 'text-2xl' },
-    { text: 'par Enzo Prados', duration: 3000, className: 'text-2xl' },
-    { text: 'Pour le Hackathon de Holberton School Fréjus', duration: 4000, className: 'text-2xl' },
-    { text: 'Musiques par Suno AI', duration: 3000, className: 'text-xl' },
-    { text: 'Effets sonores par La Sonothèque', duration: 3000, className: 'text-xl' },
+    { text: 'Game design & développement par Enzo Prados', duration: 3000, className: 'text-2xl' },
+    { text: 'Développé lors du Hackathon Holberton School', duration: 4000, className: 'text-2xl' },
+    { text: 'Remerciements au jury et aux mentors', duration: 4000, className: 'text-2xl' },
+    { text: 'Musiques par Suno AI & Pixabay', duration: 3000, className: 'text-xl' },
     { text: 'Merci d\'avoir joué.', duration: 5000, className: 'text-3xl italic' },
+    { text: 'À bientôt pour la suite…', duration: 5000, className: 'text-3xl italic' },
 ];
 
 export default function CreditsScreen({ onComplete }: { onComplete: () => void }) {
