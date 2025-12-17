@@ -15,7 +15,7 @@
         { "port": 21, "service": "FTP", "isOpen": false },
         { "port": 22, "service": "SSH", "isOpen": false },
         { "port": 25, "service": "SMTP", "isOpen": false },
-        { "port": 443, "service": "HTTPS", "isOpen": false }
+        { "port": 80, "service": "HTTP", "isOpen": false }
     ],
     "fileSystem": [
         {
