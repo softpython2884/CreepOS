@@ -841,6 +841,7 @@ export default function Terminal({
                 '  cat <file>     - Affiche le contenu d\'un fichier (auth requise)',
                 '  echo <text>    - Affiche une ligne de texte. Supporte > et >> redirection.',
                 '  nano <file>    - Crée ou édite un fichier texte (auth requise)',
+                '  mkdir <dir>    - Crée un nouveau répertoire (auth requise)',
                 '  rm <file>      - Supprime un fichier ou vide son contenu (auth requise)',
                 '  rm *           - Supprime tous les fichiers du répertoire actuel (auth requise)',
                 '  cp <src> <dest> - Copie un fichier ou un dossier (auth requise)',
@@ -965,6 +966,52 @@ export default function Terminal({
                 }
             }
             break;
+        case 'mkdir': {
+            if (!checkAuth()) break;
+
+            const dirArg = args[0];
+            if (!dirArg) {
+                handleOutput('mkdir: opérande manquant');
+                break;
+            }
+
+            const newDirPath = resolvePath(dirArg);
+            const newDirName = newDirPath[newDirPath.length - 1];
+            const parentPath = newDirPath.slice(0, -1);
+            
+            const parentNode = findNodeByPath(parentPath, fileSystem);
+            if (!parentNode || parentNode.type !== 'folder') {
+                handleOutput(`mkdir: impossible de créer le répertoire ‘${dirArg}’: Aucun fichier ou dossier de ce type`);
+                break;
+            }
+
+            const existingNode = parentNode.children?.find(c => c.name === newDirName);
+            if (existingNode) {
+                handleOutput(`mkdir: impossible de créer le répertoire ‘${dirArg}’: Le fichier existe`);
+                break;
+            }
+            
+            const newFolder: FileSystemNode = {
+                id: `folder-${Date.now()}`,
+                name: newDirName,
+                type: 'folder',
+                children: []
+            };
+            
+            setNetwork(currentNetwork => currentNetwork.map(pc => {
+                if (pc.ip === connectedIp) {
+                    const newFs = addNodeByPath(pc.fileSystem, parentPath, newFolder);
+                    return { ...pc, fileSystem: newFs };
+                }
+                return pc;
+            }));
+
+            handleOutput(`Répertoire '${dirArg}' créé.`);
+            addLog(`EVENT: Répertoire '${dirArg}' créé sur ${connectedIp}:${'/' + parentPath.join('/')}`);
+            if (connectedIp !== '127.0.0.1') addRemoteLog(`EVENT: Répertoire '${dirArg}' créé par l'utilisateur depuis ${PLAYER_PUBLIC_IP}.`);
+
+            break;
+        }
         case 'rm': {
             if (!checkAuth()) break;
 
@@ -1636,7 +1683,7 @@ export default function Terminal({
     // Command completion
     if (parts.length === 1) {
         const executables = allExecutables.map(f => f.name.split('.')[0].toLowerCase());
-        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'rm', 'mv', 'cp', 'scp', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan', 'nano', 'neo', 'call', 'unhide'];
+        const mainCommands = ['help', 'ls', 'cd', 'cat', 'echo', 'rm', 'mkdir', 'mv', 'cp', 'scp', 'connect', 'disconnect', 'dc', 'login', 'solve', 'clear', 'reboot', 'save', 'reset-game', 'danger', 'scan', 'nano', 'neo', 'call', 'unhide'];
         const allCommands = [...new Set([...mainCommands, ...executables])];
         const possibilities = allCommands.filter(cmd => cmd.startsWith(lastPart));
 
