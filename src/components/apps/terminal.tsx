@@ -48,6 +48,7 @@ interface TerminalProps {
     onNeoWakeup: () => void;
     onEndGame: (endType?: 'credits' | 'wait_for_death' | 'self_destruct' | 'flee' | 'true_ending', lines?: string[]) => void;
     onUnhide: (ip: string, path: string[]) => void;
+    onRestoreKernel?: () => boolean;
 }
 
 const PLAYER_PUBLIC_IP = '184.72.238.110';
@@ -177,6 +178,7 @@ export default function Terminal({
     onNeoWakeup,
     onEndGame,
     onUnhide,
+    onRestoreKernel,
 }: TerminalProps) {
   const [history, setHistory] = useState<HistoryItem[]>([
     { type: 'output', content: "DOD-ARS Terminal [Build 7.4.12]\n(c) United Defense Research Directorate. Classified Environment." },
@@ -1544,6 +1546,22 @@ export default function Terminal({
                 handleOutput('Données de sauvegarde supprimées. Le système va redémarrer.');
             } else {
                 handleOutput('Ceci est une action destructive. Tapez `reset-game --confirm` pour continuer.');
+            }
+            break;
+        }
+        case 'safemod': {
+            if (username === 'recovery' && fullCommand === 'safemod --active --reboot' && onRestoreKernel) {
+                handleOutput('Activation du mode de récupération sécurisé...');
+                await runProgressBar(3000, 'Restauration du noyau');
+                const success = onRestoreKernel();
+                if (success) {
+                    handleOutput('Noyau restauré avec succès. Le système va redémarrer.');
+                    setTimeout(onReboot, 2000);
+                } else {
+                    handleOutput('ERREUR : Échec de la restauration du noyau. Fichier source introuvable.');
+                }
+            } else {
+                handleOutput(`commande non trouvée: ${command}`);
             }
             break;
         }

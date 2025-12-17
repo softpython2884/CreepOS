@@ -284,36 +284,34 @@ const RecoveryTerminal = ({ onReboot }: { onReboot: () => void }) => {
     const [discoveredPcs, setDiscoveredPcs] = useState(() => loadGameState('Operator').discoveredPcs);
     const [emails, setEmails] = useState(() => loadGameState('Operator').emails);
 
-    const onSaveFile = (path: string[], content: string) => {
-        // This is a simplified save for recovery.
-        // The main goal is to get XserverOS.sys back.
-        if (path.join('/') === 'sys/XserverOS.sys') {
-            try {
-                const gameState = JSON.parse(localStorage.getItem('gameState_Operator') || '{}');
-                const playerPcIndex = gameState.network.findIndex((p:any) => p.id === 'player-pc');
+    const onRestoreKernel = () => {
+        try {
+            const gameState = JSON.parse(localStorage.getItem('gameState_Operator') || '{}');
+            const playerPcIndex = gameState.network.findIndex((p: any) => p.id === 'player-pc');
+            
+            if (playerPcIndex !== -1) {
+                const playerPc = gameState.network[playerPcIndex];
+                const sysFolderIndex = playerPc.fileSystem.findIndex((f: any) => f.name === 'sys');
                 
-                if (playerPcIndex !== -1) {
-                    const playerPc = gameState.network[playerPcIndex];
-                    const sysFolderIndex = playerPc.fileSystem.findIndex((f:any) => f.name === 'sys');
-                    
-                    if (sysFolderIndex !== -1) {
-                        const sysFolder = playerPc.fileSystem[sysFolderIndex];
-                        if (sysFolder && !sysFolder.children.some((f:any) => f.name === 'XserverOS.sys')) {
-                            const playerPcTemplate = initialNetworkData.find(p => p.id === 'player-pc');
-                            const xserverFileTemplate = playerPcTemplate?.fileSystem.find(f => f.name === 'sys')?.children?.find(f => f.name === 'XserverOS.sys');
-                            
-                            if (xserverFileTemplate) {
-                                sysFolder.children.push({ ...xserverFileTemplate, content: content });
-                                gameState.network[playerPcIndex] = playerPc;
-                                localStorage.setItem('gameState_Operator', JSON.stringify(gameState));
-                            }
+                if (sysFolderIndex !== -1) {
+                    const sysFolder = playerPc.fileSystem[sysFolderIndex];
+                    if (sysFolder && !sysFolder.children.some((f: any) => f.name === 'XserverOS.sys')) {
+                        const playerPcTemplate = initialNetworkData.find(p => p.id === 'player-pc');
+                        const xserverFileTemplate = playerPcTemplate?.fileSystem.find(f => f.name === 'sys')?.children?.find(f => f.name === 'XserverOS.sys');
+                        
+                        if (xserverFileTemplate) {
+                            sysFolder.children.push({ ...xserverFileTemplate });
+                            gameState.network[playerPcIndex] = playerPc;
+                            localStorage.setItem('gameState_Operator', JSON.stringify(gameState));
+                            return true;
                         }
                     }
                 }
-            } catch(e) {
-                console.error("Failed to restore kernel in recovery:", e);
             }
+        } catch(e) {
+            console.error("Failed to restore kernel in recovery:", e);
         }
+        return false;
     }
 
     return (
@@ -342,7 +340,8 @@ const RecoveryTerminal = ({ onReboot }: { onReboot: () => void }) => {
                         onNeoExecute={() => {}}
                         triggerCall={() => {}}
                         onNeoWakeup={() => {}}
-                        onOpenFileEditor={onSaveFile}
+                        onOpenFileEditor={() => {}}
+                        onRestoreKernel={onRestoreKernel}
                         onEndGame={() => {}}
                     />
                 </div>
