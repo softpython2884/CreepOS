@@ -1252,6 +1252,7 @@ Si vous voyez ce message, elle vous surveille déjà.
             onReboot,
             addLog,
             handleIncreaseDanger: handleIncreaseDanger,
+            setDangerLevel: setDangerLevel,
             onStartTrace: handleStartTrace,
             onStopTrace: handleStopTrace,
             onPauseTrace: handlePauseTrace,

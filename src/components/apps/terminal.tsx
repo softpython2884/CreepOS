@@ -35,6 +35,7 @@ interface TerminalProps {
     onReboot: () => void;
     addLog: (message: string) => void;
     handleIncreaseDanger: (amount: number) => void;
+    setDangerLevel?: (level: number) => void;
     onStartTrace: (targetName: string, time: number, sourceInstanceId: number) => void;
     onStopTrace: () => void;
     onPauseTrace: (isPaused: boolean) => void;
@@ -165,6 +166,7 @@ export default function Terminal({
     onReboot, 
     addLog, 
     handleIncreaseDanger,
+    setDangerLevel,
     onStartTrace,
     onStopTrace,
     onPauseTrace,
@@ -1670,8 +1672,15 @@ export default function Terminal({
             } else if (args[0] === 'final') {
                 handleOutput('DEBUG: Skipping to final call...');
                 triggerCall(finalCallScript);
+            } else if (args[0] === 'danger') {
+                if(setDangerLevel) {
+                    setDangerLevel(99);
+                    handleOutput('DEBUG: Danger level set to 99%.');
+                } else {
+                    handleOutput('DEBUG: Danger level could not be set.');
+                }
             } else {
-                handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1 | backdoor | chapter6 | neocore | nihil | final`');
+                handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1 | backdoor | chapter6 | neocore | nihil | final | danger`');
             }
             break;
         }
@@ -1867,3 +1876,4 @@ export default function Terminal({
     </div>
   );
 }
+
