@@ -750,13 +750,19 @@ export default function Terminal({
                 } else if (!targetPC.proxy.enabled) {
                     handleOutput('Le proxy n\'est pas actif.');
                 } else {
+                    const isDebug = args.includes('--debug');
                     const requiredNodes = targetPC.proxy.level;
                     const availableNodes = hackedPcs.size;
                     
-                    handleOutput(`Surcharge du proxy... (Requis: ${requiredNodes} nœuds, Disponibles: ${availableNodes})`);
-                    await runProgressBar(targetPC.proxy.level * 2000);
+                    if (isDebug) {
+                        handleOutput(`Surcharge du proxy en mode DEBUG...`);
+                    } else {
+                        handleOutput(`Surcharge du proxy... (Requis: ${requiredNodes} nœuds, Disponibles: ${availableNodes})`);
+                    }
+                    
+                    await runProgressBar(isDebug ? 1000 : targetPC.proxy.level * 2000);
 
-                    if (availableNodes >= requiredNodes) {
+                    if (isDebug || availableNodes >= requiredNodes) {
                         setNetwork(currentNetwork => currentNetwork.map(pc => pc.id === targetPC!.id ? { ...pc, proxy: { ...pc.proxy, enabled: false } } : pc));
                         handleOutput(`Proxy désactivé sur ${targetPC.ip}.`);
                         addRemoteLog(`Proxy sur ${targetPC.ip} désactivé via surcharge depuis ${PLAYER_PUBLIC_IP}.`);
