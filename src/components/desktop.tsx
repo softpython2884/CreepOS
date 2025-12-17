@@ -1029,8 +1029,21 @@ Si vous voyez ce message, elle vous surveille déjà.
         setTimeout(() => receiveEmail(chapter6IntroEmail), 2000);
     }
      if (email.recipient === 'contact@blackwire.net' && email.body.includes('NIHIL_EST_VERUM')) {
-        addLog('EVENT: Assaut final contre NÉO autorisé.');
-        setTimeout(() => receiveEmail(chapter9IntroEmail), 2000);
+        const dropzonePC = network.find(pc => pc.id === 'blackwire-dropzone');
+        const uploadFolder = dropzonePC?.fileSystem.find(f => f.name === 'upload');
+        const fileExists = uploadFolder?.children?.some(f => f.name === 'kernel_data.pak');
+        
+        if (fileExists) {
+            addLog('EVENT: Assaut final contre NÉO autorisé.');
+            setTimeout(() => receiveEmail(chapter9IntroEmail), 2000);
+        } else {
+            const failureEmail = {
+                sender: 'contact@blackwire.net',
+                subject: 'Re: NIHIL_EST_VERUM',
+                body: "Le code est correct, mais le paquet de données du noyau est manquant. Nous ne pouvons pas lancer l'assaut sans lui. Déposez-le sur notre serveur et reconfirmez."
+            };
+            setTimeout(() => receiveEmail(failureEmail), 1500);
+        }
     }
   };
 
