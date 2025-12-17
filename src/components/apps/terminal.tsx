@@ -1586,6 +1586,14 @@ export default function Terminal({
             } else if (args[0] === 'chapter6') {
                 handleOutput('DEBUG: Skipping to Chapter 6 mission email...');
                 receiveEmail(chapter6IntroEmail);
+            } else if (args[0] === 'neocore') {
+                handleOutput('DEBUG: Simulating destruction of all NEO cores...');
+                const coreIds = ['neo-core-a', 'neo-core-b', 'neo-core-c'];
+                setNetwork(currentNetwork => 
+                    currentNetwork.map(pc => 
+                        coreIds.includes(pc.id) ? { ...pc, isDestroyed: true } : pc
+                    )
+                );
             } else if (args[0] === 'nihil') {
                 handleOutput('DEBUG: Skipping to final assault mission...');
                 receiveEmail(chapter9IntroEmail);
@@ -1593,7 +1601,7 @@ export default function Terminal({
                 handleOutput('DEBUG: Skipping to final call...');
                 triggerCall(finalCallScript);
             } else {
-                handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1 | backdoor | chapter6 | nihil | final`');
+                handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1 | backdoor | chapter6 | neocore | nihil | final`');
             }
             break;
         }
