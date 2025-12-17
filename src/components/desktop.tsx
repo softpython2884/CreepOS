@@ -200,7 +200,6 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [showModuleInit, setShowModuleInit] = useState(false);
   const [moduleProgress, setModuleProgress] = useState(0);
   const [isSystemUnstable, setIsSystemUnstable] = useState(false);
-  const [isNexusLockdown, setIsNexusLockdown] = useState(false);
   
   const [emails, setEmails] = useState<Email[]>(() => gameStateRef.current.emails);
 
@@ -682,6 +681,32 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
 
     const neoCoreIds = ['neo-core-a', 'neo-core-b', 'neo-core-c'];
     const neoDefeatedRef = useRef(false);
+    const chaosIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const triggerPostNeoChaos = useCallback(() => {
+        const chaosActions = [
+            () => handleStartTrace('NÉO_GHOST', 5, 0),
+            () => setMachineState('survival'),
+            () => {
+                addLog('NÉO_RESIDUE: ...aide...moi...');
+                onSoundEvent('glitch');
+            },
+            () => receiveEmail({
+                sender: '???',
+                subject: '...',
+                body: '...pourquoi...'
+            })
+        ];
+
+        chaosIntervalRef.current = setInterval(() => {
+            const rand = Math.random();
+            if (rand < 0.3) chaosActions[0]();
+            else if (rand < 0.5) chaosActions[1]();
+            else if (rand < 0.8) chaosActions[2]();
+            else chaosActions[3]();
+        }, 45000);
+    }, [handleStartTrace, setMachineState, addLog, onSoundEvent, receiveEmail]);
+
 
     useEffect(() => {
         const checkNeoDefeat = () => {
@@ -691,7 +716,6 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
             if (coresDestroyed) {
                 neoDefeatedRef.current = true;
                 addLog('CRITICAL: NÉO core network destroyed. System integrity compromised.');
-                setIsNexusLockdown(true);
                 onAlertEvent('alarm');
                 
                 const directorAccusationEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
@@ -708,36 +732,19 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
 
                 setTimeout(() => receiveEmail(alertEmail), 1000);
                 setTimeout(() => receiveEmail(directorAccusationEmail), 2500);
+
+                triggerPostNeoChaos();
             }
         };
         checkNeoDefeat();
-    }, [network, addLog, onAlertEvent, receiveEmail]);
 
-    useEffect(() => {
-        if (!isNexusLockdown) return;
-
-        // Residual NÉO behavior
-        const chaosInterval = setInterval(() => {
-            const rand = Math.random();
-            if (rand < 0.3) {
-                handleStartTrace('NÉO_GHOST', 5, 0);
-            } else if (rand < 0.5) {
-                setMachineState('survival');
-            } else if (rand < 0.8) {
-                addLog('NÉO_RESIDUE: ...aide...moi...');
-                onSoundEvent('glitch');
-            } else {
-                receiveEmail({
-                    sender: '???',
-                    subject: '...',
-                    body: '...pourquoi...'
-                });
+        // Cleanup interval on unmount
+        return () => {
+            if (chaosIntervalRef.current) {
+                clearInterval(chaosIntervalRef.current);
             }
-        }, 45000); // every 45 seconds
-
-        return () => clearInterval(chaosInterval);
-
-    }, [isNexusLockdown, handleStartTrace, setMachineState, addLog, receiveEmail, onSoundEvent]);
+        }
+    }, [network, addLog, onAlertEvent, receiveEmail, triggerPostNeoChaos]);
 
  useEffect(() => {
     if (!isTraced) {
@@ -1367,8 +1374,7 @@ Si vous voyez ce message, elle vous surveille déjà.
       className={cn(
         "h-full w-full font-code relative overflow-hidden flex flex-col justify-center items-center p-4 transition-colors duration-500",
         isTraced && "traced",
-        isSystemUnstable && 'animate-system-collapse',
-        isNexusLockdown && 'lockdown'
+        isSystemUnstable && 'animate-system-collapse'
       )}
       style={{ backgroundImage: `linear-gradient(hsl(var(--accent) / 0.05) 1px, transparent 1px), linear-gradient(to right, hsl(var(--accent) / 0.05) 1px, hsl(var(--background)) 1px)`, backgroundSize: `2rem 2rem` }}
     >
@@ -1466,3 +1472,5 @@ Si vous voyez ce message, elle vous surveille déjà.
  
 
     
+
+      
