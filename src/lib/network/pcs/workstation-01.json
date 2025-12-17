@@ -55,13 +55,13 @@
                 "id": "log-part-1",
                 "name": "log_A.txt",
                 "type": "file",
-                "content": "Le code est YB9-...\nJe le note ici, je mettrai la fin ailleurs."
+                "content": "Le code est YB9-YBA\n---"
               },
               {
                 "id": "log-part-2",
                 "name": "log_B.txt",
                 "type": "file",
-                "content": "Fin du code : ...QUI\nFaut vraiment qu'on arrête avec ces mots de passe coupés en deux."
+                "content": "QUI\n--->"
               }
             ]
         },

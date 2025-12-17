@@ -23,7 +23,7 @@
                     "id": "logs-transfer-log", 
                     "name": "transfer_log.enc", 
                     "type": "file",
-                    "content": "Fichier crypté. Contient les journaux de transfert de données vers la base de données des RH (10.255.255.2)."
+                    "content": "U2FsdGVkX1+9k3a4J1p0QwAAAC8vLw0xZnh0b3I6IGxvZ19ibG9jaz0iNDI4IgoK[BLOCK03_CORRUPTED]7f3a9c110000002d7472616e736665725f69643d3f3f[LEAK]ts=2025-12-14T02:14:03Z;dst=10.255.255.2;status=PARTIAL--END--"
                 }
             ]
         },

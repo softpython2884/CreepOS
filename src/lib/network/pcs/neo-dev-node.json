@@ -28,7 +28,7 @@
                     "name": "lasted",
                     "type": "folder",
                     "children": [
-                        { "id": "file-neo-bin", "name": "neo.bin", "type": "file", "content": "NÉO AI Core executable. Triggers narrative events.", "isSystemFile": true }
+                        { "id": "file-neo-bin", "name": "neo.bin", "type": "file", "content": "NÉO AI Core executable.", "isSystemFile": true }
                     ]
                 }
             ]
