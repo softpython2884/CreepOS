@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect, KeyboardEvent, useCallback, useMemo } from 'react';
@@ -189,6 +190,10 @@ export default function Terminal({
   const [isIcebreakerActive, setIsIcebreakerActive] = useState(false);
   const [icebreakerCooldown, setIcebreakerCooldown] = useState(0);
   const [icebreakerTimeLeft, setIcebreakerTimeLeft] = useState(0);
+  const [lastCompletion, setLastCompletion] = useState({
+    input: '',
+    prefix: '',
+  });
 
   
   // Network and FS state
@@ -635,7 +640,7 @@ export default function Terminal({
         const neoBin = findNodeByPath(['bin', 'neo.bin'], playerPC?.fileSystem || []);
 
         if (!neoBin) {
-            handleOutput("Erreur : paquet NÉO introuvable. Téléchargez-le d\'abord.");
+            handleOutput("Erreur : paquet NÉO introuvable. Téléchargez-le d'abord.");
         } else {
             await onNeoExecute({
                 showProgress: runProgressBar,
@@ -1656,18 +1661,48 @@ export default function Terminal({
     if (!targetNode?.children) return;
 
     const possibilities = targetNode.children.filter(child => child.name.startsWith(partialName) && !child.isHidden);
+    
+    const findLongestCommonPrefix = (strs: string[]): string => {
+        if (!strs || strs.length === 0) return '';
+        let prefix = strs[0];
+        for (let i = 1; i < strs.length; i++) {
+            while (strs[i].indexOf(prefix) !== 0) {
+                prefix = prefix.substring(0, prefix.length - 1);
+                if (prefix === '') return '';
+            }
+        }
+        return prefix;
+    };
 
     if (possibilities.length === 1) {
         const completion = possibilities[0];
         const newText = parts.slice(0, -1).join(' ') + (parts.length > 1 ? ' ' : '') + pathPrefix + completion.name;
         setInput(newText + (completion.type === 'folder' ? '/' : ' '));
     } else if (possibilities.length > 1) {
-        const newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${input}` }, { type: 'output', content: possibilities.map(p => p.name).join('  ') }];
-        setHistory(newHistory);
+        // If the user presses tab again on the same input, show possibilities
+        if (lastCompletion.input === input && lastCompletion.prefix.length > 0) {
+            const newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${input}` }, { type: 'output', content: possibilities.map(p => p.name).join('  ') }];
+            setHistory(newHistory);
+        } else {
+            const commonPrefix = findLongestCommonPrefix(possibilities.map(p => p.name));
+            if (commonPrefix.length > partialName.length) {
+                const newText = parts.slice(0, -1).join(' ') + (parts.length > 1 ? ' ' : '') + pathPrefix + commonPrefix;
+                setInput(newText);
+                setLastCompletion({ input, prefix: newText });
+            } else {
+                const newHistory: HistoryItem[] = [...history, { type: 'command', content: `${getPrompt()}${input}` }, { type: 'output', content: possibilities.map(p => p.name).join('  ') }];
+                setHistory(newHistory);
+                setLastCompletion({ input, prefix: '' });
+            }
+        }
     }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Tab') {
+        setLastCompletion({ input: '', prefix: '' });
+    }
+
     if (isIcebreakerActive && e.key.toLowerCase() === 'c') {
         setIsIcebreakerActive(false);
         onPauseTrace(false);
@@ -1739,7 +1774,13 @@ export default function Terminal({
             <Input
             ref={inputRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+                setInput(e.target.value);
+                // Reset last completion if user types something else
+                if (lastCompletion.prefix && !e.target.value.startsWith(lastCompletion.prefix)) {
+                    setLastCompletion({ input: '', prefix: '' });
+                }
+            }}
             onKeyDown={handleKeyDown}
             className="bg-transparent border-none text-green-400 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 h-6 p-0 ml-1"
             autoComplete="off"
