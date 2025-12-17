@@ -17,7 +17,7 @@
             "name": "bin",
             "type": "folder",
             "children": [
-                { "id": "file-overdue", "name": "overdue.bin", "type": "file", "content": "Rappelle au superviseur de mettre à jour les mots de passe. C'est une passoire.", "isSystemFile": true }
+                { "id": "secret-file-analyzer", "name": "analyze.bin", "type": "file", "content": "Firewall analysis tool", "isSystemFile": true }
             ]
         },
         {
@@ -30,3 +30,4 @@
         }
     ]
 }
+-
