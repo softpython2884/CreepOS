@@ -1024,8 +1024,8 @@ Si vous voyez ce message, elle vous surveille déjà.
             addLog("EVENT: Chapitre 3 initié.");
         }, 5000);
     }
-    if (email.recipient === 'contact@blackwire.net' && email.body.includes('PROJET-SHEARNEO')) {
-        addLog("Fin du jeu... pour l'instant.");
+    if (email.recipient === 'contact@blackwire.net' && email.body.includes('4B-NdResult')) {
+        addLog("Progression de l'histoire: E-mail de confirmation du chapitre 5 envoyé.");
         setTimeout(() => receiveEmail(chapter6IntroEmail), 2000);
     }
      if (email.recipient === 'contact@blackwire.net' && email.body.includes('NIHIL_EST_VERUM')) {
@@ -1446,5 +1446,4 @@ Si vous voyez ce message, elle vous surveille déjà.
     </main>
   );
 }
-
-    
+ 
