@@ -621,16 +621,19 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
 
   // Initial supervisor call
   useEffect(() => {
-    const hasPlayedIntro = localStorage.getItem('hasPlayedIntro_v1');
-    if (!hasPlayedIntro) return;
+      const hasPlayedIntro = localStorage.getItem('hasPlayedIntro_v1');
+      if (!hasPlayedIntro) return;
 
-    const timer = setTimeout(() => {
-        triggerCall(supervisorCall1);
-    }, 5000); 
+      const hasMadeCall = localStorage.getItem('hasMadeSupervisorCall1');
+      if (hasMadeCall) return;
 
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+      const timer = setTimeout(() => {
+          triggerCall(supervisorCall1);
+          localStorage.setItem('hasMadeSupervisorCall1', 'true');
+      }, 5000); 
+
+      return () => clearTimeout(timer);
+  }, [triggerCall]);
 
   useEffect(() => {
     if (isNeoFreestyle) {
