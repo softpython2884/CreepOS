@@ -9,7 +9,7 @@ import { type Email } from './email-client';
 import { CallScript } from '@/lib/call-system/types';
 import { supervisorChapter2Email } from '@/lib/call-system/scripts/supervisor-chapter2';
 import { blackwireChapter3Mission } from '@/lib/call-system/scripts/blackwire-chapter3-mission';
-import { chapter9IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
+import { chapter6IntroEmail, chapter9IntroEmail } from '@/lib/call-system/scripts/chapter6-intro';
 import { finalCallScript } from '@/lib/call-system/scripts/final-call';
 import { directorCallback } from '@/lib/call-system/scripts/director-callback';
 
@@ -743,6 +743,7 @@ export default function Terminal({
                     addRemoteLog(`L'analyse du pare-feu depuis ${PLAYER_PUBLIC_IP} a désactivé le pare-feu.`);
                 }
                 break;
+            case 'overdue':
             case 'overload':
                 if (!targetPC) {
                     handleOutput('overload : Doit être connecté à un système distant.');
@@ -1576,6 +1577,9 @@ export default function Terminal({
             } else if (args[0] === 'backdoor') {
                 handleOutput('DEBUG: Skipping to backdoor mission call...');
                 triggerCall(blackwireChapter3Mission);
+            } else if (args[0] === 'chapter6') {
+                handleOutput('DEBUG: Skipping to Chapter 6 mission email...');
+                receiveEmail(chapter6IntroEmail);
             } else if (args[0] === 'nihil') {
                 handleOutput('DEBUG: Skipping to final assault mission...');
                 receiveEmail(chapter9IntroEmail);
@@ -1583,7 +1587,7 @@ export default function Terminal({
                 handleOutput('DEBUG: Skipping to final call...');
                 triggerCall(finalCallScript);
             } else {
-                handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1` or `debug-skip backdoor` or `debug-skip nihil` or `debug-skip final`');
+                handleOutput('DEBUG: Unknown skip point. Use `debug-skip mission1 | backdoor | chapter6 | nihil | final`');
             }
             break;
         }

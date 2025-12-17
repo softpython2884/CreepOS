@@ -8,7 +8,7 @@ export const chapter6IntroEmail: Omit<Email, 'id' | 'timestamp' | 'folder' | 're
 
 Le temps de la discrétion est terminé. Ce que vous avez découvert prouve que Nexus, et surtout NÉO, est une menace incontrôlable.
 
-Nous passons à l'offensive. Nous vous donnons accès à l'intégralité de notre arsenal via les décrypteurs ci-joints. Récupérez et installez TOUS les outils. La pièce maîtresse est "Forkbomb", un virus conçu pour faire crasher n'importe quel système de manière irrécupérable. Utilisez-le en dernier recours.
+Nous passons à l'offensive. Nous vous donnons accès à l'intégralité de notre arsenal via les décrypteurs ci-joints. Récupérez et installez TOUS les outils. (18.117.228.214) La pièce maîtresse est "Forkbomb", un virus conçu pour faire crasher n'importe quel système. Utilisez-le en dernier recours.
 
 **Votre mission :**
 
