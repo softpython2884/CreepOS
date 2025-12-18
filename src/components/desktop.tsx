@@ -399,11 +399,12 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
     }
 
     // Explicit chapter progression logic
+    if (lastScript?.id === 'supervisor-chapter2-call') {
+        setTimeout(() => receiveEmail(blackwireChapter3IntroEmail), 2000);
+        addLog("EVENT: Chapitre 3 (Porte Dérobée) initié.");
+    }
     if (lastScript?.id === 'director-chapter3-interrogation') {
         setTimeout(() => receiveEmail(blackwireChapter4IntroEmail), 1200);
-    }
-    if(lastScript?.id === 'supervisor-chapter2-call') {
-        setTimeout(() => triggerCall(blackwireChapter3Mission), 2000);
     }
     if(lastScript?.id === 'blackwire-chapter7-debrief') {
         const mindBreakEmail = {
@@ -448,7 +449,7 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     if(nextCall) {
         setTimeout(nextCall, 1200); 
     }
-  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, activeCall, handleCallConsequences, receiveEmail, triggerCall, handleIncreaseDanger, addLog]);
+  }, [onAlertEvent, onSoundEvent, onMusicEvent, isTraced, activeCall, handleCallConsequences, receiveEmail, handleIncreaseDanger, addLog]);
 
   const advanceCall = useCallback((choiceId: string) => {
     const script = callScriptRef.current;
@@ -1476,4 +1477,5 @@ Si vous voyez ce message, elle vous surveille déjà.
     
 
       
+
 
