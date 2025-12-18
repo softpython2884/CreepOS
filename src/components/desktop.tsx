@@ -34,6 +34,7 @@ import { neoChapter2Call } from '@/lib/call-system/scripts/neo-chapter2';
 import { supervisorChapter2Call } from '@/lib/call-system/scripts/supervisor-chapter2-call';
 import TextEditor from './apps/text-editor';
 import { blackwireChapter3IntroEmail } from '@/lib/call-system/scripts/blackwire-chapter3-intro';
+import { blackwireChapter3Mission } from '@/lib/call-system/scripts/blackwire-chapter3-mission';
 import { directorChapter3InterrogationCall, directorChapter3AlertEmail } from '@/lib/call-system/scripts/director-chapter3-interrogation';
 import { blackwireChapter4IntroEmail } from '@/lib/call-system/scripts/blackwire-chapter4-intro';
 import { chapter5IntroEmail } from '@/lib/call-system/scripts/chapter5-intro';
@@ -402,7 +403,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
         setTimeout(() => receiveEmail(blackwireChapter4IntroEmail), 1200);
     }
     if(lastScript?.id === 'supervisor-chapter2-call') {
-        setTimeout(() => triggerCall(blackwireChapter7Debrief), 2000);
+        setTimeout(() => triggerCall(blackwireChapter3Mission), 2000);
     }
     if(lastScript?.id === 'blackwire-chapter7-debrief') {
         const mindBreakEmail = {
@@ -1475,3 +1476,4 @@ Si vous voyez ce message, elle vous surveille déjà.
     
 
       
+
