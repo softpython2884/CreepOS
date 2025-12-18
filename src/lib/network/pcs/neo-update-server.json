@@ -1,7 +1,7 @@
 {
     "id": "neo-update-server",
     "name": "NEO-UPDATE-SRV",
-    "ip": "10.0.0.4",
+    "ip": "- 172.19.44.7",
     "type": "Server",
     "links": ["neo-core-a"],
     "auth": { "user": "admin", "pass": "cyclical_rebirth" },

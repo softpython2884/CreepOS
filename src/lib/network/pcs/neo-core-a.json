@@ -1,7 +1,7 @@
 {
     "id": "neo-core-a",
     "name": "NEO-CORE-ALPHA",
-    "ip": "10.0.0.1",
+    "ip": "- 172.16.4.22",
     "type": "Server",
     "links": ["neo-core-b"],
     "auth": { "user": "core_admin", "pass": "alpha_core_pass" },

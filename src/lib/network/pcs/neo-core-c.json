@@ -1,7 +1,7 @@
 {
     "id": "neo-core-c",
     "name": "NEO-CORE-GAMMA",
-    "ip": "10.0.0.3",
+    "ip": "172.18.3.199",
     "type": "Server",
     "links": ["neo-update-server"],
     "auth": { "user": "core_admin", "pass": "gamma_core_pass" },
