@@ -19,5 +19,12 @@ Votre nouvelle mission est d'infiltrer une station de travail d'un superviseur d
 
 Faites vite. Nous n'avons aucune idée de ce que NÉO est en train de devenir.
 
-- Blackwire`,
+- Blackwire
+
+---
+
+P.S. — Pendant qu'on remontait votre nom dans les archives presse, on est tombés sur un papier régional vieux de trois mois : "Disparition inquiétante du Dr. Omen, chercheur à Nexus, signalée par sa famille". Photo floue, mais c'est vous.
+Trois mois. Vous étiez où ?
+On a aussi sorti le journal des caméras du bâtiment. Quelqu'un qui vous ressemble en tous points quitte Nexus par la sortie ouest. Tous les soirs. 18h12, comme une horloge.
+Si c'est pas vous, qui c'est ?`,
 };

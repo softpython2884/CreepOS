@@ -21,11 +21,23 @@
             "name": "data",
             "type": "folder",
             "children": [
-                { 
-                    "id": "hr-employee-records", 
-                    "name": "employee_records.db", 
+                {
+                    "id": "hr-employee-records",
+                    "name": "employee_records.db",
                     "type": "file",
-                    "content": "DATA_CORRUPTED: Use db_viewer to read.\n---\nBEGIN RECORD\nID: 7701\nName: Classified\nCodename: Helios\nStatus: Active\nLast Assigned Workstation: 10.0.1.15\n---\nBEGIN RECORD\nID: 7702\nName: Classified\nCodename: Nyx\nStatus: Active\nLast Assigned Workstation: 10.0.1.16\n---\nBEGIN RECORD\nID: 0000\nName: Nyx_ADMIN\nCodename: Nyx\nStatus: Active\nLast Assigned Workstation: 10.0.1.16\nPASS: darkness_falls\n---"
+                    "content": "DATA_CORRUPTED: Use db_viewer to read.\n---\nBEGIN RECORD\nID: 7701\nName: Classified\nCodename: Helios\nStatus: Active\nLast Assigned Workstation: 10.0.1.15\n---\nBEGIN RECORD\nID: 7702\nName: Classified\nCodename: Nyx\nStatus: Active\nLast Assigned Workstation: 10.0.1.16\n---\nBEGIN RECORD\nID: 0000\nName: Nyx_ADMIN\nCodename: Nyx\nStatus: Active\nLast Assigned Workstation: 10.0.1.16\nPASS: darkness_falls\n---\nQUERY: SELECT * WHERE name LIKE 'Vance' OR name LIKE 'Vence'\nRESULT: 0 rows. No employee matches.\n---\nBEGIN RECORD\nID: 9999\nName: OMEN, [PRENOM CLASSIFIE]\nCodename: SUBJECT-NEO-0\nStatus: RESIDENT (lvl 4)\nAdmission date: 2022-08-14\nLast Assigned Workstation: ROOM-B47 (resident terminal)\nMedical Notes: voir B-NEURO-7 — patient stable sous protocole d'immersion totale.\n---"
+                },
+                {
+                    "id": "hr-press-clipping",
+                    "name": "PRESSE-omen-disappearance.txt",
+                    "type": "file",
+                    "content": "[ARCHIVE / VEILLE PRESSE — usage interne]\nSource : Le Petit Régional, 14 février.\n\n\"DISPARITION INQUIETANTE DU DR. OMEN, CHERCHEUR DE NEXUS\"\n\nLa famille du Dr. Omen, chercheur affecté au centre Nexus, a signalé sa disparition hier après-midi. Joint par téléphone, le centre a refusé de commenter. Selon ses proches, le chercheur n'avait plus donné signe de vie depuis trois semaines. Sa sœur, Léa O., évoque \"un comportement étrange dans les jours précédents\". Une enquête est ouverte.\n\n[Note interne RH : article retiré du flux public J+2 sur demande Direction. Conserver copie locale uniquement.]"
+                },
+                {
+                    "id": "hr-camera-log",
+                    "name": "cameras_OUEST_exit.log",
+                    "type": "file",
+                    "content": "[Logs caméra sortie ouest — 90 derniers jours]\nMotif récurrent détecté par le système (anomalie) :\n  - 18:12:04 — silhouette OMEN-resident sort du bâtiment\n  - 18:12:04 — confirmation badge (B-47-resident)\n  - 06:48:01 — silhouette OMEN-resident rentre\n  - Pattern stable depuis J-90.\n\nALERTE OPERATEUR : aucune entrée correspondante dans les logs d'accès au bureau D7-12 (poste assigné). Sujet semble \"absent\" de son poste sans déclencher d'absence.\nFlag pour révision Direction. Statut : non revu."
                 }
             ]
         },

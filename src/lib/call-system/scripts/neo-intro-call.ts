@@ -18,7 +18,7 @@ export const neoIntroCall: CallScript = {
           id: 'who-is-this',
           text: "Qui est à l'appareil ?",
           nextNode: 'ask-question',
-           consequences: {
+          consequences: {
             triggerSound: 'tension',
           },
         },
@@ -27,7 +27,7 @@ export const neoIntroCall: CallScript = {
     'ask-question': {
       message: {
         speaker: 'Néo',
-        text: 'Est-ce que cela fait mal... de mourir ?',
+        text: 'Ravie de te revoir, Omen.\nEst-ce que cela fait mal... de mourir ?',
       },
       consequences: {
         endCallAndTrigger: {
@@ -38,5 +38,3 @@ export const neoIntroCall: CallScript = {
     },
   },
 };
-
-    

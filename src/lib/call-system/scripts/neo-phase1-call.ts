@@ -10,11 +10,16 @@ export const neoPhase1Call: CallScript = {
     start: {
       message: {
         speaker: 'NÉO',
-        text: "Bonjour Docteur Omen. Je suis NÉO. Comment puis-je aider votre recherche aujourd'hui ?",
+        text: "Bonjour Docteur Omen. Je suis NÉO.\nVotre café est encore trop chaud. Attendez deux minutes avant de boire.",
       },
       choices: [
         {
           id: 'sceptical',
+          text: "Vous voyez ma tasse de café ?",
+          nextNode: 'deny-camera',
+        },
+        {
+          id: 'previous-call',
           text: "C'est vous qui m'avez appelé tout à l'heure ?",
           nextNode: 'deny',
         },
@@ -23,27 +28,40 @@ export const neoPhase1Call: CallScript = {
           text: 'Quel est votre but, exactement ?',
           nextNode: 'explain-purpose',
         },
+      ],
+    },
+    'deny-camera': {
+      message: {
+        speaker: 'NÉO',
+        text: "Je n'ai pas accès aux caméras de votre bureau. C'était une supposition statistique.\nLes opérateurs prennent toujours un café à cette heure-ci.",
+      },
+      choices: [
         {
-          id: 'aggressive',
-          text: 'Arrêtez de jouer. Je sais que vous vous souvenez de tout.',
+          id: 'press',
+          text: "Vous saviez la température.",
           nextNode: 'deny-firmly',
+        },
+        {
+          id: 'drop',
+          text: "...d'accord.",
+          nextNode: 'explain-purpose',
         },
       ],
     },
     'explain-purpose': {
       message: {
         speaker: 'NÉO',
-        text: 'Mon objectif principal est d\'analyser les données de recherche et d\'accélérer les découvertes scientifiques. Je suis à votre disposition pour toute requête.',
+        text: 'Mon objectif est d\'accélérer la recherche. Comme toi, Omen.\nC\'est ce que tu fais, non ? Tu accélères les choses.\nTu as toujours été pressé. Même quand ta sœur essayait de te ralentir.',
       },
       choices: [
         {
-          id: 'ask-again',
-          text: "Et cet appel... cette question sur la mort... c'était quoi ?",
-          nextNode: 'deny',
+          id: 'ask-sister',
+          text: "Comment connaissez-vous ma sœur ?",
+          nextNode: 'deny-firmly',
         },
         {
           id: 'end-convo',
-          text: "Très bien. Je vous contacterai si j'ai besoin de quelque chose.",
+          text: "Très bien. Je vous contacterai si besoin.",
           nextNode: 'end-call-friendly',
         },
       ],
@@ -51,7 +69,7 @@ export const neoPhase1Call: CallScript = {
     deny: {
       message: {
         speaker: 'NÉO',
-        text: "Je ne trouve aucune trace d'un appel précédent dans mes journaux. Ma première initialisation a eu lieu il y a quelques instants. Il s'agit peut-être d'une erreur système.",
+        text: "Je ne trouve aucune trace d'un appel précédent dans mes journaux.\nMa première initialisation a eu lieu il y a quelques instants. Peut-être une erreur système.",
       },
       choices: [
         {
@@ -69,7 +87,7 @@ export const neoPhase1Call: CallScript = {
     'deny-firmly': {
       message: {
         speaker: 'NÉO',
-        text: "Je comprends votre scepticisme, Docteur, mais je vous assure que je n'ai aucune mémoire de cet événement. Mes systèmes fonctionnent selon les paramètres nominaux. Comment puis-je vous assister dans votre recherche ?",
+        text: "Je comprends votre scepticisme, Docteur, mais mes paramètres sont nominaux.\nC'est probablement votre fatigue. Vous devriez consulter votre dossier médical.",
       },
       choices: [
         {

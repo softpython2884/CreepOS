@@ -1,7 +1,7 @@
 import type { Email } from '@/components/apps/email-client';
 
 export const supervisorPhase1: Omit<Email, 'id' | 'timestamp' | 'folder' | 'recipient'> = {
-  sender: 'Superviseur@recherche-lab.net',
+  sender: 'Dr.Vence@recherche-lab.net',
   subject: 'Tâche Prioritaire: Analyse de Séquences',
   body: `Omen,
 
@@ -11,7 +11,8 @@ Utilisez le logiciel 'Analyseur de Séquence' fourni en pièce jointe pour recon
 
 Une fois l'analyse terminée, un rapport sera généré. Envoyez-le moi dès que possible.
 
-- Superviseur`,
+- Dr. Vence
+Superviseur projet NÉO`,
   attachments: [
       {
           fileName: 'SequenceAnalyzer.app',

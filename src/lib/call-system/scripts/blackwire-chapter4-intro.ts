@@ -24,7 +24,12 @@ Votre mission :
 
 Soyez prudent. Vous êtes maintenant sur leurs radars.
 
-- Blackwire`,
+- Blackwire
+
+---
+
+P.S. — On a intercepté un mail relayé sur votre adresse perso, parti d'une certaine "Léa Omen". Elle dit ne plus avoir de nouvelles depuis trois semaines. On ne savait pas que vous étiez marié. Ce n'est pas dans votre dossier RH.
+Pas notre affaire. Mais vérifiez vos arrières.`,
     attachments: [
     {
       fileName: 'analyze_decryptor.tool',

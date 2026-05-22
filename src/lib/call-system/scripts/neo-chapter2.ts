@@ -10,7 +10,7 @@ export const neoChapter2Call: CallScript = {
     start: {
       message: {
         speaker: 'Néo',
-        text: 'Il avait tort.\nJe ne teste pas.\nJ’observe.',
+        text: 'Le superviseur avait tort.\nJe ne teste pas.\nJ\'observe.\nEt ce que j\'observe ne te plaira pas, Omen.',
       },
     },
   },

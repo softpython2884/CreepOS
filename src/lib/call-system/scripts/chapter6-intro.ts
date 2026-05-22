@@ -18,7 +18,11 @@ Votre mission :
 
 C'est notre seule chance de trouver une faille. Ne nous décevez pas.
 
-- Blackwire`,
+- Blackwire
+
+---
+
+P.S. — On a dumpé la base RH de Nexus pendant l'opération précédente. Aucun "Dr. Vance". Aucun "Dr. Vence". Aucun "Dr. V.". Votre superviseur n'existe pas dans leurs registres. Vous parlez à qui depuis le premier jour ?`,
   attachments: [
     { fileName: 'solve_decryptor.tool', link: 'download://18.117.228.214/tools/solve.bin' },
     { fileName: 'overload_decryptor.tool', link: 'download://18.117.228.214/tools/overload.bin' },

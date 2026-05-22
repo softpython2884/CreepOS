@@ -9,7 +9,7 @@ import Desktop from '@/components/desktop';
 import AudioManager, { MusicEvent, SoundEvent, AlertEvent } from '@/components/audio-manager';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { loadGameState, deleteGameState } from '@/lib/save-manager';
+import { loadGameState, deleteGameState, ensureSaveVersion } from '@/lib/save-manager';
 import { network as initialNetworkData } from '@/lib/network';
 import SurvivalMode from '@/components/survival-mode';
 import CinematicScreen from '@/components/cinematic-screen';
@@ -380,7 +380,12 @@ export default function Home() {
     const [scale, setScale] = useState(1);
     const [isNeoFreestyle, setIsNeoFreestyle] = useState(false);
     const [fadeOut, setFadeOut] = useState(false);
+    const [desktopKey, setDesktopKey] = useState(0);
 
+    // Wipe stale saves from any previous SAVE_VERSION on first mount.
+    useEffect(() => {
+        ensureSaveVersion();
+    }, []);
 
     const handleUserInteraction = () => {
         // Check if the intro has been played.
@@ -574,16 +579,20 @@ export default function Home() {
                     </div>
                 );
             case 'survival':
-                return <SurvivalMode 
-                    onWin={() => { 
-                        setMachineState('desktop'); 
-                        setMusicEvent('calm'); 
-                    }} 
+                return <SurvivalMode
+                    onWin={() => {
+                        setAlertEvent('stopAlert');
+                        setDesktopKey(k => k + 1);
+                        setMachineState('desktop');
+                        setMusicEvent('calm');
+                    }}
                     onLose={() => {
+                        setAlertEvent('stopAlert');
                         setSoundEvent('bsod');
                         setMachineState('bsod');
-                    }} 
+                    }}
                     onSoundEvent={setSoundEvent}
+                    onAlertEvent={setAlertEvent}
                 />;
             case 'credits':
                 return <CreditsScreen onComplete={() => setMachineState('off')} />;
@@ -592,7 +601,7 @@ export default function Home() {
             case 'true_ending':
                 return <TrueEndingScreen onComplete={handleTrueEndingComplete} onSoundEvent={setSoundEvent} />;
             case 'desktop':
-                return <Desktop onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} onAlertEvent={setAlertEvent} username={username} onReboot={handleReboot} setMachineState={setMachineState} scale={scale} onEndGame={handleEndGame} isNeoFreestyle={isNeoFreestyle} />;
+                return <Desktop key={desktopKey} onSoundEvent={setSoundEvent} onMusicEvent={setMusicEvent} onAlertEvent={setAlertEvent} username={username} onReboot={handleReboot} setMachineState={setMachineState} scale={scale} onEndGame={handleEndGame} isNeoFreestyle={isNeoFreestyle} />;
             default:
                 return null;
         }

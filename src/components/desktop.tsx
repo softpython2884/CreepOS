@@ -181,7 +181,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   const [discoveredPcs, setDiscoveredPcs] = useState<Set<string>>(() => gameStateRef.current.discoveredPcs);
   const [isNeoInstalled, setIsNeoInstalled] = useState<boolean>(() => gameStateRef.current.isNeoInstalled || false);
   const [logs, setLogs] = useState<string[]>(['System initialized.']);
-  const [dangerLevel, setDangerLevel] = useState(0);
+  const [dangerLevel, setDangerLevel] = useState(() => gameStateRef.current.dangerLevel ?? 0);
 
   // Call state
   const [callState, setCallState] = useState<CallState>('idle');
@@ -204,7 +204,7 @@ export default function Desktop({ onSoundEvent, onMusicEvent, onAlertEvent, user
   
   const [emails, setEmails] = useState<Email[]>(() => gameStateRef.current.emails);
 
-  const gameState = { network, hackedPcs, discoveredPcs, emails, isNeoInstalled, machineState: 'desktop' };
+  const gameState = { network, hackedPcs, discoveredPcs, emails, isNeoInstalled, machineState: 'desktop', dangerLevel };
 
   const addLog = useCallback((message: string) => {
     setLogs(prev => {
@@ -438,7 +438,8 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     setActiveCall(null);
     callScriptRef.current = null;
     currentNodeIdRef.current = null;
-    
+    callConsequencesTriggeredRef.current.clear();
+
     if (!isTraced) {
         setTimeout(() => {
           onMusicEvent('calm');
@@ -655,11 +656,12 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     return () => clearInterval(saveInterval);
   }, [network, hackedPcs, discoveredPcs, emails, username, gameState, isNeoInstalled]);
 
+    const survivalTriggeredRef = useRef(false);
     useEffect(() => {
-        if (dangerLevel >= 100) {
-            setMachineState('survival');
+        if (dangerLevel >= 100 && !survivalTriggeredRef.current) {
+            survivalTriggeredRef.current = true;
             onAlertEvent('alarm');
-            setDangerLevel(0); // Reset for next time
+            setMachineState('survival');
         }
     }, [dangerLevel, setMachineState, onAlertEvent]);
 
@@ -760,12 +762,13 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
             const newTime = prevTime - 1;
             if (newTime <= 0) {
                 clearInterval(timer);
-                
+
                 const targetPc = network.find(pc => pc.name === traceTarget.name);
                 let dangerIncrease = targetPc?.traceability || 20;
                 if (targetPc?.isDangerous) {
                     dangerIncrease *= 2;
                 }
+                const projectedDanger = dangerLevel + dangerIncrease;
                 handleIncreaseDanger(dangerIncrease);
                 addLog(`CRITICAL: Trace complétée par ${traceTarget.name}. Danger augmenté de ${dangerIncrease}%. KERNEL SUPPRIMÉ.`);
 
@@ -781,11 +784,15 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
                     return pc;
                 });
                 setNetwork(updatedNetwork);
-                
+
                 saveGameState(username, { ...gameState, network: updatedNetwork });
 
-                onSoundEvent('bsod');
-                setMachineState('bsod');
+                // If danger reaches 100 we let the dangerLevel useEffect handle the survival
+                // transition. Otherwise we go straight to BSOD.
+                if (projectedDanger < 100) {
+                    onSoundEvent('bsod');
+                    setMachineState('bsod');
+                }
                 return 0;
             }
             return newTime;
@@ -793,7 +800,7 @@ Les coupables seront trouvés. Le protocole 7 sera appliqué. La torture sera ut
     }, 1000);
 
     return () => clearInterval(timer);
-}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, gameState, traceTarget, handleIncreaseDanger, isTracePaused]);
+}, [isTraced, addLog, onSoundEvent, network, username, setMachineState, gameState, traceTarget, handleIncreaseDanger, isTracePaused, dangerLevel]);
 
 
   const handleHackedPc = useCallback((pcId: string, ip: string) => {

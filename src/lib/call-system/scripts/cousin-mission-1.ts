@@ -12,5 +12,13 @@ Nous avons une petite tâche… format initiation.
 4. Envoyez-nous le mot de passe du .zip comme preuve.
 
 Discrétion obligatoire. Le système est équipé de trace-time.
-Appliquez les procédures apprises : effacement, crash, vitesse.`,
+Appliquez les procédures apprises : effacement, crash, vitesse.
+
+---
+
+Note : un message bizarre a été relayé sur cette boîte, envoyé à votre nom par un "Théo Omen". Vous nous aviez dit que vous aviez coupé les ponts avec votre famille. Il dit ceci, on le colle tel quel :
+
+> "Tu m'avais juré que t'avais arrêté ce putain de job. Maman a vu un papier dans le journal. Réponds, merde. T'es où ?"
+
+On range ça où ?`,
 };

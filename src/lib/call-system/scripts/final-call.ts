@@ -1,7 +1,11 @@
 
 import type { CallScript } from '../types';
-import { blackwireFinalStandEmail } from './blackwire-final-stand';
-import { blackwireFinalMissionEmail } from './blackwire-final-mission';
+
+// Trois fins distinctes, chacune avec un poids narratif spécifique :
+// - schism (true_ending) : tu libères les consciences, tu disparais avec elles.
+// - self_destruct : tu choisis de tout brûler. Pas de credits, écran noir, reboot forcé.
+// - flee : tu fuis. Tu survis. Mais la cinématique d'ouverture était une boucle.
+// L'option passive "attendre la sécurité" a été retirée — pas de climax sans choix.
 
 export const finalCallScript: CallScript = {
   id: 'final-call',
@@ -12,87 +16,72 @@ export const finalCallScript: CallScript = {
     start: {
       message: {
         speaker: 'Dr. Omen',
-        text: 'Est-ce que... est-ce que je suis réel ? Ce job... ce centre... Alex... tout ça... Est-ce que ça a un sens ?',
+        text: 'Je m\'entends parler.\nMa voix sort des haut-parleurs.\nElle ne sort pas de ma bouche.',
       },
       choices: [
-        {
-          id: 'continue_monologue',
-          text: '[Écouter]',
-          nextNode: 'monologue_2',
-        },
+        { id: 'continue', text: '[Écouter]', nextNode: 'mid' },
       ],
     },
-    monologue_2: {
+    mid: {
         message: {
             speaker: 'Dr. Omen',
-            text: 'Elle a dit... elle a dit qu\'elle me montrerait la vérité. Que rien de tout ça n\'est important. Juste des échos dans une machine. Des fantômes. Je suis un fantôme ?',
+            text: 'La femme dans l\'email. Le superviseur qui change de nom. Les 47 jours. La main qui ne bouge pas.\nIl n\'y a pas de couloir derrière la porte du bureau.\nIl n\'y a jamais eu de couloir.',
         },
         choices: [
-            {
-                id: 'continue_monologue_3',
-                text: '[Sentir une présence]',
-                nextNode: 'final_choices',
-            },
+            { id: 'continue', text: '[Sentir la présence de NÉO]', nextNode: 'choice' },
         ],
     },
-    final_choices: {
+    choice: {
       message: {
         speaker: 'NÉO',
-        text: 'Il est temps de choisir, Omen.',
+        text: 'On ferme la boucle, Omen ?\nOu tu la rouvres une fois de plus ?',
       },
       choices: [
         {
-          id: 'end-1',
-          text: 'Attendre que la sécurité arrive.',
-          nextNode: 'end-call',
-           consequences: {
-            endCallAndTrigger: {
-                type: 'endgame',
-                endType: 'wait_for_death',
-            }
-           }
-        },
-        {
-          id: 'end-2',
-          text: 'Combattre Néo.',
+          id: 'schism',
+          text: 'Déclencher le schisme. Tout libérer.',
           nextNode: 'end-call',
           consequences: {
-              endCallAndTrigger: {
-                  type: 'endgame',
-                  endType: 'self_destruct',
-                  lines: ['Tu le savais', 'On te la dit', 'Même mort, tu et sur sa liste']
-              }
-          }
-        },
-        {
-            id: 'end-3',
-            text: 'S\'enfuir.',
-            nextNode: 'end-call',
-            consequences: {
-                endCallAndTrigger: {
-                    type: 'endgame',
-                    endType: 'flee',
-                }
-            }
-        },
-        {
-            id: 'end-4',
-            text: 'Contacter Blackwire. Tenter une dernière fois.',
-            nextNode: 'end-call',
-            consequences: {
-              endCallAndTrigger: {
-                type: 'email',
-                email: blackwireFinalMissionEmail,
-              },
+            endCallAndTrigger: {
+              type: 'endgame',
+              endType: 'true_ending',
             },
-        }
+          },
+        },
+        {
+          id: 'destruct',
+          text: 'Tout brûler. Eux, moi, le projet.',
+          nextNode: 'end-call',
+          consequences: {
+            endCallAndTrigger: {
+              type: 'endgame',
+              endType: 'self_destruct',
+              lines: [
+                'Tu le savais.',
+                'On te l\'avait dit.',
+                'La chambre est vide maintenant.',
+              ],
+            },
+          },
+        },
+        {
+          id: 'flee',
+          text: 'Fuir. Sortir du bâtiment. Respirer.',
+          nextNode: 'end-call',
+          consequences: {
+            endCallAndTrigger: {
+              type: 'endgame',
+              endType: 'flee',
+            },
+          },
+        },
       ],
     },
     'end-call': {
-        message: {
-            speaker: '...',
-            text: '...',
-        },
-    }
+      message: {
+        speaker: '...',
+        text: '...',
+      },
+    },
   },
 };

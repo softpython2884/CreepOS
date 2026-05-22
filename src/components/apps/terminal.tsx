@@ -1614,13 +1614,7 @@ export default function Terminal({
                 break;
             }
 
-            if (ipArg === DIRECTOR_IP && isSecure) {
-                handleOutput('Appel sécurisé vers le Directeur en cours...');
-                // This would trigger a call script. For now, a placeholder.
-                handleOutput('Fonctionnalité de script d\'appel non entièrement implémentée.');
-            } else {
-                handleOutput(`call: Impossible de joindre ${ipArg}. Vérifiez l'IP et les protocoles.`);
-            }
+            handleOutput(`call: Impossible de joindre ${ipArg}. Vérifiez l'IP et les protocoles.`);
             break;
         }
         case 'debug-skip': {
